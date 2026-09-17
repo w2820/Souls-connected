@@ -344,11 +344,11 @@
         }
 
         @keyframes messageAppear {
-            0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+            0% { opacity: 0; transform: translateY(10px) scale(0.96); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .message-wrapper {
-            animation: messageAppear 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            animation: messageAppear 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
             opacity: 0;
         }
 
@@ -706,7 +706,7 @@
         /* 样式二：消息流底部气泡 */
         .typing-bubble-wrap {
             display: flex; align-items: flex-end; gap: 8px; margin: 6px 0 2px;
-            animation: typingIndicatorIn .28s ease both;
+            animation: typingIndicatorIn .32s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
         }
         .typing-bubble-wrap .tbw-avatar {
             width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
@@ -722,7 +722,7 @@
         }
         .typing-bubble .typing-dots span { background: var(--text-secondary); }
         @keyframes typingIndicatorIn {
-            from { opacity: 0; transform: translateY(10px) scale(.9); }
+            from { opacity: 0; transform: translateY(14px) scale(.82); }
             to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
@@ -7099,7 +7099,11 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
+            cursor: pointer;
+            transition: transform 0.12s ease;
+            -webkit-tap-highlight-color: transparent;
         }
+        .fortune-msg-card:active { transform: scale(0.95); }
         .fortune-msg-card img {
             width: 62px;
             height: 96px;
@@ -9378,7 +9382,7 @@
                 <div class="bg-gray-50 p-4 rounded-xl space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium">启用随机合并字卡（1-3条）</span>
-                        <div class="ios-switch" id="setting-merge-switch" onclick="toggleSwitch(this)"></div>
+                        <div class="ios-switch" id="setting-merge-switch" onclick="KSS_toggleMergeSwitch(this)"></div>
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div><span class="text-xs text-gray-500 block mb-1">1条概率</span><input type="number" id="merge-prob-1" class="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm" value="50"></div>
@@ -9439,7 +9443,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div><span class="text-xs text-gray-500 block mb-1">角色发帖概率 (%)</span><input type="number" id="setting-moment-prob" min="0" max="100" value="7" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                         <div><span class="text-xs text-gray-500 block mb-1">评论我的动态 (%)</span><input type="number" id="setting-moment-my-comment" min="0" max="100" value="45" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-                        <div><span class="text-xs text-gray-500 block mb-1">角色互评概率 (%)</span><input type="number" id="setting-moment-role-comment" min="0" max="100" value="35" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                        <div><span class="text-xs text-gray-500 block mb-1">角色互评概率 (%)</span><input type="number" id="setting-moment-role-comment" min="0" max="100" value="2" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                         <div><span class="text-xs text-gray-500 block mb-1">用户评论后角色回复概率 (%)</span><input type="number" id="setting-moment-user-reply" min="0" max="100" value="65" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                     </div>
                 </div>
@@ -9480,10 +9484,16 @@
                     </div>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="text-sm font-medium">主动回复概率</span>
-                        <input type="number" id="setting-poke-auto-reply-prob" min="0" max="100" value="45" class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                        <input type="number" id="setting-poke-auto-reply-prob" min="0" max="100" value="95" class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
                         <span class="text-sm text-gray-400">%</span>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">当你戳一戳角色后，角色有该概率主动发送一条消息</p>
+                    <p class="text-xs text-gray-400 mt-1">当你戳一戳角色后，角色有该概率回复你 1-3 条消息（每条按回复速度显示“正在输入”后发送）</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="text-sm font-medium">角色戳我一戳的概率</span>
+                        <input type="number" id="setting-role-poke-me-prob" min="0" max="100" value="15" class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                        <span class="text-sm text-gray-400">%</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">角色主动发消息后，有该概率顺手戳一戳你</p>
                     <div class="grid grid-cols-2 gap-3 mt-3">
                         <button type="button" data-kss-open onclick="openComboPanel('poke')" class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">发起戳一戳</button>
                         <button type="button" onclick="openPokeSettingsFromSheet()" class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">戳一戳文案 / 符号</button>
@@ -10904,13 +10914,14 @@ const DEFAULT_DATA = {
         autoSendProbEnabled: false,
         autoSendProbPercent: 50,
         transferTestMode: false,
-        moment: { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 35, authorReplyProb: 30, userCommentReplyProb: 65 },
+        moment: { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 2, authorReplyProb: 30, userCommentReplyProb: 65 },
         momentCover: '',
         musicPlayerEnabled: true,
         musicShuffle: true,
         musicCardPosition: { left: 'auto', top: '70px', right: '16px' },
         pokeAutoReplyEnabled: true,
-        pokeAutoReplyProb: 45,
+        pokeAutoReplyProb: 95,
+        rolePokeMeProb: 15,
         mergeReplyEnabled: false,
         mergeProb1: 50,
         mergeProb2: 30,
@@ -16490,6 +16501,192 @@ function clearAllTimers() {
     stopRingback();
 }
 
+// ========== 统一自动行为定时器（主动发送 / 自动邮件 / 自动来电 / 自动转账 / 在线状态） ==========
+let _lastAutoMailCheck = Date.now();
+
+// 主动发送消息：按 autoInterval 分钟逐个角色检查，autoSendProbEnabled 开启时再按百分比掷点
+function kssAutoSendTick() {
+    try {
+        const s = appData.settings || {};
+        if (!s.autoSend) return;
+        const roles = appData.roles || [];
+        if (!roles.length) return;
+        const intervalMs = Math.max(KSS_settingNum(s.autoInterval, 30, 0), 0) * 60 * 1000;
+        const now = Date.now();
+        const probEnabled = !!s.autoSendProbEnabled;
+        const prob = KSS_settingNum(s.autoSendProbPercent, 50, 0, 100);
+        let changed = false;
+        roles.forEach(role => {
+            if (!role) return;
+            const last = role.lastAutoSendTime || 0;
+            const need = intervalMs > 0 ? intervalMs : 30000;
+            if (now - last < need) return;
+            role.lastAutoSendTime = now;
+            changed = true;
+            if (probEnabled && Math.random() * 100 >= prob) return;
+            if (typeof window.executeRoleReply === 'function') {
+                try { window.executeRoleReply(role); } catch (e) { console.warn('autoSend:', e); }
+            }
+        });
+        if (changed) debouncedSaveData();
+    } catch (e) { console.warn('autoSendTick:', e); }
+}
+
+// 角色主动寄信（用字卡库内容拼一封收到的信 + 聊天内系统提示）
+function kssRoleSendLetter(role) {
+    if (!role) return;
+    const all = (typeof getActiveWordList === 'function') ? getActiveWordList() : [];
+    const pool = all.length ? all : ['想你啦', '最近还好吗', '今天天气不错'];
+    const count = 5 + Math.floor(Math.random() * 8);
+    const parts = [];
+    for (let i = 0; i < count; i++) parts.push(pool[Math.floor(Math.random() * pool.length)]);
+    const content = parts.join('。') + '。';
+    if (!appData.mails) appData.mails = [];
+    appData.mails.push({ id: generateUID(), roleId: role.id, type: 'received', content, time: Date.now(), viewed: false });
+    try {
+        if (!appData.chats[role.id]) appData.chats[role.id] = [];
+        const notice = `${role.name}给你寄了一封信`;
+        appData.chats[role.id].push({ id: Date.now() + 1, sender: role.id, type: 'letter_notify', content: notice, time: Date.now() });
+        if (currentChatType === 'role' && currentRoleId === role.id) appendMessageToDOM(role.id, notice, Date.now(), null, 'letter_notify');
+        else incrementUnread(role.id);
+    } catch (e) { console.warn('mail chat notice:', e); }
+    debouncedSaveData();
+    try { sendNotificationIfNeeded(`${role.name} 寄来一封信`, content.slice(0, 40), role.id); } catch (e) {}
+    try {
+        const page = document.getElementById('page-mailbox');
+        if (page && page.classList.contains('active')) renderMailList();
+    } catch (e) {}
+}
+
+// 邮件检查：先投递到期的回信，再按 autoMail.checkInterval 分钟给角色一次主动寄信机会
+function kssMailTick() {
+    try {
+        const now = Date.now();
+        (appData.mails || []).slice().forEach(mail => {
+            if (mail && mail.type === 'sent' && !mail.replied && mail.replyTime && now >= mail.replyTime) {
+                try { generateReplyForMail(mail); } catch (e) { console.warn('mailReply:', e); }
+            }
+        });
+        const m = appData.settings.autoMail || {};
+        if (!m.enabled) return;
+        const intervalMs = Math.max(KSS_settingNum(m.checkInterval, 10, 0), 1) * 60 * 1000;
+        if (now - _lastAutoMailCheck < intervalMs) return;
+        _lastAutoMailCheck = now;
+        const roles = appData.roles || [];
+        if (!roles.length) return;
+        const senders = roles.filter(role => role && Math.random() * 100 < KSS_settingNum(role.autoMailProbability, 15, 0, 100));
+        if (!senders.length) return;
+        kssRoleSendLetter(senders[Math.floor(Math.random() * senders.length)]);
+    } catch (e) { console.warn('mailTick:', e); }
+}
+
+// 角色来电：在 minInterval~maxInterval 分钟内随机安排一次，命中 probability 就发起
+function kssScheduleAutoCall() {
+    if (autoCallTimer) { clearTimeout(autoCallTimer); autoCallTimer = null; }
+    const c = appData.settings.autoCall || {};
+    if (!c.enabled) return;
+    const a = Math.max(KSS_settingNum(c.minInterval, 10, 0), 0);
+    const b = Math.max(KSS_settingNum(c.maxInterval, 30, 0), 0);
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    const delayMs = (lo + Math.random() * (hi - lo)) * 60 * 1000;
+    autoCallTimer = setTimeout(() => {
+        autoCallTimer = null;
+        try { kssMaybeAutoCall(); } catch (e) { console.warn('autoCall:', e); }
+        kssScheduleAutoCall();
+    }, Math.max(delayMs, 5000));
+}
+
+function kssMaybeAutoCall() {
+    const c = appData.settings.autoCall || {};
+    if (!c.enabled) return;
+    if (callState.active) return;
+    const roles = appData.roles || [];
+    if (!roles.length) return;
+    const prob = KSS_settingNum(c.probability, 30, 0, 100);
+    if (Math.random() * 100 >= prob) return;
+    startIncomingCall(roles[Math.floor(Math.random() * roles.length)]);
+}
+
+// 角色主动来电（与用户呼出共用同一套通话界面，超时未接按未接听处理）
+function startIncomingCall(role) {
+    if (!role || callState.active) return;
+    callState.roleId = role.id; callState.roleName = role.name; callState.roleAvatar = role.avatar;
+    callState.rejectProb = appData.settings.call?.rejectProb ?? 20;
+    callState.missProb = appData.settings.call?.missProb ?? 10;
+    callState.windowSize = appData.settings.call?.windowSize ?? 'standard';
+    callState.active = true; callState.status = 'incoming'; callState.initiator = 'role'; callState.seconds = 0;
+    const av = document.getElementById('call-avatar'); if (av) av.src = role.avatar;
+    const nm = document.getElementById('call-name'); if (nm) nm.textContent = role.name;
+    const st = document.getElementById('call-status'); if (st) st.textContent = '邀请你通话...';
+    const tm = document.getElementById('call-timer'); if (tm) tm.textContent = '00:00';
+    const bgEl = document.getElementById('call-bg');
+    if (bgEl) { const bg = appData.settings.call?.background; bgEl.style.backgroundImage = bg ? `url(${bg})` : 'none'; }
+    setCallWindowSize(callState.windowSize);
+    updateCallActions();
+    const modal = document.getElementById('modal-call'); if (modal) modal.classList.remove('hidden');
+    playCustomRingtone();
+    const timeoutSec = Math.max(KSS_settingNum(appData.settings.autoCall?.userTimeout, 30, 0), 1);
+    if (callState.userTimeoutTimer) clearTimeout(callState.userTimeoutTimer);
+    callState.userTimeoutTimer = setTimeout(() => {
+        if (callState.active && callState.status === 'incoming' && callState.initiator === 'role') endCall('missed', 0);
+    }, timeoutSec * 1000);
+    debouncedSaveData();
+}
+
+// 自动转账：按 transferSettings.checkInterval 分钟检查一次，命中 probability 随机挑一个角色转账
+function kssScheduleAutoTransfer() {
+    if (autoTransferTimer) { clearTimeout(autoTransferTimer); autoTransferTimer = null; }
+    const t = appData.transferSettings || {};
+    if (!t.enabled) return;
+    const minutes = Math.max(KSS_settingNum(t.checkInterval, 30, 0), 1);
+    autoTransferTimer = setTimeout(() => {
+        autoTransferTimer = null;
+        try { kssMaybeAutoTransfer(); } catch (e) { console.warn('autoTransfer:', e); }
+        kssScheduleAutoTransfer();
+    }, minutes * 60 * 1000);
+}
+
+function kssMaybeAutoTransfer() {
+    const t = appData.transferSettings || {};
+    if (!t.enabled) return;
+    const roles = appData.roles || [];
+    if (!roles.length) return;
+    const prob = KSS_settingNum(t.probability, 15, 0, 100);
+    if (Math.random() * 100 >= prob) return;
+    try { sendRoleTransfer(roles[Math.floor(Math.random() * roles.length)]); } catch (e) { console.warn('sendRoleTransfer:', e); }
+}
+
+function startUnifiedTimers() {
+    stopUnifiedTimers();
+    autoSendTimer = setInterval(kssAutoSendTick, 30000);
+    mailCheckTimer = setInterval(kssMailTick, 60000);
+    kssScheduleAutoCall();
+    kssScheduleAutoTransfer();
+}
+
+function stopUnifiedTimers() {
+    if (autoSendTimer) { clearInterval(autoSendTimer); autoSendTimer = null; }
+    if (mailCheckTimer) { clearInterval(mailCheckTimer); mailCheckTimer = null; }
+    if (autoCallTimer) { clearTimeout(autoCallTimer); autoCallTimer = null; }
+    if (autoTransferTimer) { clearTimeout(autoTransferTimer); autoTransferTimer = null; }
+}
+
+// 在线状态自动切换：定期让每个角色在其状态列表中滚动（refreshRoleOnlineStatus 内部限制 3 小时一次）
+function startOnlineStatusTimer() {
+    if (onlineStatusTimer) clearInterval(onlineStatusTimer);
+    onlineStatusTimer = setInterval(() => {
+        try {
+            (appData.roles || []).forEach(role => refreshRoleOnlineStatus(role));
+            if (currentChatType === 'role' && currentRoleId) {
+                const role = appData.roles.find(r => String(r.id) === String(currentRoleId));
+                const sub = document.getElementById('chat-subtitle');
+                if (role && sub) sub.textContent = role.onlineStatus?.currentStatus || '在线';
+            }
+        } catch (e) { console.warn('onlineStatusTimer:', e); }
+    }, 10 * 60 * 1000);
+}
+window.startIncomingCall = startIncomingCall;
+
 // --- Web Audio API 铃音引擎 ---
 let audioCtx = null;
 let ringtoneInterval = null;
@@ -17177,7 +17374,7 @@ function _readMirror() {
 /* ===== 数据结构版本与迁移框架 =====
    升级数据格式时：把 APP_SCHEMA_VERSION +1，并在 DATA_MIGRATIONS 里加一条「目标版本 -> 迁移函数」。
    迁移函数必须幂等（可重复执行），因为异常中断后下次启动会重跑。 */
-const APP_SCHEMA_VERSION = 3;
+const APP_SCHEMA_VERSION = 5;
 const DATA_MIGRATIONS = {
     /* v1 -> v2：外观设置字段归一化（补齐 momentAvatarShape / customThemeColors 等新增字段，修掉重复键） */
     2: function (data) {
@@ -17191,6 +17388,21 @@ const DATA_MIGRATIONS = {
         if (!data.settings) data.settings = {};
         if (!data.settings.moment || typeof data.settings.moment !== 'object') data.settings.moment = {};
         if (data.settings.moment.probability === 15) data.settings.moment.probability = 7;
+        return data;
+    },
+    /* v3 -> v4：角色互评概率默认值 35% -> 2%（仅迁移仍为旧默认值的用户，改动过的不动） */
+    4: function (data) {
+        if (!data || typeof data !== 'object') return data;
+        if (!data.settings) data.settings = {};
+        if (!data.settings.moment || typeof data.settings.moment !== 'object') data.settings.moment = {};
+        if (data.settings.moment.rolePostCommentProb === 35) data.settings.moment.rolePostCommentProb = 2;
+        return data;
+    },
+    /* v4 -> v5：戳一戳回复概率默认值 45% -> 95%（仅迁移仍为旧默认值的用户，改动过的不动） */
+    5: function (data) {
+        if (!data || typeof data !== 'object') return data;
+        if (!data.settings) data.settings = {};
+        if (data.settings.pokeAutoReplyProb === 45) data.settings.pokeAutoReplyProb = 95;
         return data;
     }
 };
@@ -17705,7 +17917,8 @@ async function loadData() {
             if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] };
             if (!appData.pokeSymbols.customSymbols) appData.pokeSymbols.customSymbols = [];
             if (!appData.settings.pokeAutoReplyEnabled) appData.settings.pokeAutoReplyEnabled = true;
-            if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 45;
+            if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 95;
+            if (appData.settings.rolePokeMeProb === undefined) appData.settings.rolePokeMeProb = 15;
             if (appData.settings.mergeReplyEnabled === undefined) appData.settings.mergeReplyEnabled = false;
             if (appData.settings.mergeProb1 === undefined) appData.settings.mergeProb1 = 50;
             if (appData.settings.mergeProb2 === undefined) appData.settings.mergeProb2 = 30;
@@ -17867,9 +18080,9 @@ async function loadData() {
         if (appData.settings.autoSendProbPercent === undefined) appData.settings.autoSendProbPercent = 50;
         if (appData.settings.transferTestMode === undefined) appData.settings.transferTestMode = false;
         if (appData.settings.multiMsgInterval === undefined) appData.settings.multiMsgInterval = 2;
-        if (!appData.settings.moment) appData.settings.moment = { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 35, authorReplyProb: 30, userCommentReplyProb: 65 };
+        if (!appData.settings.moment) appData.settings.moment = { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 2, authorReplyProb: 30, userCommentReplyProb: 65 };
         if (appData.settings.moment.myPostCommentProb === undefined) appData.settings.moment.myPostCommentProb = 45;
-        if (appData.settings.moment.rolePostCommentProb === undefined) appData.settings.moment.rolePostCommentProb = 35;
+        if (appData.settings.moment.rolePostCommentProb === undefined) appData.settings.moment.rolePostCommentProb = 2;
         if (appData.settings.moment.authorReplyProb === undefined) appData.settings.moment.authorReplyProb = 30;
         if (appData.settings.moment.userCommentReplyProb === undefined) appData.settings.moment.userCommentReplyProb = 65;
         if (appData.settings.moment.globalMaxPerDay === undefined) appData.settings.moment.globalMaxPerDay = 3;
@@ -17880,7 +18093,8 @@ async function loadData() {
         if (appData.settings.musicShuffle === undefined) appData.settings.musicShuffle = true;
         if (!appData.settings.musicCardPosition) appData.settings.musicCardPosition = { left: 'auto', top: '70px', right: '16px' };
         if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true;
-        if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 45;
+        if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 95;
+        if (appData.settings.rolePokeMeProb === undefined) appData.settings.rolePokeMeProb = 15;
         appData.appearance = ensureAppearance(appData.appearance);
 
         // 一次性将旧版绿色默认主题迁移为图二蓝色主题
@@ -18790,6 +19004,60 @@ function cancelPendingMessageRenders() {
     }
 }
 
+const MESSAGE_APPEAR_MS = 320;
+const MESSAGE_STAGGER_MS = 70;
+let _chatScrollRaf = 0;
+
+function _cubicBezierEase(p1x, p1y, p2x, p2y) {
+    const cx = 3 * p1x, bx = 3 * (p2x - p1x) - cx, ax = 1 - cx - bx;
+    const cy = 3 * p1y, by = 3 * (p2y - p1y) - cy, ay = 1 - cy - by;
+    const sampleX = t => ((ax * t + bx) * t + cx) * t;
+    const sampleY = t => ((ay * t + by) * t + cy) * t;
+    const slopeX = t => (3 * ax * t + 2 * bx) * t + cx;
+    return function (x) {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        let t = x;
+        for (let i = 0; i < 8; i++) {
+            const diff = sampleX(t) - x;
+            if (Math.abs(diff) < 1e-5) break;
+            const d = slopeX(t);
+            if (Math.abs(d) < 1e-6) break;
+            t -= diff / d;
+        }
+        return sampleY(t);
+    };
+}
+
+const _chatScrollEase = _cubicBezierEase(0.25, 0.46, 0.45, 0.94);
+
+function smoothScrollChatToBottom(duration) {
+    const c = document.getElementById('chat-messages');
+    if (!c) return;
+    if (_chatScrollRaf) {
+        cancelAnimationFrame(_chatScrollRaf);
+        _chatScrollRaf = 0;
+    }
+    const start = c.scrollTop;
+    const target = c.scrollHeight - c.clientHeight;
+    const dist = target - start;
+    if (!(duration > 0) || Math.abs(dist) < 1) {
+        c.scrollTop = target;
+        return;
+    }
+    const t0 = performance.now();
+    const step = now => {
+        const p = Math.min(1, (now - t0) / duration);
+        c.scrollTop = start + dist * _chatScrollEase(p);
+        if (p < 1) {
+            _chatScrollRaf = requestAnimationFrame(step);
+        } else {
+            _chatScrollRaf = 0;
+        }
+    };
+    _chatScrollRaf = requestAnimationFrame(step);
+}
+
 function appendMessageToDOM(sender, content, time, quote = null, type = 'text', mindCards = null, read = false) {
     const container = document.getElementById('chat-messages');
     if (!container) return;
@@ -18847,7 +19115,8 @@ function flushPendingMessages() {
         
         if (signal.aborted) return;
         
-        msgs.forEach(({ sender, content, time, quote, type, mindCards, read }) => {
+        const _batchCount = msgs.length;
+        msgs.forEach(({ sender, content, time, quote, type, mindCards, read }, _batchIndex) => {
             if (signal.aborted) return;
             
             const currentDate = formatDate(time);
@@ -18875,6 +19144,7 @@ function flushPendingMessages() {
             el.dataset.msgTime = time;
             el.dataset.rawId = time + '_' + sender + '_' + content;
             renderedMessageIds.add(msgId);
+            if (_batchCount > 1) el.style.animationDelay = (_batchIndex * MESSAGE_STAGGER_MS) + 'ms';
             fragment.appendChild(el);
         });
         
@@ -18884,7 +19154,8 @@ function flushPendingMessages() {
         
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
         if (isNearBottom) {
-            container.scrollTop = container.scrollHeight;
+            const _scrollDur = MESSAGE_APPEAR_MS + (_batchCount > 1 ? (_batchCount - 1) * MESSAGE_STAGGER_MS : 0);
+            smoothScrollChatToBottom(_scrollDur);
         }
     });
 }
@@ -20191,10 +20462,32 @@ function executeGroupReply(group) {
     if (!group || !group.members || group.members.length < 2) return;
     
     const memberCount = group.members.length;
-    let selectedCount = Math.min(3 + Math.floor(Math.random() * 3), memberCount);
-    selectedCount = Math.max(2, Math.min(selectedCount, 5));
-    
-    const speakers = [...group.members].sort(() => Math.random() - 0.5).slice(0, selectedCount);
+
+    /* 期望发言人数：优先按群配置 replyCountProb[成员数] 的分布抽样，否则 3~5 随机 */
+    const _countDist = group.replyCountProb && group.replyCountProb[String(memberCount)];
+    let selectedCount;
+    if (_countDist) {
+        const _total = Object.keys(_countDist).reduce((s, k) => s + (Number(_countDist[k]) || 0), 0);
+        if (_total > 0) {
+            let _roll = Math.random() * _total, _pick = 1;
+            for (let i = 1; i <= memberCount; i++) {
+                const _w = Number(_countDist[i]) || 0;
+                if (_roll < _w) { _pick = i; break; }
+                _roll -= _w;
+            }
+            selectedCount = _pick;
+        }
+    }
+    if (selectedCount === undefined) selectedCount = 3 + Math.floor(Math.random() * 3);
+    selectedCount = Math.max(1, Math.min(selectedCount, 5, memberCount));
+
+    /* 每个成员按自身「群聊发言概率」groupProb 决定是否参与本轮发言（0% 即不发言） */
+    const _speakProb = (id) => {
+        const _r = appData.roles.find(x => x.id === id);
+        return KSS_settingNum(_r && _r.groupProb, 50, 0, 100);
+    };
+    let speakers = group.members.filter(id => Math.random() * 100 < _speakProb(id));
+    speakers = speakers.sort(() => Math.random() - 0.5).slice(0, selectedCount);
     if (speakers.length === 0) return;
 
     const firstRole = appData.roles.find(r => r.id === speakers[0]);
@@ -20205,7 +20498,11 @@ function executeGroupReply(group) {
         tip.classList.add('active');
     }
 
-    const delay = Math.random() * (appData.settings.maxDelay - appData.settings.minDelay) * 1000 + appData.settings.minDelay * 1000;
+    /* 群聊首条延迟按“回复速度”抽样；成员之间按“多条回复间隔”依次发言 */
+    const _gMin = KSS_settingNum(appData.settings.minDelay, 1, 0);
+    const _gMax = KSS_settingNum(appData.settings.maxDelay, 3, 0);
+    const delay = (Math.random() * Math.abs(_gMax - _gMin) + Math.min(_gMin, _gMax)) * 1000;
+    const _gGapMs = KSS_settingNum(appData.settings.multiMsgInterval, 2, 0) * 1000;
     setTimeout(() => {
         const tip = document.getElementById('typing-indicator');
         if (tip) tip.classList.remove('active');
@@ -20237,7 +20534,7 @@ function executeGroupReply(group) {
                 if (gSeparateEmoji) {
                     KSS_sendSeparateEmojiGroup(group.id, speakerId, gSeparateEmoji, index);
                 }
-            }, index * 800);
+            }, index * _gGapMs);
         });
     }, delay);
 }
@@ -20247,9 +20544,7 @@ function scrollToBottom() {
     if (!c) return;
     const isNearBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 100;
     if (isNearBottom) {
-        requestAnimationFrame(() => {
-            c.scrollTop = c.scrollHeight;
-        });
+        smoothScrollChatToBottom(MESSAGE_APPEAR_MS);
     }
 }
 
@@ -20306,13 +20601,37 @@ window.syncTypingStyleButtons = syncTypingStyleButtons;
     else bind();
 })();
 
+let _typingBarHideTimer = null;
+
+function _resetTypingUIForShow() {
+    if (_typingBarHideTimer) {
+        clearTimeout(_typingBarHideTimer);
+        _typingBarHideTimer = null;
+    }
+    var bar = document.getElementById('typing-bar');
+    if (bar) bar.classList.remove('active', 'wall-mode', 'hiding');
+    var ti = document.getElementById('typing-indicator');
+    if (ti) {
+        ti.classList.remove('active', 'wall-mode');
+        var wp = ti.querySelector('.wall-portal');
+        if (wp) wp.remove();
+    }
+    var bw = document.getElementById('typing-bubble-wrap');
+    if (bw) bw.remove();
+}
+
 function _clearAllTypingUI() {
+    if (_typingBarHideTimer) {
+        clearTimeout(_typingBarHideTimer);
+        _typingBarHideTimer = null;
+    }
     var bar = document.getElementById('typing-bar');
     if (bar) {
         if (bar.classList.contains('active')) {
             /* 参照第一个文件：先播 .hiding 淡出动画（0.25s），再真正隐藏 */
             bar.classList.add('hiding');
-            setTimeout(function () {
+            _typingBarHideTimer = setTimeout(function () {
+                _typingBarHideTimer = null;
                 bar.classList.remove('active', 'wall-mode', 'hiding');
                 var _bl2 = document.getElementById('typing-bar-label');
                 if (_bl2) _bl2.textContent = '';
@@ -20341,7 +20660,7 @@ function _clearAllTypingUI() {
 }
 
 function _showTypingUI(roleName, roleAvatar) {
-    _clearAllTypingUI();
+    _resetTypingUIForShow();
     var style = getTypingAnimStyle();
     var name = roleName || '角色';
     var avatar = roleAvatar || (typeof DEFAULT_AVATAR !== 'undefined' ? DEFAULT_AVATAR : '');
@@ -20459,37 +20778,85 @@ function hideRoleTyping(roleId) {
 }
 
 // ========== 拍一拍核心功能 ==========
+/* 按“回复速度”（最小/最大延迟设置）抽样一条消息的延迟（毫秒），所有角色发消息场景共用 */
+function getReplySpeedDelayMs() {
+    const mn = KSS_settingNum(appData.settings.minDelay, 1, 0);
+    const mx = KSS_settingNum(appData.settings.maxDelay, 3, 0);
+    const lo = Math.min(mn, mx), hi = Math.max(mn, mx);
+    return (Math.random() * (hi - lo) + lo) * 1000;
+}
+
+/* 联系人按“回复速度”发送一条聊天消息：先显示“正在输入”，到点再发送 */
+function sendRoleTextWithSpeed(role, content, type) {
+    if (!role || !content) return;
+    type = type || 'text';
+    const d = getReplySpeedDelayMs();
+    showRoleTyping(role.id, role.name, role.avatar, d);
+    setTimeout(() => {
+        hideRoleTyping(role.id);
+        const msg = { id: Date.now(), sender: role.id, content: content, time: Date.now(), type: type, read: false };
+        if (!appData.chats[role.id]) appData.chats[role.id] = [];
+        appData.chats[role.id].push(msg);
+        role.lastActive = Date.now();
+        debouncedSaveData();
+        if (currentChatType === 'role' && currentRoleId === role.id) {
+            appendMessageToDOM(role.id, content, Date.now(), null, type);
+        } else {
+            incrementUnread(role.id);
+        }
+        sendNotificationIfNeeded(`${role.name} 发来消息`, formatNotificationBody(content, type), role.id);
+    }, d);
+}
+
 async function sendRolePokeReply(role, count, initialDelayMs = 0) {
     if (!role) return;
     const allWords = getActiveWordList();
     if (allWords.length === 0) return;
-    const intervalMs = (appData.settings.multiMsgInterval || 2) * 1000;
-    setTimeout(async () => {
-        for (let i = 1; i <= count; i++) {
-            setTimeout(async () => {
-                let content = allWords[Math.floor(Math.random() * allWords.length)];
-                let type = 'text';
-                /* ===== 表情机制（移植自传讯版） ===== */
-                const _pemo = KSS_applyEmoji(content, type, KSS_getRoleStickerPool(role.id));
-                content = _pemo.content;
-                type = _pemo.type;
-                const pSeparateEmoji = _pemo.separateEmoji;
-                const msg = { id: Date.now() + i, sender: role.id, content: content, time: Date.now(), type: type, read: false };
-                if (!appData.chats[role.id]) appData.chats[role.id] = [];
-                appData.chats[role.id].push(msg);
-                debouncedSaveData();
-                if (currentChatType === 'role' && currentRoleId === role.id) {
-                    appendMessageToDOM(role.id, content, Date.now(), null, type);
-                } else {
-                    incrementUnread(role.id);
-                }
-                sendNotificationIfNeeded(`${role.name} 发来消息`, formatNotificationBody(content, type), role.id);
-                if (pSeparateEmoji) {
-                    KSS_sendSeparateEmojiRole(role.id, pSeparateEmoji, i);
-                }
-            }, (i - 1) * intervalMs);
-        }
-    }, initialDelayMs);
+    const total = Math.max(1, Math.min(3, count || 1));
+    /* 每次戳一戳生成一个代次，重复戳时作废旧回复队列 */
+    window._pokeReplyGen = window._pokeReplyGen || {};
+    const _gen = (window._pokeReplyGen[role.id] = (window._pokeReplyGen[role.id] || 0) + 1);
+    const _isCurrent = () => window._pokeReplyGen[role.id] === _gen;
+
+    /* 每条消息都按“回复速度”抽样延迟，并在该时长内显示“正在输入”后再发送 */
+    const sendOne = (idx) => {
+        if (idx > total || !_isCurrent()) return;
+        const d = getReplySpeedDelayMs();
+        showRoleTyping(role.id, role.name, role.avatar, d);
+        setTimeout(() => {
+            if (!_isCurrent()) return;
+            hideRoleTyping(role.id);
+            let content = allWords[Math.floor(Math.random() * allWords.length)];
+            let type = 'text';
+            /* ===== 表情机制（移植自传讯版） ===== */
+            const _pemo = KSS_applyEmoji(content, type, KSS_getRoleStickerPool(role.id));
+            content = _pemo.content;
+            type = _pemo.type;
+            const pSeparateEmoji = _pemo.separateEmoji;
+            const msg = { id: Date.now() + idx, sender: role.id, content: content, time: Date.now(), type: type, read: false };
+            if (!appData.chats[role.id]) appData.chats[role.id] = [];
+            appData.chats[role.id].push(msg);
+            role.lastActive = Date.now();
+            debouncedSaveData();
+            if (currentChatType === 'role' && currentRoleId === role.id) {
+                appendMessageToDOM(role.id, content, Date.now(), null, type);
+            } else {
+                incrementUnread(role.id);
+            }
+            sendNotificationIfNeeded(`${role.name} 发来消息`, formatNotificationBody(content, type), role.id);
+            if (pSeparateEmoji) {
+                KSS_sendSeparateEmojiRole(role.id, pSeparateEmoji, idx);
+            }
+            if (idx < total) sendOne(idx + 1);
+        }, d);
+    };
+
+    if (initialDelayMs > 0) {
+        showRoleTyping(role.id, role.name, role.avatar, initialDelayMs);
+        setTimeout(() => { if (_isCurrent()) { hideRoleTyping(role.id); sendOne(1); } }, initialDelayMs);
+    } else {
+        sendOne(1);
+    }
 }
 
 function executePokeWithText(text) {
@@ -20513,27 +20880,17 @@ function executePokeWithText(text) {
     
     const role = appData.roles.find(r => r.id === currentRoleId);
     if (role) {
-        const delay = 1500 + Math.random() * 2000;
-        showRoleTyping(role.id, role.name, role.avatar, delay);
-        setTimeout(() => {
-            hideRoleTyping(role.id);
-        }, delay + 500);
-    }
-    
-    if (appData.settings.pokeAutoReplyEnabled && role) {
-        let prob = appData.settings.pokeAutoReplyProb ?? 45;
-        let shouldReply = false;
-        if (prob >= 100) {
-            shouldReply = true;
-        } else {
-            shouldReply = (Math.random() * 100 < prob);
-        }
+        const prob = appData.settings.pokeAutoReplyProb ?? 95;
+        const shouldReply = appData.settings.pokeAutoReplyEnabled && (prob >= 100 || Math.random() * 100 < prob);
         if (shouldReply) {
+            /* 回复 1-3 条，每条都按“回复速度”显示“正在输入”后再发送（见 sendRolePokeReply） */
             const replyCount = Math.floor(Math.random() * 3) + 1;
-            const minDelay = appData.settings.minDelay || 1;
-            const maxDelay = appData.settings.maxDelay || 3;
-            const initialDelay = (Math.random() * (maxDelay - minDelay) + minDelay) * 1000;
-            sendRolePokeReply(role, replyCount, initialDelay);
+            sendRolePokeReply(role, replyCount);
+        } else {
+            /* 不回复时也给一次短暂的“正在输入”反馈 */
+            const delay = getReplySpeedDelayMs();
+            showRoleTyping(role.id, role.name, role.avatar, delay);
+            setTimeout(() => hideRoleTyping(role.id), delay);
         }
     }
 }
@@ -20654,16 +21011,16 @@ function openChatSettings() {
     document.getElementById('setting-auto-interval').value = appData.settings.autoInterval;
     document.getElementById('setting-auto-prob-switch').classList.toggle('active', appData.settings.autoSendProbEnabled);
     document.getElementById('setting-auto-prob-val').value = appData.settings.autoSendProbPercent;
-    setReplyMode(appData.settings.replyMode);
+    setReplyMode(appData.settings.mergeReplyEnabled !== false ? 'merge' : 'single');
     document.getElementById('setting-prob-2').value = appData.settings.prob2;
     document.getElementById('setting-prob-3').value = appData.settings.prob3;
     document.getElementById('setting-quote-my').value = appData.settings.quoteMyProb;
     document.getElementById('setting-quote-other').value = appData.settings.quoteOtherProb;
-    document.getElementById('setting-emoji-prob').value = appData.settings.emojiProb || 20;
-    document.getElementById('setting-sticker-prob').value = appData.settings.stickerProb || 10;
+    document.getElementById('setting-emoji-prob').value = appData.settings.emojiProb ?? 20;
+    document.getElementById('setting-sticker-prob').value = appData.settings.stickerProb ?? 10;
     var _emix = document.getElementById('setting-emoji-mix-switch');
     if (_emix) _emix.classList.toggle('active', appData.settings.emojiMixEnabled !== false);
-    document.getElementById('setting-multi-interval').value = appData.settings.multiMsgInterval || 2;
+    document.getElementById('setting-multi-interval').value = appData.settings.multiMsgInterval ?? 2;
     /* 字卡库开关 */
     var _ucl = document.getElementById('setting-use-cardlib-switch');
     if (_ucl) _ucl.classList.toggle('active', appData.settings.useCardLibrary !== false);
@@ -20699,11 +21056,13 @@ function openChatSettings() {
     document.getElementById('setting-auto-mail-interval').value = autoMail.checkInterval;
     document.getElementById('setting-moment-prob').value = appData.settings.moment?.probability ?? 7;
     document.getElementById('setting-moment-my-comment').value = appData.settings.moment?.myPostCommentProb ?? 45;
-    document.getElementById('setting-moment-role-comment').value = appData.settings.moment?.rolePostCommentProb ?? 35;
+    document.getElementById('setting-moment-role-comment').value = appData.settings.moment?.rolePostCommentProb ?? 2;
     document.getElementById('setting-moment-user-reply').value = appData.settings.moment?.userCommentReplyProb ?? 65;
     document.getElementById('setting-poke-auto-reply-switch').classList.toggle('active', appData.settings.pokeAutoReplyEnabled !== false);
-    document.getElementById('setting-poke-auto-reply-prob').value = appData.settings.pokeAutoReplyProb ?? 45;
+    document.getElementById('setting-poke-auto-reply-prob').value = appData.settings.pokeAutoReplyProb ?? 95;
+    document.getElementById('setting-role-poke-me-prob').value = appData.settings.rolePokeMeProb ?? 15;
     document.getElementById('setting-merge-switch').classList.toggle('active', appData.settings.mergeReplyEnabled !== false);
+    setReplyMode(appData.settings.mergeReplyEnabled !== false ? 'merge' : 'single');
     document.getElementById('merge-prob-1').value = appData.settings.mergeProb1 ?? 50;
     document.getElementById('merge-prob-2').value = appData.settings.mergeProb2 ?? 30;
     document.getElementById('merge-prob-3').value = appData.settings.mergeProb3 ?? 20;
@@ -20715,7 +21074,25 @@ function openChatSettings() {
 }
 function closeChatSettings() { document.getElementById('modal-settings-chat').classList.add('hidden'); showDesktop(); }
 function toggleSwitch(el) { el.classList.toggle('active'); }
-function setReplyMode(mode) { const ind = document.getElementById('reply-mode-indicator'), s = document.getElementById('btn-mode-single'), m = document.getElementById('btn-mode-merge'); if (mode === 'single') { ind.style.transform = 'translateX(0)'; s.style.color = 'var(--tab-active-text)'; m.style.color = ''; } else { ind.style.transform = 'translateX(100%)'; m.style.color = 'var(--tab-active-text)'; s.style.color = ''; } }
+/* 回复模式与「随机合并字卡」开关是同一份设置，二者保持同步，避免出现空转的控件 */
+function setReplyMode(mode) {
+    const isMerge = (mode === 'merge');
+    const ind = document.getElementById('reply-mode-indicator'), s = document.getElementById('btn-mode-single'), m = document.getElementById('btn-mode-merge');
+    if (ind && s && m) {
+        if (isMerge) { ind.style.transform = 'translateX(100%)'; m.style.color = 'var(--tab-active-text)'; s.style.color = ''; }
+        else { ind.style.transform = 'translateX(0)'; s.style.color = 'var(--tab-active-text)'; m.style.color = ''; }
+    }
+    if (!appData.settings) appData.settings = {};
+    appData.settings.mergeReplyEnabled = isMerge;
+    appData.settings.replyMode = isMerge ? 'merge' : 'single';
+    const sw = document.getElementById('setting-merge-switch');
+    if (sw) sw.classList.toggle('active', isMerge);
+}
+function KSS_toggleMergeSwitch(el) {
+    el.classList.toggle('active');
+    setReplyMode(el.classList.contains('active') ? 'merge' : 'single');
+}
+window.KSS_toggleMergeSwitch = KSS_toggleMergeSwitch;
 let selectedInviteCardStyle = 'glass';
 function setInviteCardStyle(style) {
     selectedInviteCardStyle = (style === 'paper') ? 'paper' : 'glass';
@@ -20748,23 +21125,45 @@ function loadAndTestRingtone() {
     });
 }
 
+/* ===== 设置数值读写：空/非法回退默认值，其余严格采用用户数值（含 0），并按范围收敛 ===== */
+function KSS_clampNum(raw, def, min, max) {
+    if (raw === undefined || raw === null) return def;
+    const s = String(raw).trim();
+    if (s === '') return def;
+    let n = Number(s);
+    if (!isFinite(n)) return def;
+    if (typeof min === 'number' && n < min) n = min;
+    if (typeof max === 'number' && n > max) n = max;
+    return n;
+}
+function KSS_numEl(id, def, min, max) {
+    const el = document.getElementById(id);
+    return KSS_clampNum(el ? el.value : '', def, min, max);
+}
+function KSS_settingNum(v, def, min, max) {
+    return KSS_clampNum(v, def, min, max);
+}
+window.KSS_clampNum = KSS_clampNum;
+window.KSS_numEl = KSS_numEl;
+window.KSS_settingNum = KSS_settingNum;
+
 async function saveSettings() {
-    appData.settings.minDelay = parseInt(document.getElementById('setting-min-delay').value) || 1;
-    appData.settings.maxDelay = parseInt(document.getElementById('setting-max-delay').value) || 3;
+    appData.settings.minDelay = KSS_numEl('setting-min-delay', 1, 0);
+    appData.settings.maxDelay = KSS_numEl('setting-max-delay', 3, 0);
     appData.settings.autoSend = document.getElementById('setting-auto-send-switch').classList.contains('active');
-    appData.settings.autoInterval = parseInt(document.getElementById('setting-auto-interval').value) || 30;
+    appData.settings.autoInterval = KSS_numEl('setting-auto-interval', 30, 0);
     appData.settings.autoSendProbEnabled = document.getElementById('setting-auto-prob-switch').classList.contains('active');
-    appData.settings.autoSendProbPercent = parseInt(document.getElementById('setting-auto-prob-val').value) || 50;
+    appData.settings.autoSendProbPercent = KSS_numEl('setting-auto-prob-val', 50, 0, 100);
     appData.settings.replyMode = document.getElementById('btn-mode-single').style.color === 'var(--tab-active-text)' ? 'single' : 'merge';
-    appData.settings.prob2 = parseInt(document.getElementById('setting-prob-2').value) || 0;
-    appData.settings.prob3 = parseInt(document.getElementById('setting-prob-3').value) || 0;
-    appData.settings.quoteMyProb = parseInt(document.getElementById('setting-quote-my').value) || 0;
-    appData.settings.quoteOtherProb = parseInt(document.getElementById('setting-quote-other').value) || 0;
-    appData.settings.emojiProb = parseInt(document.getElementById('setting-emoji-prob').value) || 20;
-    appData.settings.stickerProb = parseInt(document.getElementById('setting-sticker-prob').value) || 10;
+    appData.settings.prob2 = KSS_numEl('setting-prob-2', 0, 0, 100);
+    appData.settings.prob3 = KSS_numEl('setting-prob-3', 0, 0, 100);
+    appData.settings.quoteMyProb = KSS_numEl('setting-quote-my', 0, 0, 100);
+    appData.settings.quoteOtherProb = KSS_numEl('setting-quote-other', 0, 0, 100);
+    appData.settings.emojiProb = KSS_numEl('setting-emoji-prob', 20, 0, 100);
+    appData.settings.stickerProb = KSS_numEl('setting-sticker-prob', 10, 0, 100);
     var _emix2 = document.getElementById('setting-emoji-mix-switch');
     appData.settings.emojiMixEnabled = _emix2 ? _emix2.classList.contains('active') : true;
-    appData.settings.multiMsgInterval = parseInt(document.getElementById('setting-multi-interval').value) || 2;
+    appData.settings.multiMsgInterval = KSS_numEl('setting-multi-interval', 2, 0);
     var _ucl2 = document.getElementById('setting-use-cardlib-switch');
     appData.settings.useCardLibrary = _ucl2 ? _ucl2.classList.contains('active') : true;
     var _tas = document.querySelector('#typing-anim-style-pick .typing-style-btn.active');
@@ -20772,37 +21171,38 @@ async function saveSettings() {
     try { if (window.invalidateAppCardPool) window.invalidateAppCardPool(); } catch (e) {}
     if (!appData.settings.call) appData.settings.call = {};
     appData.settings.call.enabled = document.getElementById('setting-call-enabled-switch').classList.contains('active');
-    appData.settings.call.rejectProb = parseInt(document.getElementById('setting-call-reject-prob').value) || 20;
-    appData.settings.call.missProb = parseInt(document.getElementById('setting-call-miss-prob').value) || 10;
-    appData.settings.call.minDuration = parseFloat(document.getElementById('setting-call-min-duration').value) || 0.5;
-    appData.settings.call.maxDuration = parseFloat(document.getElementById('setting-call-max-duration').value) || 2;
+    appData.settings.call.rejectProb = KSS_numEl('setting-call-reject-prob', 20, 0, 100);
+    appData.settings.call.missProb = KSS_numEl('setting-call-miss-prob', 10, 0, 100);
+    appData.settings.call.minDuration = KSS_numEl('setting-call-min-duration', 0.5, 0);
+    appData.settings.call.maxDuration = KSS_numEl('setting-call-max-duration', 2, 0);
     appData.settings.call.ringtone = document.getElementById('setting-call-ringtone').value.trim();
     if (!appData.settings.autoCall) appData.settings.autoCall = {};
     appData.settings.autoCall.enabled = document.getElementById('setting-auto-call-enabled-switch').classList.contains('active');
-    appData.settings.autoCall.probability = parseInt(document.getElementById('setting-auto-call-prob').value) || 30;
-    appData.settings.autoCall.minInterval = parseInt(document.getElementById('setting-auto-call-min-interval').value) || 10;
-    appData.settings.autoCall.maxInterval = parseInt(document.getElementById('setting-auto-call-max-interval').value) || 30;
-    appData.settings.autoCall.userTimeout = parseInt(document.getElementById('setting-auto-call-user-timeout').value) || 30;
-    appData.settings.autoCall.minDuration = parseFloat(document.getElementById('setting-auto-call-min-duration').value) || 0.5;
-    appData.settings.autoCall.maxDuration = parseFloat(document.getElementById('setting-auto-call-max-duration').value) || 3;
+    appData.settings.autoCall.probability = KSS_numEl('setting-auto-call-prob', 30, 0, 100);
+    appData.settings.autoCall.minInterval = KSS_numEl('setting-auto-call-min-interval', 10, 0);
+    appData.settings.autoCall.maxInterval = KSS_numEl('setting-auto-call-max-interval', 30, 0);
+    appData.settings.autoCall.userTimeout = KSS_numEl('setting-auto-call-user-timeout', 30, 0);
+    appData.settings.autoCall.minDuration = KSS_numEl('setting-auto-call-min-duration', 0.5, 0);
+    appData.settings.autoCall.maxDuration = KSS_numEl('setting-auto-call-max-duration', 3, 0);
     if (!appData.settings.autoMail) appData.settings.autoMail = {};
     appData.settings.autoMail.enabled = document.getElementById('setting-auto-mail-enabled-switch').classList.contains('active');
-    appData.settings.autoMail.checkInterval = parseInt(document.getElementById('setting-auto-mail-interval').value) || 10;
+    appData.settings.autoMail.checkInterval = KSS_numEl('setting-auto-mail-interval', 10, 0);
     if (!appData.settings.moment) appData.settings.moment = {};
-    appData.settings.moment.probability = parseInt(document.getElementById('setting-moment-prob').value) || 7;
-    appData.settings.moment.myPostCommentProb = parseInt(document.getElementById('setting-moment-my-comment').value) || 45;
-    appData.settings.moment.rolePostCommentProb = parseInt(document.getElementById('setting-moment-role-comment').value) || 35;
-    appData.settings.moment.userCommentReplyProb = parseInt(document.getElementById('setting-moment-user-reply').value) || 65;
+    appData.settings.moment.probability = KSS_numEl('setting-moment-prob', 7, 0, 100);
+    appData.settings.moment.myPostCommentProb = KSS_numEl('setting-moment-my-comment', 45, 0, 100);
+    appData.settings.moment.rolePostCommentProb = KSS_numEl('setting-moment-role-comment', 2, 0, 100);
+    appData.settings.moment.userCommentReplyProb = KSS_numEl('setting-moment-user-reply', 65, 0, 100);
     appData.settings.pokeAutoReplyEnabled = document.getElementById('setting-poke-auto-reply-switch').classList.contains('active');
-    appData.settings.pokeAutoReplyProb = parseInt(document.getElementById('setting-poke-auto-reply-prob').value) || 45;
+    appData.settings.pokeAutoReplyProb = KSS_numEl('setting-poke-auto-reply-prob', 95, 0, 100);
+    appData.settings.rolePokeMeProb = KSS_numEl('setting-role-poke-me-prob', 15, 0, 100);
     appData.settings.mergeReplyEnabled = document.getElementById('setting-merge-switch').classList.contains('active');
-    appData.settings.mergeProb1 = parseInt(document.getElementById('merge-prob-1').value) || 50;
-    appData.settings.mergeProb2 = parseInt(document.getElementById('merge-prob-2').value) || 30;
-    appData.settings.mergeProb3 = parseInt(document.getElementById('merge-prob-3').value) || 20;
+    appData.settings.mergeProb1 = KSS_numEl('merge-prob-1', 50, 0, 100);
+    appData.settings.mergeProb2 = KSS_numEl('merge-prob-2', 30, 0, 100);
+    appData.settings.mergeProb3 = KSS_numEl('merge-prob-3', 20, 0, 100);
     appData.settings.mindCardsEnabled = document.getElementById('setting-mind-cards-switch').classList.contains('active');
-    appData.settings.mindCardMoodProb = parseInt(document.getElementById('setting-mind-mood-prob').value) || 0;
-    appData.settings.mindCardHeartProb = parseInt(document.getElementById('setting-mind-heart-prob').value) || 0;
-    appData.settings.mindCardIntentProb = parseInt(document.getElementById('setting-mind-intent-prob').value) || 0;
+    appData.settings.mindCardMoodProb = KSS_numEl('setting-mind-mood-prob', 0, 0, 100);
+    appData.settings.mindCardHeartProb = KSS_numEl('setting-mind-heart-prob', 0, 0, 100);
+    appData.settings.mindCardIntentProb = KSS_numEl('setting-mind-intent-prob', 0, 0, 100);
     appData.settings.inviteCardStyle = selectedInviteCardStyle;
 
     const ringtoneAudio = document.getElementById('call-ringtone');
@@ -20929,8 +21329,8 @@ function switchAppearanceTab(tab) {
         return;
     } 
     if (tab === 'bubble') {
-        document.getElementById('bubble-radius').value = tempAppearance.bubble.radius || 13;
-        document.getElementById('bubble-shadow').value = tempAppearance.bubble.shadow || 1;
+        document.getElementById('bubble-radius').value = tempAppearance.bubble.radius ?? 13;
+        document.getElementById('bubble-shadow').value = tempAppearance.bubble.shadow ?? 1;
         updateBubblePreview();
         
         const textarea = document.getElementById('custom-bubble-css');
@@ -21208,8 +21608,8 @@ async function saveRole() { const name = document.getElementById('role-name-inpu
         id: Date.now().toString(), 
         name, 
         avatar: document.getElementById('role-avatar-preview').src, 
-        groupProb: parseInt(document.getElementById('role-group-prob').value), 
-        autoMailProbability: parseInt(document.getElementById('role-mail-prob').value) || 15, 
+        groupProb: KSS_clampNum(document.getElementById('role-group-prob').value, 50, 0, 100), 
+        autoMailProbability: KSS_clampNum(document.getElementById('role-mail-prob').value, 15, 0, 100), 
         lastActive: Date.now(), 
         lastAutoSendTime: Date.now(), 
         lastLoveRefresh: 0, 
@@ -21340,12 +21740,12 @@ function copyBackupToClipboard() {
         }
     });
 }
-function openRestoreFromClipboardModal() { const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.style.zIndex = '1200'; overlay.innerHTML = `<div class="modal-card" style="max-width:400px;width:90%;"><h3 class="text-lg font-bold mb-4">从备份恢复</h3><p class="text-xs text-gray-500 mb-2">请将之前复制的备份数据粘贴到下方文本框中，然后点击"恢复"。</p><textarea id="restore-backup-textarea" class="w-full h-40 bg-gray-100 rounded-xl p-3 text-sm outline-none resize-none" placeholder="在此粘贴备份数据..."></textarea><div class="flex gap-3 mt-4"><button id="restore-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-gray-200 font-medium">取消</button><button id="restore-confirm-btn" class="flex-1 py-2.5 rounded-xl text-white font-medium shadow-lg" style="background-color: var(--button-primary-bg);">恢复</button></div></div>`; document.body.appendChild(overlay); const cancelBtn = overlay.querySelector('#restore-cancel-btn'); const confirmBtn = overlay.querySelector('#restore-confirm-btn'); const textarea = overlay.querySelector('#restore-backup-textarea'); cancelBtn.onclick = () => { document.body.removeChild(overlay); }; confirmBtn.onclick = () => { const content = textarea.value.trim(); if (!content) { showToast('请粘贴备份内容'); return; } try { const data = JSON.parse(content); if (data.roles && data.chats) { showConfirm('确定要恢复该备份吗？当前数据将被覆盖。', async () => { appData = migrateAppData(data); if (!appData.wordbanks.wordGroups) appData.wordbanks.wordGroups = [{ name: '默认', words: [...(appData.wordbanks.replies || [])] }]; appData.wordbanks.wordGroups.forEach(g => { g.words = g.words.map(w => typeof w === 'string' ? { text: w, blocked: false } : w); }); if (!appData.favoriteMessages) appData.favoriteMessages = []; if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 }; if (!appData.transferRecords) appData.transferRecords = []; if (!appData.redPackets) appData.redPackets = []; if (!appData.userProfile) appData.userProfile = { nickname: '我', avatar: DEFAULT_AVATAR }; if (!appData.balance) appData.balance = 1000000; if (!appData.moments || appData.moments.length === 0) appData.moments = JSON.parse(JSON.stringify(DEFAULT_DATA.moments)); if (!appData.momentPhotos) appData.momentPhotos = []; if (!appData.songLibrary || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.songLibrary)); if (!appData.bookLibrary || appData.bookLibrary.length === 0) appData.bookLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.bookLibrary)); if (!appData.musicLibrary) appData.musicLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.musicLibrary)); if (!appData.addressLibrary) appData.addressLibrary = [...DEFAULT_DATA.addressLibrary]; if (appData.settings.momentCover === undefined) appData.settings.momentCover = ''; if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] }; if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true; if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 45; if (appData.settings.mindCardsEnabled === undefined) appData.settings.mindCardsEnabled = false; if (appData.settings.mindCardMoodProb === undefined) appData.settings.mindCardMoodProb = 55; if (appData.settings.mindCardHeartProb === undefined) appData.settings.mindCardHeartProb = 35; if (appData.settings.mindCardIntentProb === undefined) appData.settings.mindCardIntentProb = 25;
+function openRestoreFromClipboardModal() { const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.style.zIndex = '1200'; overlay.innerHTML = `<div class="modal-card" style="max-width:400px;width:90%;"><h3 class="text-lg font-bold mb-4">从备份恢复</h3><p class="text-xs text-gray-500 mb-2">请将之前复制的备份数据粘贴到下方文本框中，然后点击"恢复"。</p><textarea id="restore-backup-textarea" class="w-full h-40 bg-gray-100 rounded-xl p-3 text-sm outline-none resize-none" placeholder="在此粘贴备份数据..."></textarea><div class="flex gap-3 mt-4"><button id="restore-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-gray-200 font-medium">取消</button><button id="restore-confirm-btn" class="flex-1 py-2.5 rounded-xl text-white font-medium shadow-lg" style="background-color: var(--button-primary-bg);">恢复</button></div></div>`; document.body.appendChild(overlay); const cancelBtn = overlay.querySelector('#restore-cancel-btn'); const confirmBtn = overlay.querySelector('#restore-confirm-btn'); const textarea = overlay.querySelector('#restore-backup-textarea'); cancelBtn.onclick = () => { document.body.removeChild(overlay); }; confirmBtn.onclick = () => { const content = textarea.value.trim(); if (!content) { showToast('请粘贴备份内容'); return; } try { const data = JSON.parse(content); if (data.roles && data.chats) { showConfirm('确定要恢复该备份吗？当前数据将被覆盖。', async () => { appData = migrateAppData(data); if (!appData.wordbanks.wordGroups) appData.wordbanks.wordGroups = [{ name: '默认', words: [...(appData.wordbanks.replies || [])] }]; appData.wordbanks.wordGroups.forEach(g => { g.words = g.words.map(w => typeof w === 'string' ? { text: w, blocked: false } : w); }); if (!appData.favoriteMessages) appData.favoriteMessages = []; if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 }; if (!appData.transferRecords) appData.transferRecords = []; if (!appData.redPackets) appData.redPackets = []; if (!appData.userProfile) appData.userProfile = { nickname: '我', avatar: DEFAULT_AVATAR }; if (!appData.balance) appData.balance = 1000000; if (!appData.moments || appData.moments.length === 0) appData.moments = JSON.parse(JSON.stringify(DEFAULT_DATA.moments)); if (!appData.momentPhotos) appData.momentPhotos = []; if (!appData.songLibrary || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.songLibrary)); if (!appData.bookLibrary || appData.bookLibrary.length === 0) appData.bookLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.bookLibrary)); if (!appData.musicLibrary) appData.musicLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.musicLibrary)); if (!appData.addressLibrary) appData.addressLibrary = [...DEFAULT_DATA.addressLibrary]; if (appData.settings.momentCover === undefined) appData.settings.momentCover = ''; if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] }; if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true; if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 95; if (appData.settings.mindCardsEnabled === undefined) appData.settings.mindCardsEnabled = false; if (appData.settings.mindCardMoodProb === undefined) appData.settings.mindCardMoodProb = 55; if (appData.settings.mindCardHeartProb === undefined) appData.settings.mindCardHeartProb = 35; if (appData.settings.mindCardIntentProb === undefined) appData.settings.mindCardIntentProb = 25;
         appData.roles.forEach(r => { if (r.chatBackground === undefined) r.chatBackground = null; });
         await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('数据已恢复'); updateMusicPlayerCardVisibility(); }); } else { showToast('无效的备份数据'); } } catch (e) { showToast('数据格式错误，无法解析'); } document.body.removeChild(overlay); }; overlay.addEventListener('click', (e) => { if (e.target === overlay) { document.body.removeChild(overlay); } }); }
 
 function exportData() { const jsonStr = JSON.stringify(appData, null, 2); const blob = new Blob([jsonStr], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `spiritual_connection_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('导出成功'); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
-function importData() { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.onchange = e => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = async ev => { try { const d = JSON.parse(ev.target.result); if (d.roles && d.chats) { showConfirm('导入将覆盖现有数据，确定？', async () => { appData = migrateAppData(d); if (!appData.wordbanks.wordGroups) appData.wordbanks.wordGroups = [{ name: '默认', words: [...(appData.wordbanks.replies || [])] }]; appData.wordbanks.wordGroups.forEach(g => { g.words = g.words.map(w => typeof w === 'string' ? { text: w, blocked: false } : w); }); if (d.appearance?.backgrounds) await saveBackgrounds(d.appearance.backgrounds); if (!appData.favoriteMessages) appData.favoriteMessages = []; if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 }; if (!appData.transferRecords) appData.transferRecords = []; if (!appData.redPackets) appData.redPackets = []; if (!appData.userProfile) appData.userProfile = { nickname: '我', avatar: DEFAULT_AVATAR }; if (!appData.balance) appData.balance = 1000000; if (!appData.moments || appData.moments.length === 0) appData.moments = JSON.parse(JSON.stringify(DEFAULT_DATA.moments)); if (!appData.momentPhotos) appData.momentPhotos = []; if (!appData.songLibrary || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.songLibrary)); if (!appData.bookLibrary || appData.bookLibrary.length === 0) appData.bookLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.bookLibrary)); if (!appData.musicLibrary) appData.musicLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.musicLibrary)); if (!appData.addressLibrary) appData.addressLibrary = [...DEFAULT_DATA.addressLibrary]; if (appData.settings.momentCover === undefined) appData.settings.momentCover = ''; if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] }; if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true; if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 45; if (appData.settings.mindCardsEnabled === undefined) appData.settings.mindCardsEnabled = false; if (appData.settings.mindCardMoodProb === undefined) appData.settings.mindCardMoodProb = 55; if (appData.settings.mindCardHeartProb === undefined) appData.settings.mindCardHeartProb = 35; if (appData.settings.mindCardIntentProb === undefined) appData.settings.mindCardIntentProb = 25; appData.roles.forEach(r => { if (r.chatBackground === undefined) r.chatBackground = null; }); await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('导入成功'); updateMusicPlayerCardVisibility(); }); } else showToast('无效文件'); } catch { showToast('解析失败'); } }; r.readAsText(f); }; i.click(); }
+function importData() { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.onchange = e => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = async ev => { try { const d = JSON.parse(ev.target.result); if (d.roles && d.chats) { showConfirm('导入将覆盖现有数据，确定？', async () => { appData = migrateAppData(d); if (!appData.wordbanks.wordGroups) appData.wordbanks.wordGroups = [{ name: '默认', words: [...(appData.wordbanks.replies || [])] }]; appData.wordbanks.wordGroups.forEach(g => { g.words = g.words.map(w => typeof w === 'string' ? { text: w, blocked: false } : w); }); if (d.appearance?.backgrounds) await saveBackgrounds(d.appearance.backgrounds); if (!appData.favoriteMessages) appData.favoriteMessages = []; if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 }; if (!appData.transferRecords) appData.transferRecords = []; if (!appData.redPackets) appData.redPackets = []; if (!appData.userProfile) appData.userProfile = { nickname: '我', avatar: DEFAULT_AVATAR }; if (!appData.balance) appData.balance = 1000000; if (!appData.moments || appData.moments.length === 0) appData.moments = JSON.parse(JSON.stringify(DEFAULT_DATA.moments)); if (!appData.momentPhotos) appData.momentPhotos = []; if (!appData.songLibrary || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.songLibrary)); if (!appData.bookLibrary || appData.bookLibrary.length === 0) appData.bookLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.bookLibrary)); if (!appData.musicLibrary) appData.musicLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.musicLibrary)); if (!appData.addressLibrary) appData.addressLibrary = [...DEFAULT_DATA.addressLibrary]; if (appData.settings.momentCover === undefined) appData.settings.momentCover = ''; if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] }; if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true; if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 95; if (appData.settings.mindCardsEnabled === undefined) appData.settings.mindCardsEnabled = false; if (appData.settings.mindCardMoodProb === undefined) appData.settings.mindCardMoodProb = 55; if (appData.settings.mindCardHeartProb === undefined) appData.settings.mindCardHeartProb = 35; if (appData.settings.mindCardIntentProb === undefined) appData.settings.mindCardIntentProb = 25; appData.roles.forEach(r => { if (r.chatBackground === undefined) r.chatBackground = null; }); await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('导入成功'); updateMusicPlayerCardVisibility(); }); } else showToast('无效文件'); } catch { showToast('解析失败'); } }; r.readAsText(f); }; i.click(); }
 async function clearChatRecords() { showConfirm('清空所有聊天记录？', async () => { appData.chats = {}; appData.groupChats = {}; unreadCounts = {}; await saveUnreadCounts(); appData.roles.forEach(r => r.lastActive = Date.now()); await saveData(); renderRoleList(); if (currentChatType === 'role') renderChatMessages(); updateStorageDisplay(); showToast('已清空'); }); }
 async function resetAllData() { showConfirm('重置所有数据？不可恢复！', async () => { appData = JSON.parse(JSON.stringify(DEFAULT_DATA)); appData.schemaVersion = APP_SCHEMA_VERSION; await saveBackgrounds({ home: '', chat: '', group: '' }); await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('已重置'); }); }
 
@@ -23503,7 +23903,7 @@ function confirmTransfer() {
                         if (index > msgCount) return;
                         let type = 'text', content;
                         if (stickers.length > 0 && Math.random() < 0.5) { type = 'image'; content = stickers[Math.floor(Math.random() * stickers.length)]; }
-                        else { content = allWords[Math.floor(Math.random() * allWords.length)]; if (Math.random() * 100 < (appData.settings.emojiProb || 20) && appData.wordbanks.emojis.length > 0) content += ' ' + appData.wordbanks.emojis[Math.floor(Math.random() * appData.wordbanks.emojis.length)]; }
+                        else { content = allWords[Math.floor(Math.random() * allWords.length)]; if (Math.random() * 100 < KSS_settingNum(appData.settings.emojiProb, 20, 0, 100) && appData.wordbanks.emojis.length > 0) content += ' ' + appData.wordbanks.emojis[Math.floor(Math.random() * appData.wordbanks.emojis.length)]; }
                         const extraMsg = { id: Date.now() + index + 100, sender: targetRoleId, content, time: Date.now(), type };
                         appData.chats[targetRoleId].push(extraMsg);
                         debouncedSaveData();
@@ -23571,7 +23971,7 @@ function sendRoleTransfer(role, force = false) {
 }
 function openTransferSettings() { const s = appData.transferSettings; document.getElementById('setting-auto-transfer-switch').classList.toggle('active', s.enabled); document.getElementById('setting-transfer-min').value = s.minAmount; document.getElementById('setting-transfer-max').value = s.maxAmount; document.getElementById('setting-transfer-prob').value = s.probability; document.getElementById('setting-transfer-interval').value = s.checkInterval; const testSwitch = document.getElementById('setting-transfer-test-switch'); if (testSwitch) testSwitch.classList.toggle('active', appData.settings.transferTestMode); document.getElementById('modal-transfer-settings').classList.remove('hidden'); }
 function closeTransferSettings() { document.getElementById('modal-transfer-settings').classList.add('hidden'); }
-async function saveTransferSettings() { appData.transferSettings.enabled = document.getElementById('setting-auto-transfer-switch').classList.contains('active'); appData.transferSettings.minAmount = parseFloat(document.getElementById('setting-transfer-min').value) || 5.20; appData.transferSettings.maxAmount = parseFloat(document.getElementById('setting-transfer-max').value) || 200; appData.transferSettings.probability = parseInt(document.getElementById('setting-transfer-prob').value) || 15; appData.transferSettings.checkInterval = parseInt(document.getElementById('setting-transfer-interval').value) || 30; const testSwitch = document.getElementById('setting-transfer-test-switch'); appData.settings.transferTestMode = testSwitch ? testSwitch.classList.contains('active') : false; await saveData(); closeTransferSettings(); if (appData.settings.transferTestMode && currentRoleId) { const role = appData.roles.find(r => r.id === currentRoleId); if (role) sendRoleTransfer(role, true); } autoTransferTimer = null; startUnifiedTimers(); showToast('转账设置已保存'); }
+async function saveTransferSettings() { appData.transferSettings.enabled = document.getElementById('setting-auto-transfer-switch').classList.contains('active'); appData.transferSettings.minAmount = KSS_numEl('setting-transfer-min', 5.20, 0); appData.transferSettings.maxAmount = KSS_numEl('setting-transfer-max', 200, 0); appData.transferSettings.probability = KSS_numEl('setting-transfer-prob', 15, 0, 100); appData.transferSettings.checkInterval = KSS_numEl('setting-transfer-interval', 30, 0); const testSwitch = document.getElementById('setting-transfer-test-switch'); appData.settings.transferTestMode = testSwitch ? testSwitch.classList.contains('active') : false; await saveData(); closeTransferSettings();     if (appData.settings.transferTestMode && currentRoleId) { const role = appData.roles.find(r => r.id === currentRoleId); if (role) sendRoleTransfer(role, true); } startUnifiedTimers(); showToast('转账设置已保存'); }
 /* ===== 我的钱包（原「转账记录」升级为独立桌面 app，卡片式弹窗） ===== */
 function openWallet() {
     const modal = document.getElementById('modal-wallet');
@@ -23828,10 +24228,10 @@ function KSS_applyEmoji(content, type, stickerPool) {
     const mix = appData.settings.emojiMixEnabled !== false;
     const emojiPool = KSS_validList(appData.wordbanks.emojis);
     const pool = KSS_validList(stickerPool);
-    if (pool.length > 0 && Math.random() * 100 < (appData.settings.stickerProb || 10)) {
+    if (pool.length > 0 && Math.random() * 100 < KSS_settingNum(appData.settings.stickerProb, 10, 0, 100)) {
         return { content: pool[Math.floor(Math.random() * pool.length)], type: 'image', separateEmoji: null };
     }
-    if (emojiPool.length > 0 && Math.random() * 100 < (appData.settings.emojiProb || 20)) {
+    if (emojiPool.length > 0 && Math.random() * 100 < KSS_settingNum(appData.settings.emojiProb, 20, 0, 100)) {
         const e = emojiPool[Math.floor(Math.random() * emojiPool.length)];
         if (mix) {
             content = (Math.random() < 0.5) ? (e + ' ' + content) : (content + ' ' + e);
@@ -24086,7 +24486,7 @@ function KSS_executeGroupPoke(text) {
     debouncedSaveData();
     appendMessageToDOM('me', content, Date.now(), null, 'poke');
     if (appData.settings.pokeAutoReplyEnabled) {
-        const prob = (appData.settings.pokeAutoReplyProb === undefined ? 45 : appData.settings.pokeAutoReplyProb);
+        const prob = (appData.settings.pokeAutoReplyProb === undefined ? 95 : appData.settings.pokeAutoReplyProb);
         if (prob >= 100 || Math.random() * 100 < prob) {
             try { triggerGroupReplyForGroup(currentGroupId); } catch (e) {}
         }
@@ -25762,35 +26162,47 @@ function runMomentAutoCheck(silent) {
         moment.commenters = moment.commenters || [];
         const authorId = moment.roleId;
         const isMyPost = authorId === 'me';
-        let candidates = [];
-        if (isMyPost) {
-            candidates = appData.roles.filter(r => r.id !== authorId);
-        } else {
-            candidates = appData.roles.filter(r => r.id !== authorId).filter(r => r.id !== 'me');
-        }
+        let candidates = appData.roles.filter(r => r.id !== authorId && r.id !== 'me');
+        if (isMyPost) candidates = appData.roles.filter(r => r.id !== authorId);
         candidates = candidates.filter(c => !moment.commenters.includes(c.id));
         if (candidates.length === 0) return;
-        const prob = isMyPost ? (appData.settings.moment.myPostCommentProb || 45) : (appData.settings.moment.rolePostCommentProb || 35);
-        candidates.forEach(commenter => {
-            if (Math.random() * 100 < prob * 2) {
-                const commentText = pickRandomWordCard();
-                moment.comments.push({ roleId: commenter.id, content: commentText, time: Date.now() });
-                moment.commenters.push(commenter.id);
-                if (Math.random() < 0.6) {
-                    if (!moment.likes) moment.likes = [];
-                    if (!moment.likes.includes(commenter.id)) {
-                        moment.likes.push(commenter.id);
-                    }
+        /* 概率直接使用设置值（不再额外放大）：我的动态默认 45%，联系人互评默认 2% 极低 */
+        const prob = isMyPost ? (appData.settings.moment.myPostCommentProb ?? 45) : (appData.settings.moment.rolePostCommentProb ?? 2);
+        /* 每次检查中单条动态最多新增的评论人数：我的动态较活跃，他人的动态极克制 */
+        const maxNewComments = isMyPost ? 2 : 1;
+        /* 日常化：一定概率只点赞不评论，避免每次互动都是完整评论 */
+        const likeOnlyChance = isMyPost ? 0.25 : 0.45;
+        const shuffled = candidates.slice().sort(() => Math.random() - 0.5);
+        let addedComments = 0;
+        for (const commenter of shuffled) {
+            if (addedComments >= maxNewComments) break;
+            if (Math.random() * 100 >= prob) continue;
+            if (Math.random() < likeOnlyChance) {
+                if (!moment.likes) moment.likes = [];
+                if (!moment.likes.includes(commenter.id)) {
+                    moment.likes.push(commenter.id);
+                    debouncedSaveData();
                 }
-                debouncedSaveData();
-                if (!document.getElementById('page-moments').classList.contains('active') && !(document.getElementById('page-moment-detail') && document.getElementById('page-moment-detail').classList.contains('active') && currentDetailMomentId === moment.id) && !(currentContactMomentRoleId === moment.roleId && document.getElementById('page-contact-moments').classList.contains('active'))) {
-                    incrementMomentUnread();
-                }
-                if (document.getElementById('page-moments').classList.contains('active')) renderMomentList(currentMomentFilter);
-                if (document.getElementById('page-moment-detail').classList.contains('active') && currentDetailMomentId === moment.id) showMomentDetail(moment.id);
-                if (currentContactMomentRoleId === moment.roleId && document.getElementById('page-contact-moments').classList.contains('active')) renderContactMomentsList();
+                continue;
             }
-        });
+            const commentText = pickRandomWordCard();
+            moment.comments.push({ roleId: commenter.id, content: commentText, time: Date.now() });
+            moment.commenters.push(commenter.id);
+            if (Math.random() < 0.6) {
+                if (!moment.likes) moment.likes = [];
+                if (!moment.likes.includes(commenter.id)) {
+                    moment.likes.push(commenter.id);
+                }
+            }
+            addedComments++;
+            debouncedSaveData();
+            if (!document.getElementById('page-moments').classList.contains('active') && !(document.getElementById('page-moment-detail') && document.getElementById('page-moment-detail').classList.contains('active') && currentDetailMomentId === moment.id) && !(currentContactMomentRoleId === moment.roleId && document.getElementById('page-contact-moments').classList.contains('active'))) {
+                incrementMomentUnread();
+            }
+            if (document.getElementById('page-moments').classList.contains('active')) renderMomentList(currentMomentFilter);
+            if (document.getElementById('page-moment-detail').classList.contains('active') && currentDetailMomentId === moment.id) showMomentDetail(moment.id);
+            if (currentContactMomentRoleId === moment.roleId && document.getElementById('page-contact-moments').classList.contains('active')) renderContactMomentsList();
+        }
     });
     if (!silent) showToast('朋友圈测试触发完成');
 }
@@ -27781,31 +28193,14 @@ function acceptInviteFromMessage(roleId, inviteId, btnEl) {
         }
     }
     
-    // 角色发送后续消息
-    setTimeout(() => {
-        if (role) {
-            const allWords = getActiveWordList();
-            if (allWords.length > 0) {
-                const followUp = allWords[Math.floor(Math.random() * allWords.length)];
-                const msg = {
-                    id: Date.now() + 1,
-                    sender: role.id,
-                    content: followUp,
-                    time: Date.now(),
-                    type: 'text',
-                    read: false
-                };
-                if (!appData.chats[roleId]) appData.chats[roleId] = [];
-                appData.chats[roleId].push(msg);
-                debouncedSaveData();
-                if (currentChatType === 'role' && currentRoleId === roleId) {
-                    appendMessageToDOM(role.id, msg.content, Date.now(), null, 'text');
-                } else {
-                    incrementUnread(roleId);
-                }
-            }
+    // 角色发送后续消息（按“回复速度”先显示“正在输入”再发送）
+    if (role) {
+        const allWords = getActiveWordList();
+        if (allWords.length > 0) {
+            const followUp = allWords[Math.floor(Math.random() * allWords.length)];
+            sendRoleTextWithSpeed(role, followUp);
         }
-    }, 2000 + Math.random() * 3000);
+    }
     
     updateInviteCardInDOM(roleId, inviteId, data);
 }
@@ -27832,29 +28227,12 @@ function declineInviteFromMessage(roleId, inviteId, btnEl) {
     if (role) {
         showToast(`已拒绝 ${role.name} 的邀请`);
         
-        // 角色回应
-        setTimeout(() => {
-            const allWords = getActiveWordList();
-            if (allWords.length > 0) {
-                const reply = allWords[Math.floor(Math.random() * allWords.length)];
-                const msg = {
-                    id: Date.now() + 1,
-                    sender: role.id,
-                    content: reply,
-                    time: Date.now(),
-                    type: 'text',
-                    read: false
-                };
-                if (!appData.chats[roleId]) appData.chats[roleId] = [];
-                appData.chats[roleId].push(msg);
-                debouncedSaveData();
-                if (currentChatType === 'role' && currentRoleId === roleId) {
-                    appendMessageToDOM(role.id, msg.content, Date.now(), null, 'text');
-                } else {
-                    incrementUnread(roleId);
-                }
-            }
-        }, 1500 + Math.random() * 2000);
+        // 角色回应（按“回复速度”先显示“正在输入”再发送）
+        const allWords = getActiveWordList();
+        if (allWords.length > 0) {
+            const reply = allWords[Math.floor(Math.random() * allWords.length)];
+            sendRoleTextWithSpeed(role, reply);
+        }
     }
     
     updateInviteCardInDOM(roleId, inviteId, data);
@@ -28303,26 +28681,11 @@ function scheduleRoleInviteResponse(role, inviteData, msg) {
             }
         }
         
-        // 角色后续回复
+        // 角色后续回复（按“回复速度”先显示“正在输入”再发送）
         const allWords = getActiveWordList();
         if (allWords.length > 0) {
             const followUp = allWords[Math.floor(Math.random() * allWords.length)];
-            const replyMsg = {
-                id: Date.now() + 1,
-                sender: role.id,
-                content: accepted ? followUp : followUp + ' 今天先不啦～',
-                time: Date.now(),
-                type: 'text',
-                read: false
-            };
-            if (!appData.chats[role.id]) appData.chats[role.id] = [];
-            appData.chats[role.id].push(replyMsg);
-            debouncedSaveData();
-            if (currentChatType === 'role' && currentRoleId === role.id) {
-                appendMessageToDOM(role.id, replyMsg.content, Date.now(), null, 'text');
-            } else {
-                incrementUnread(role.id);
-            }
+            sendRoleTextWithSpeed(role, accepted ? followUp : followUp + ' 今天先不啦～');
         }
         
         updateInviteCardInDOM(role.id, data.inviteId, data);
@@ -29407,25 +29770,8 @@ function gameEndFollowUp(g) {
         ? ['你太厉害了，下次我要赢回来！', '这局你赢了，开心～', '哇，你好强，再来一局！']
         : ['哈哈，这局我赢了～', '下次我可不会放水哦', '玩得很开心，再陪我玩一局嘛'];
     const react = reactions[Math.floor(Math.random() * reactions.length)];
-    setTimeout(() => {
-        const role = winRole;
-        const msg = {
-            id: Date.now(),
-            sender: role.id,
-            content: react,
-            time: Date.now(),
-            type: 'text',
-            read: false
-        };
-        if (!appData.chats[role.id]) appData.chats[role.id] = [];
-        appData.chats[role.id].push(msg);
-        debouncedSaveData();
-        if (currentChatType === 'role' && currentRoleId === role.id) {
-            appendMessageToDOM(role.id, msg.content, Date.now(), null, 'text');
-        } else {
-            incrementUnread(role.id);
-        }
-    }, 1200 + Math.random() * 1500);
+    /* 按“回复速度”先显示“正在输入”再发送 */
+    sendRoleTextWithSpeed(winRole, react);
 }
 
 // ===== 喵喵牌（基础版 / 功能版 · 毛玻璃淡色风 · 线性图标）=====
@@ -37316,21 +37662,10 @@ function updateLifeTrajectory(roleArg) {
         const allWords = getActiveWordList();
         const extraText = targetedText || (allWords.length > 0 ? allWords[Math.floor(Math.random() * allWords.length)] : null);
         if (extraText) {
-            const msg = {
-                id: Date.now() + 1,
-                sender: role.id,
-                content: extraText,
-                time: Date.now(),
-                type: 'text',
-                read: false
-            };
-            if (!appData.chats[role.id]) appData.chats[role.id] = [];
-            appData.chats[role.id].push(msg);
-            debouncedSaveData();
-            appendMessageToDOM(role.id, msg.content, Date.now(), null, 'text');
             const lastTraj = appData.lifeTrajectory.find(t => t.id === trajectory.id);
-            if (lastTraj) lastTraj.extraMessage = extraText;
-            debouncedSaveData();
+            if (lastTraj) { lastTraj.extraMessage = extraText; debouncedSaveData(); }
+            /* 按“回复速度”先显示“正在输入”再发送 */
+            sendRoleTextWithSpeed(role, extraText);
         }
     }
     
@@ -37891,7 +38226,7 @@ function buildFortuneCardsHTML(content) {
         const face = img
             ? `<img src="${img}" alt="${escapeHtml(c.name)}" loading="lazy"${it.reversed ? ' class="reversed"' : ''}>`
             : `<div class="fortune-msg-card-ph">${c.icon || '🃏'}</div>`;
-        return `<div class="fortune-msg-card">${face}<span>${escapeHtml(label)}</span></div>`;
+        return `<div class="fortune-msg-card" role="button" tabindex="0" title="点击查看牌义" onclick="event.stopPropagation(); openCardDetail('${it.kind}', '${c.id}', ${it.reversed ? 1 : 0})">${face}<span>${escapeHtml(label)}</span></div>`;
     }).join('') + `</div>`;
 }
 
@@ -38079,16 +38414,21 @@ function initNewFeatures() {
 
 const originalExecuteRoleReply = window.executeRoleReply || function() {};
 
+window._roleReplyGen = window._roleReplyGen || {};
+
 window.executeRoleReply = function(role) {
     if (!role) return;
+    const _gen = (window._roleReplyGen[role.id] = (window._roleReplyGen[role.id] || 0) + 1);
+    const _isCurrent = () => window._roleReplyGen[role.id] === _gen;
     
-    const minDelay = appData.settings.minDelay || 1;
-    const maxDelay = appData.settings.maxDelay || 3;
-    const baseDelay = (Math.random() * (maxDelay - minDelay) + minDelay) * 1000;
+    const minDelay = KSS_settingNum(appData.settings.minDelay, 1, 0);
+    const maxDelay = KSS_settingNum(appData.settings.maxDelay, 3, 0);
+    const baseDelay = (Math.random() * Math.abs(maxDelay - minDelay) + Math.min(minDelay, maxDelay)) * 1000;
     
     showRoleTyping(role.id, role.name, role.avatar, baseDelay + 500);
     
     setTimeout(async () => {
+        if (!_isCurrent()) return;
         hideRoleTyping(role.id);
         
         const all = getActiveWordList();
@@ -38101,25 +38441,22 @@ window.executeRoleReply = function(role) {
         if (rand < prob2) msgCount = 2;
         else if (rand < prob2 + prob3) msgCount = 3;
         
-        const intervalSec = appData.settings.multiMsgInterval || 2;
-        const intervalMs = intervalSec * 1000;
-
-        /* 每条消息的“正在输入”动画时长＝该条的发送延迟，保证动画与发送严格同步 */
-        const _speedDelayMs = () => {
-            const mn = appData.settings.minDelay || 1;
-            const mx = appData.settings.maxDelay || 3;
-            return (Math.random() * (mx - mn) + mn) * 1000;
-        };
-        /* 后续每条：在“回复速度”区间与“多条回复间隔”之间取较大值 */
+        /* 每条消息的“正在输入”动画时长＝该条按回复速度抽样出的延迟，保证动画与发送严格同步 */
+        const _speedDelayMs = () => getReplySpeedDelayMs();
+        /* 第2条起：每条都重新按“回复速度”抽样，并在该时长内显示“正在输入”后再发送 */
         const _queueNextReply = (nextCount) => {
-            if (nextCount <= 0) return;
-            const d = Math.max(intervalMs, _speedDelayMs());
+            if (nextCount <= 0 || !_isCurrent()) return;
+            const d = _speedDelayMs();
             showRoleTyping(role.id, role.name, role.avatar, d);
-            setTimeout(() => { hideRoleTyping(role.id); sendNext(nextCount); }, d);
+            setTimeout(() => {
+                if (!_isCurrent()) return;
+                hideRoleTyping(role.id);
+                sendNext(nextCount);
+            }, d);
         };
 
         const sendNext = (count) => {
-            if (count <= 0) return;
+            if (count <= 0 || !_isCurrent()) return;
             
             // 5% 概率：联系人抽三张塔罗牌发消息
             if (Math.random() < 0.05 && sendFortuneCardMessage(role)) {
@@ -38132,11 +38469,13 @@ window.executeRoleReply = function(role) {
             if (appData.settings.mergeReplyEnabled) {
                 const mergeRand = Math.random() * 100;
                 let mergeCount = 1;
-                const p1 = appData.settings.mergeProb1 || 50;
-                const p2 = appData.settings.mergeProb2 || 30;
+                const p1 = KSS_settingNum(appData.settings.mergeProb1, 50, 0, 100);
+                const p2 = KSS_settingNum(appData.settings.mergeProb2, 30, 0, 100);
+                const p3 = KSS_settingNum(appData.settings.mergeProb3, 20, 0, 100);
                 if (mergeRand < p1) mergeCount = 1;
                 else if (mergeRand < p1 + p2) mergeCount = 2;
-                else mergeCount = 3;
+                else if (mergeRand < p1 + p2 + p3) mergeCount = 3;
+                else mergeCount = 1;
                 const selectedTexts = [];
                 for (let i = 0; i < mergeCount; i++) {
                     const word = all[Math.floor(Math.random() * all.length)];
@@ -38148,9 +38487,15 @@ window.executeRoleReply = function(role) {
             }
             
             const msgs = appData.chats[role.id] || [];
-            const lastMe = msgs.slice().reverse().find(m => m.sender === 'me');
-            if (lastMe && Math.random() * 100 < appData.settings.quoteMyProb) {
-                quote = { content: lastMe.content, type: lastMe.type || 'text' };
+            const quoteMyProb = KSS_settingNum(appData.settings.quoteMyProb, 20, 0, 100);
+            const quoteOtherProb = KSS_settingNum(appData.settings.quoteOtherProb, 10, 0, 100);
+            const _quoteRoll = Math.random() * 100;
+            if (_quoteRoll < quoteMyProb) {
+                const lastMe = msgs.slice().reverse().find(m => m.sender === 'me' && ((m.type || 'text') === 'text'));
+                if (lastMe) quote = { content: lastMe.content, type: lastMe.type || 'text' };
+            } else if (_quoteRoll < quoteMyProb + quoteOtherProb) {
+                const lastOther = msgs.slice().reverse().find(m => m.sender === role.id && ((m.type || 'text') === 'text'));
+                if (lastOther) quote = { content: lastOther.content, type: lastOther.type || 'text' };
             }
             
             /* ===== 表情机制（移植自传讯版）：emojiMixEnabled 开＝混入同条，关＝单独一条表情气泡 ===== */
@@ -38195,7 +38540,7 @@ window.executeRoleReply = function(role) {
                 KSS_sendSeparateEmojiRole(role.id, separateEmoji, count);
             }
 
-            if (Math.random() < 0.03) {
+            if (Math.random() * 100 < (appData.settings.rolePokeMeProb ?? 15)) {
                 setTimeout(() => {
                     let actions = role.pokeActions;
                     if (!actions || actions.length === 0) {
@@ -41497,8 +41842,8 @@ function funQuizInvite(quizId) {
     appendMessageToDOM('me', content, msg.time, null, 'funquiz');
     closeFunQuiz(); closeFunQuizDetail();
     showToast('邀请已发送，等待对方回应…');
-    const min = appData.settings.minDelay || 1, max = appData.settings.maxDelay || 3;
-    const delay = (Math.random() * (max - min) + min) * 1000;
+    const min = KSS_settingNum(appData.settings.minDelay, 1, 0), max = KSS_settingNum(appData.settings.maxDelay, 3, 0);
+    const delay = (Math.random() * (Math.abs(max - min)) + Math.min(min, max)) * 1000;
     setTimeout(() => funQuizAcceptInvite(role.id, msg.id, quizId), delay);
 }
 
@@ -43004,14 +43349,7 @@ function resetThemeToDefault() {
 }
 window.resetThemeToDefault = resetThemeToDefault;
 
-function startOnlineStatusTimer(){}
-window.startOnlineStatusTimer = startOnlineStatusTimer;
-
-function startUnifiedTimers(){}
-window.startUnifiedTimers = startUnifiedTimers;
-
-function stopUnifiedTimers(){}
-window.stopUnifiedTimers = stopUnifiedTimers;
+/* 定时器实现位于主脚本（clearAllTimers 之后的统一自动行为定时器区块），此处不再覆盖 */
 </script>
 
 </body>
