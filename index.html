@@ -17183,10 +17183,30 @@ function _ensureCropperStyle() {
         '.image-cropper-overlay{position:fixed;inset:0;z-index:4300;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}',
         '.image-cropper-card{background:#fff;border-radius:18px;padding:16px;width:min(360px,92vw);box-shadow:0 18px 50px rgba(0,0,0,.35);box-sizing:border-box;}',
         '.image-cropper-title{font-size:15px;font-weight:600;color:#333;text-align:center;margin-bottom:12px;}',
-        '.image-cropper-stage{position:relative;margin:0 auto;overflow:hidden;background:#111;border-radius:12px;touch-action:none;cursor:grab;}',
+        '.image-cropper-stage{position:relative;margin:0 auto;overflow:hidden;background:#111;border-radius:12px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;}',
         '.image-cropper-stage:active{cursor:grabbing;}',
-        '.image-cropper-stage img{position:absolute;left:50%;top:50%;transform-origin:center center;user-select:none;-webkit-user-drag:none;pointer-events:none;}',
-        '.image-cropper-frame{position:absolute;inset:0;pointer-events:none;box-sizing:border-box;border:2px solid rgba(255,255,255,.9);border-radius:8px;}',
+        '.image-cropper-stage img{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none;will-change:left,top,width,height;}',
+        '.image-cropper-box{position:absolute;left:0;top:0;box-sizing:border-box;border:2px solid rgba(255,255,255,.95);cursor:move;touch-action:none;box-shadow:0 0 0 9999px rgba(0,0,0,.55);}',
+        '.image-cropper-grid{position:absolute;inset:0;pointer-events:none;}',
+        '.image-cropper-grid:before,.image-cropper-grid:after{content:"";position:absolute;}',
+        '.image-cropper-grid:before{left:33.33%;right:33.33%;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.55);border-right:1px dashed rgba(255,255,255,.55);}',
+        '.image-cropper-grid:after{top:33.33%;bottom:33.33%;left:0;right:0;border-top:1px dashed rgba(255,255,255,.55);border-bottom:1px dashed rgba(255,255,255,.55);}',
+        '.image-cropper-handle{position:absolute;width:26px;height:26px;touch-action:none;z-index:2;}',
+        '.image-cropper-handle[data-handle="nw"]{left:0;top:0;cursor:nwse-resize;}',
+        '.image-cropper-handle[data-handle="ne"]{right:0;top:0;cursor:nesw-resize;}',
+        '.image-cropper-handle[data-handle="sw"]{left:0;bottom:0;cursor:nesw-resize;}',
+        '.image-cropper-handle[data-handle="se"]{right:0;bottom:0;cursor:nwse-resize;}',
+        '.image-cropper-handle[data-handle="n"]{left:50%;top:0;margin-left:-13px;cursor:ns-resize;}',
+        '.image-cropper-handle[data-handle="s"]{left:50%;bottom:0;margin-left:-13px;cursor:ns-resize;}',
+        '.image-cropper-handle[data-handle="w"]{left:0;top:50%;margin-top:-13px;cursor:ew-resize;}',
+        '.image-cropper-handle[data-handle="e"]{right:0;top:50%;margin-top:-13px;cursor:ew-resize;}',
+        '.image-cropper-handle[data-handle="nw"]:after,.image-cropper-handle[data-handle="ne"]:after,.image-cropper-handle[data-handle="sw"]:after,.image-cropper-handle[data-handle="se"]:after{content:"";position:absolute;width:16px;height:16px;border:3px solid #fff;border-radius:2px;}',
+        '.image-cropper-handle[data-handle="nw"]:after{left:1px;top:1px;border-right:none;border-bottom:none;}',
+        '.image-cropper-handle[data-handle="ne"]:after{right:1px;top:1px;border-left:none;border-bottom:none;}',
+        '.image-cropper-handle[data-handle="sw"]:after{left:1px;bottom:1px;border-right:none;border-top:none;}',
+        '.image-cropper-handle[data-handle="se"]:after{right:1px;bottom:1px;border-left:none;border-top:none;}',
+        '.image-cropper-handle[data-handle="n"]:after,.image-cropper-handle[data-handle="s"]:after{content:"";position:absolute;left:6px;right:6px;height:5px;top:50%;margin-top:-2.5px;background:#fff;border-radius:3px;}',
+        '.image-cropper-handle[data-handle="w"]:after,.image-cropper-handle[data-handle="e"]:after{content:"";position:absolute;top:6px;bottom:6px;width:5px;left:50%;margin-left:-2.5px;background:#fff;border-radius:3px;}',
         '.image-cropper-tip{font-size:11px;color:#999;text-align:center;margin-top:8px;}',
         '.image-cropper-zoom{display:flex;align-items:center;gap:8px;margin:14px 2px 2px;color:#999;font-size:14px;}',
         '.image-cropper-zoom input{flex:1;}',
@@ -17202,7 +17222,6 @@ function _ensureCropperStyle() {
 function openImageCropper(file, opts) {
     opts = opts || {};
     _ensureCropperStyle();
-    const aspectOpt = (typeof opts.aspect === 'number' && opts.aspect > 0) ? opts.aspect : 0;
     const maxOut = opts.maxWidth || 800;
     const quality = opts.quality || 0.8;
     return new Promise((resolve) => {
@@ -17213,9 +17232,19 @@ function openImageCropper(file, opts) {
                 <div class="image-cropper-title">调整图片</div>
                 <div class="image-cropper-stage" id="ic-stage">
                     <img id="ic-img" alt="">
-                    <div class="image-cropper-frame"></div>
+                    <div class="image-cropper-box" id="ic-box">
+                        <div class="image-cropper-grid"></div>
+                        <div class="image-cropper-handle" data-handle="nw"></div>
+                        <div class="image-cropper-handle" data-handle="ne"></div>
+                        <div class="image-cropper-handle" data-handle="sw"></div>
+                        <div class="image-cropper-handle" data-handle="se"></div>
+                        <div class="image-cropper-handle" data-handle="n"></div>
+                        <div class="image-cropper-handle" data-handle="s"></div>
+                        <div class="image-cropper-handle" data-handle="w"></div>
+                        <div class="image-cropper-handle" data-handle="e"></div>
+                    </div>
                 </div>
-                <div class="image-cropper-tip">拖动图片调整位置 · 双指/滚轮缩放</div>
+                <div class="image-cropper-tip">拖动图片调整位置 · 双指/滚轮缩放 · 拖动边框可裁切</div>
                 <div class="image-cropper-zoom">
                     <span>－</span>
                     <input type="range" id="ic-zoom" min="1" max="4" step="0.01" value="1">
@@ -17231,6 +17260,7 @@ function openImageCropper(file, opts) {
 
         const stage = overlay.querySelector('#ic-stage');
         const img = overlay.querySelector('#ic-img');
+        const boxEl = overlay.querySelector('#ic-box');
         const zoomInput = overlay.querySelector('#ic-zoom');
         const btnCancel = overlay.querySelector('#ic-cancel');
         const btnSkip = overlay.querySelector('#ic-skip');
@@ -17238,8 +17268,13 @@ function openImageCropper(file, opts) {
 
         let closed = false;
         let naturalW = 1, naturalH = 1, stageW = 300, stageH = 300;
-        let baseScale = 1, zoom = 1, offX = 0, offY = 0;
-        let dragging = false, startX = 0, startY = 0, offStartX = 0, offStartY = 0;
+        let fitScale = 1, zoom = 1, imgX = 0, imgY = 0;
+        let box = { x: 0, y: 0, w: 300, h: 300 };
+        let startBox = { x: 0, y: 0, w: 0, h: 0 };
+        let mode = null, activeHandle = '', panStartX = 0, panStartY = 0, startImgX = 0, startImgY = 0;
+        const pointers = new Map();
+        let pinchStartDist = 1, pinchStartZoom = 1, pinchImgPoint = null;
+        const MIN_BOX = 44;
 
         const done = (val) => {
             if (closed) return;
@@ -17250,52 +17285,124 @@ function openImageCropper(file, opts) {
             resolve(val);
         };
 
-        const render = () => {
-            const scaleFactor = baseScale * zoom;
-            const dispW = naturalW * scaleFactor;
-            const dispH = naturalH * scaleFactor;
-            const maxX = Math.max(0, (dispW - stageW) / 2);
-            const maxY = Math.max(0, (dispH - stageH) / 2);
-            offX = Math.min(maxX, Math.max(-maxX, offX));
-            offY = Math.min(maxY, Math.max(-maxY, offY));
-            img.style.width = dispW + 'px';
-            img.style.height = dispH + 'px';
-            img.style.transform = `translate(-50%,-50%) translate(${offX}px,${offY}px)`;
+        const scaleNow = () => fitScale * zoom;
+        const clampImage = () => {
+            const scale = scaleNow();
+            const dispW = naturalW * scale, dispH = naturalH * scale;
+            imgX = Math.min(0, Math.max(stageW - dispW, imgX));
+            imgY = Math.min(0, Math.max(stageH - dispH, imgY));
         };
+        const paintImage = () => {
+            const scale = scaleNow();
+            img.style.width = (naturalW * scale) + 'px';
+            img.style.height = (naturalH * scale) + 'px';
+            img.style.left = imgX + 'px';
+            img.style.top = imgY + 'px';
+        };
+        const clampBox = () => {
+            box.w = Math.max(MIN_BOX, Math.min(stageW, box.w));
+            box.h = Math.max(MIN_BOX, Math.min(stageH, box.h));
+            box.x = Math.max(0, Math.min(stageW - box.w, box.x));
+            box.y = Math.max(0, Math.min(stageH - box.h, box.y));
+        };
+        const paintBox = () => {
+            boxEl.style.left = box.x + 'px';
+            boxEl.style.top = box.y + 'px';
+            boxEl.style.width = box.w + 'px';
+            boxEl.style.height = box.h + 'px';
+        };
+        const render = () => { clampImage(); paintImage(); clampBox(); paintBox(); };
 
         const computeStage = () => {
-            let asp = aspectOpt;
-            if (!asp) asp = (naturalW && naturalH) ? (naturalW / naturalH) : 1;
+            const asp = (naturalW && naturalH) ? (naturalW / naturalH) : 1;
             if (asp >= 1) { stageW = 300; stageH = Math.round(300 / asp); }
             else { stageH = 300; stageW = Math.round(300 * asp); }
             stageW = Math.max(60, Math.min(300, stageW));
             stageH = Math.max(60, Math.min(300, stageH));
             stage.style.width = stageW + 'px';
             stage.style.height = stageH + 'px';
-            baseScale = Math.max(stageW / naturalW, stageH / naturalH);
+            // contain：舞台比例跟随原图，整张图完整显示，既不裁切也不拉伸
+            fitScale = Math.min(stageW / naturalW, stageH / naturalH);
+        };
+
+        // 框选默认铺满舞台：默认输出整张原图（不裁切、不拉伸），用户可自行拖动边框裁切
+        const initBox = () => {
+            box = { x: 0, y: 0, w: stageW, h: stageH };
+            clampBox();
+        };
+
+        // 单指/鼠标拖动图片，保持舞台始终被图片覆盖
+        const panImage = (dx, dy) => {
+            imgX += dx; imgY += dy;
+            clampImage(); paintImage();
+        };
+
+        // 缩放图片：以舞台坐标 (cx,cy) 为锚点，保持该点像素不动
+        const zoomImageAt = (cx, cy, nextZoom) => {
+            const nz = Math.max(1, Math.min(4, nextZoom));
+            const oldScale = scaleNow();
+            const ix = (cx - imgX) / oldScale;
+            const iy = (cy - imgY) / oldScale;
+            zoom = nz;
+            const scale = scaleNow();
+            imgX = cx - ix * scale;
+            imgY = cy - iy * scale;
+            zoomInput.value = String(zoom);
+            render();
+        };
+
+        // 拖动控制点改变框选区域大小（有 aspect 时锁定比例）
+        const resizeBox = (handle, px, py) => {
+            const s = startBox;
+            const left = handle.indexOf('w') !== -1;
+            const right = handle.indexOf('e') !== -1;
+            const top = handle.indexOf('n') !== -1;
+            const bottom = handle.indexOf('s') !== -1;
+            let x, y, w, h;
+            {
+                let x1 = s.x, y1 = s.y, x2 = s.x + s.w, y2 = s.y + s.h;
+                if (left) x1 = px;
+                if (right) x2 = px;
+                if (top) y1 = py;
+                if (bottom) y2 = py;
+                x = Math.min(x1, x2);
+                y = Math.min(y1, y2);
+                w = Math.abs(x2 - x1);
+                h = Math.abs(y2 - y1);
+                w = Math.max(MIN_BOX, Math.min(stageW, w));
+                h = Math.max(MIN_BOX, Math.min(stageH, h));
+                x = Math.max(0, Math.min(stageW - w, x));
+                y = Math.max(0, Math.min(stageH - h, y));
+            }
+            box = { x: x, y: y, w: w, h: h };
+            clampBox();
+            paintBox();
+        };
+
+        const localPoint = (e) => {
+            const r = stage.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
         };
 
         const onResize = () => {
-            const savedZoom = zoom, savedX = offX, savedY = offY;
             computeStage();
-            zoom = savedZoom; offX = savedX; offY = savedY;
+            clampImage();
+            clampBox();
             render();
         };
         const onKey = (e) => { if (e.key === 'Escape') done(null); };
 
         const confirmCrop = () => {
             try {
-                const scaleFactor = baseScale * zoom;
-                const dispW = naturalW * scaleFactor;
-                const dispH = naturalH * scaleFactor;
-                const left = stageW / 2 - dispW / 2 + offX;
-                const top = stageH / 2 - dispH / 2 + offY;
-                let srcX = -left / scaleFactor;
-                let srcY = -top / scaleFactor;
-                let srcW = stageW / scaleFactor;
-                let srcH = stageH / scaleFactor;
-                srcX = Math.max(0, Math.min(naturalW - srcW, srcX));
-                srcY = Math.max(0, Math.min(naturalH - srcH, srcY));
+                const scale = scaleNow();
+                let srcX = (box.x - imgX) / scale;
+                let srcY = (box.y - imgY) / scale;
+                let srcW = box.w / scale;
+                let srcH = box.h / scale;
+                srcX = Math.max(0, Math.min(naturalW - 1, srcX));
+                srcY = Math.max(0, Math.min(naturalH - 1, srcY));
+                srcW = Math.max(1, Math.min(naturalW - srcX, srcW));
+                srcH = Math.max(1, Math.min(naturalH - srcY, srcH));
                 let outW = Math.max(1, Math.min(maxOut, Math.round(srcW)));
                 let outH = Math.max(1, Math.round(outW * (srcH / srcW)));
                 const canvas = document.createElement('canvas');
@@ -17310,29 +17417,87 @@ function openImageCropper(file, opts) {
         };
 
         stage.addEventListener('pointerdown', (e) => {
-            dragging = true;
-            startX = e.clientX; startY = e.clientY;
-            offStartX = offX; offStartY = offY;
+            if (closed) return;
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
             try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+            const p = localPoint(e);
+            if (pointers.size >= 2) {
+                const pts = Array.from(pointers.values());
+                const a = pts[0], b = pts[1];
+                const r = stage.getBoundingClientRect();
+                pinchStartDist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+                pinchStartZoom = zoom;
+                const mid = { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top };
+                const scale = scaleNow();
+                pinchImgPoint = { x: (mid.x - imgX) / scale, y: (mid.y - imgY) / scale };
+                mode = 'pinch';
+                return;
+            }
+            const handleEl = (e.target && e.target.closest) ? e.target.closest('.image-cropper-handle') : null;
+            if (handleEl) {
+                mode = 'resize';
+                activeHandle = handleEl.getAttribute('data-handle') || '';
+                startBox = { x: box.x, y: box.y, w: box.w, h: box.h };
+            } else if (p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h
+                       && !(box.w >= stageW - 0.5 && box.h >= stageH - 0.5)) {
+                mode = 'movebox';
+                startBox = { x: box.x, y: box.y, w: box.w, h: box.h };
+                panStartX = p.x; panStartY = p.y;
+            } else {
+                mode = 'pan';
+                panStartX = e.clientX; panStartY = e.clientY;
+                startImgX = imgX; startImgY = imgY;
+            }
         });
         stage.addEventListener('pointermove', (e) => {
-            if (!dragging) return;
-            offX = offStartX + (e.clientX - startX);
-            offY = offStartY + (e.clientY - startY);
-            render();
+            if (closed) return;
+            if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (mode === 'pinch' && pointers.size >= 2) {
+                const pts = Array.from(pointers.values());
+                const a = pts[0], b = pts[1];
+                const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+                const r = stage.getBoundingClientRect();
+                const mid = { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top };
+                const next = Math.max(1, Math.min(4, pinchStartZoom * (dist / pinchStartDist)));
+                const scale = fitScale * next;
+                zoom = next;
+                imgX = mid.x - pinchImgPoint.x * scale;
+                imgY = mid.y - pinchImgPoint.y * scale;
+                zoomInput.value = String(zoom);
+                render();
+                return;
+            }
+            if (mode === 'resize') {
+                const p = localPoint(e);
+                resizeBox(activeHandle, p.x, p.y);
+                return;
+            }
+            if (mode === 'movebox') {
+                const p = localPoint(e);
+                box.x = startBox.x + (p.x - panStartX);
+                box.y = startBox.y + (p.y - panStartY);
+                clampBox();
+                paintBox();
+                return;
+            }
+            if (mode === 'pan') {
+                panImage(e.clientX - panStartX, e.clientY - panStartY);
+            }
         });
-        const stopDrag = () => { dragging = false; };
-        stage.addEventListener('pointerup', stopDrag);
-        stage.addEventListener('pointercancel', stopDrag);
+        const endPointer = (e) => {
+            pointers.delete(e.pointerId);
+            if (pointers.size === 0) { mode = null; activeHandle = ''; }
+            else if (mode === 'pinch' && pointers.size < 2) { mode = null; }
+        };
+        stage.addEventListener('pointerup', endPointer);
+        stage.addEventListener('pointercancel', endPointer);
         stage.addEventListener('wheel', (e) => {
             e.preventDefault();
-            zoom = Math.min(4, Math.max(1, zoom - e.deltaY * 0.0012));
-            zoomInput.value = String(zoom);
-            render();
+            const p = localPoint(e);
+            zoomImageAt(p.x, p.y, zoom - e.deltaY * 0.0012);
         }, { passive: false });
         zoomInput.addEventListener('input', () => {
-            zoom = Math.max(1, Math.min(4, parseFloat(zoomInput.value) || 1));
-            render();
+            zoomImageAt(stageW / 2, stageH / 2, parseFloat(zoomInput.value) || 1);
         });
 
         btnCancel.addEventListener('click', () => done(null));
@@ -17347,8 +17512,12 @@ function openImageCropper(file, opts) {
                 naturalW = img.naturalWidth || 1;
                 naturalH = img.naturalHeight || 1;
                 computeStage();
-                zoom = 1; offX = 0; offY = 0;
+                zoom = 1;
+                const scale = scaleNow();
+                imgX = (stageW - naturalW * scale) / 2;
+                imgY = (stageH - naturalH * scale) / 2;
                 zoomInput.value = '1';
+                initBox();
                 render();
             };
             img.onerror = () => done(null);
