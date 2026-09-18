@@ -3685,23 +3685,34 @@
             padding-bottom: max(8px, env(safe-area-inset-bottom));
             display: flex;
             gap: 8px;
-            align-items: center;
+            align-items: flex-end;
             background: #f7f7f7;
             z-index: 50;
             transition: transform 0.3s ease;
             box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
         }
-        .moment-detail-footer input {
+        .moment-detail-footer input,
+        .moment-detail-footer textarea {
             flex: 1;
             background: #fff;
             border: 1px solid #ddd;
             border-radius: 20px;
             padding: 10px 16px;
             font-size: 14px;
+            line-height: 1.4;
+            font-family: inherit;
             outline: none;
             min-height: 40px;
+            max-height: 96px;
+            box-sizing: border-box;
+            resize: none;
+            overflow-y: hidden;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
-        .moment-detail-footer input:focus {
+        .moment-detail-footer input:focus,
+        .moment-detail-footer textarea:focus {
             border-color: var(--accent-color);
             box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.15);
         }
@@ -3758,12 +3769,29 @@
             display: flex;
             gap: 2px;
             padding: 2px 0;
+            align-items: flex-start;
+            flex-wrap: wrap;
         }
         .moment-comment-item .comment-author {
             font-weight: 600;
             color: #576B95;
-            flex-shrink: 0;
+            flex: 1 1 auto;
+            min-width: 0;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
+        .blacklist-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 0; border-bottom: 1px solid var(--border-color);
+        }
+        .blacklist-item:last-child { border-bottom: none; }
+        .blacklist-item .bl-avatar {
+            width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+            background: var(--bg-primary); display: flex; align-items: center; justify-content: center;
+        }
+        .blacklist-item .bl-name { font-size: 15px; color: var(--text-primary); font-weight: 500; }
+        .blacklist-empty { text-align: center; color: var(--text-secondary); font-size: 14px; padding: 24px 0; }
 
         .moment-location {
             font-size: 12px;
@@ -3814,8 +3842,17 @@
             border-radius: 20px;
             padding: 10px 16px;
             font-size: 14px;
+            line-height: 1.4;
+            font-family: inherit;
             outline: none;
             resize: none;
+            min-height: 40px;
+            max-height: 120px;
+            box-sizing: border-box;
+            overflow-y: hidden;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .comment-modal .comment-actions {
             display: flex;
@@ -9568,7 +9605,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div><span class="text-xs text-gray-500 block mb-1">角色发帖概率 (%)</span><input type="number" id="setting-moment-prob" min="0" max="100" value="7" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                         <div><span class="text-xs text-gray-500 block mb-1">评论我的动态 (%)</span><input type="number" id="setting-moment-my-comment" min="0" max="100" value="45" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-                        <div><span class="text-xs text-gray-500 block mb-1">角色互评概率 (%)</span><input type="number" id="setting-moment-role-comment" min="0" max="100" value="2" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                        <div><span class="text-xs text-gray-500 block mb-1">角色互评概率 (%)</span><input type="number" id="setting-moment-role-comment" min="0" max="100" step="0.1" value="0.5" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                         <div><span class="text-xs text-gray-500 block mb-1">用户评论后角色回复概率 (%)</span><input type="number" id="setting-moment-user-reply" min="0" max="100" value="65" class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                     </div>
                 </div>
@@ -10570,9 +10607,21 @@
     </main>
 </div>
 
+<!-- 联系人黑名单（朋友圈互相拉黑） -->
+<div id="modal-role-blacklist" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 360px;">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold" id="role-blacklist-title">黑名单</h2>
+            <button onclick="closeRoleBlacklist()" class="p-2 rounded-full hover:bg-gray-100"><i class="fas fa-times ricon w-5 h-5"></i></button>
+        </div>
+        <p class="text-xs text-gray-400 mb-2">TA 拉黑的联系人，无法评论 TA 的朋友圈</p>
+        <div id="role-blacklist-list"></div>
+    </div>
+</div>
+
 <!-- 朋友圈评论弹窗 -->
 <div id="comment-modal" class="comment-modal" style="display: none;">
-    <textarea id="comment-input" rows="2" placeholder="写评论..."></textarea>
+    <textarea id="comment-input" rows="2" placeholder="写评论..." oninput="_autoGrowCommentBox(this,120)"></textarea>
     <div class="comment-actions">
         <button onclick="closeCommentModal()">取消</button>
         <button onclick="submitComment()" style="background-color: var(--accent-color); color: white; border: none; padding: 6px 16px; border-radius: 20px;">发送</button>
@@ -10595,7 +10644,7 @@
         <div class="moment-detail-comments" id="moment-detail-comments-block"></div>
     </div>
     <div class="moment-detail-footer safe-bottom" id="moment-detail-footer">
-        <input type="text" id="detail-comment-input" placeholder="评论" />
+        <textarea id="detail-comment-input" rows="1" placeholder="评论" oninput="_autoGrowCommentBox(this,96)"></textarea>
         <button onclick="submitDetailComment()">发送</button>
     </div>
 </div>
@@ -11101,7 +11150,7 @@ const DEFAULT_DATA = {
         autoSendProbEnabled: false,
         autoSendProbPercent: 50,
         transferTestMode: false,
-        moment: { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 2, authorReplyProb: 30, userCommentReplyProb: 65 },
+        moment: { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 0.5, authorReplyProb: 30, userCommentReplyProb: 65 },
         momentCover: '',
         musicPlayerEnabled: true,
         musicShuffle: true,
@@ -17734,7 +17783,7 @@ function _readMirror() {
 /* ===== 数据结构版本与迁移框架 =====
    升级数据格式时：把 APP_SCHEMA_VERSION +1，并在 DATA_MIGRATIONS 里加一条「目标版本 -> 迁移函数」。
    迁移函数必须幂等（可重复执行），因为异常中断后下次启动会重跑。 */
-const APP_SCHEMA_VERSION = 5;
+const APP_SCHEMA_VERSION = 6;
 const DATA_MIGRATIONS = {
     /* v1 -> v2：外观设置字段归一化（补齐 momentAvatarShape / customThemeColors 等新增字段，修掉重复键） */
     2: function (data) {
@@ -17763,6 +17812,19 @@ const DATA_MIGRATIONS = {
         if (!data || typeof data !== 'object') return data;
         if (!data.settings) data.settings = {};
         if (data.settings.pokeAutoReplyProb === 45) data.settings.pokeAutoReplyProb = 95;
+        return data;
+    },
+    /* v5 -> v6：1) 角色互评概率默认值 2% -> 0.5%（仍为旧默认值的才改）；2) 为联系人与动态补充朋友圈黑名单字段 */
+    6: function (data) {
+        if (!data || typeof data !== 'object') return data;
+        if (!data.settings) data.settings = {};
+        if (!data.settings.moment || typeof data.settings.moment !== 'object') data.settings.moment = {};
+        if (data.settings.moment.rolePostCommentProb === 2) data.settings.moment.rolePostCommentProb = 0.5;
+        if (Array.isArray(data.roles)) {
+            data.roles.forEach(function (r) {
+                if (r && !Array.isArray(r.blockedRoles)) r.blockedRoles = [];
+            });
+        }
         return data;
     }
 };
@@ -18441,9 +18503,9 @@ async function loadData() {
         if (appData.settings.autoSendProbPercent === undefined) appData.settings.autoSendProbPercent = 50;
         if (appData.settings.transferTestMode === undefined) appData.settings.transferTestMode = false;
         if (appData.settings.multiMsgInterval === undefined) appData.settings.multiMsgInterval = 2;
-        if (!appData.settings.moment) appData.settings.moment = { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 2, authorReplyProb: 30, userCommentReplyProb: 65 };
+        if (!appData.settings.moment) appData.settings.moment = { enabled: true, probability: 7, maxPerDay: 3, globalMaxPerDay: 3, myPostCommentProb: 45, rolePostCommentProb: 0.5, authorReplyProb: 30, userCommentReplyProb: 65 };
         if (appData.settings.moment.myPostCommentProb === undefined) appData.settings.moment.myPostCommentProb = 45;
-        if (appData.settings.moment.rolePostCommentProb === undefined) appData.settings.moment.rolePostCommentProb = 2;
+        if (appData.settings.moment.rolePostCommentProb === undefined) appData.settings.moment.rolePostCommentProb = 0.5;
         if (appData.settings.moment.authorReplyProb === undefined) appData.settings.moment.authorReplyProb = 30;
         if (appData.settings.moment.userCommentReplyProb === undefined) appData.settings.moment.userCommentReplyProb = 65;
         if (appData.settings.moment.globalMaxPerDay === undefined) appData.settings.moment.globalMaxPerDay = 3;
@@ -18481,7 +18543,7 @@ async function loadData() {
             }
             appData.settings.removeSeededContactsV1 = true;
         }
-        appData.roles.forEach(r => { if (!r.lastAutoSendTime) r.lastAutoSendTime = Date.now(); if (!r.lastLoveRefresh) r.lastLoveRefresh = 0; if (!r.currentLoveState) r.currentLoveState = null; if (!r.onlineStatus) r.onlineStatus = { enabled: true, statusList: ['在忙', '工作中', '在吃饭', '睡觉中', '勿扰'], currentStatus: '在线', lastUpdate: 0 }; if (r.autoMailProbability === undefined) r.autoMailProbability = 15; if (r.todayMomentCount === undefined) r.todayMomentCount = 0; if (r.lastMomentDate === undefined) r.lastMomentDate = null; });
+        appData.roles.forEach(r => { if (!r.lastAutoSendTime) r.lastAutoSendTime = Date.now(); if (!r.lastLoveRefresh) r.lastLoveRefresh = 0; if (!r.currentLoveState) r.currentLoveState = null; if (!r.onlineStatus) r.onlineStatus = { enabled: true, statusList: ['在忙', '工作中', '在吃饭', '睡觉中', '勿扰'], currentStatus: '在线', lastUpdate: 0 }; if (r.autoMailProbability === undefined) r.autoMailProbability = 15; if (r.todayMomentCount === undefined) r.todayMomentCount = 0; if (r.lastMomentDate === undefined) r.lastMomentDate = null; if (!Array.isArray(r.blockedRoles)) r.blockedRoles = []; if (r.lastMomentCommentTime === undefined) r.lastMomentCommentTime = 0; });
         if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 };
         if (!appData.transferRecords) appData.transferRecords = [];
         if (!appData.redPackets) appData.redPackets = [];
@@ -20703,8 +20765,8 @@ function buildMindCardsHTML(cards) {
 function executeRoleReply(role) {
     if (!role) return;
     
-    const minDelay = appData.settings.minDelay || 1;
-    const maxDelay = appData.settings.maxDelay || 3;
+    const minDelay = KSS_settingNum(appData.settings.minDelay, 1, 0);
+    const maxDelay = KSS_settingNum(appData.settings.maxDelay, 3, 0);
     const baseDelay = (Math.random() * (maxDelay - minDelay) + minDelay) * 1000;
     
     showRoleTyping(role.id, role.name, role.avatar, baseDelay + 500);
@@ -20725,7 +20787,7 @@ function executeRoleReply(role) {
         else msgCount = 3;
         if (msgCount < 1) msgCount = 1;
         
-        const intervalSec = appData.settings.multiMsgInterval || 2;
+        const intervalSec = KSS_settingNum(appData.settings.multiMsgInterval, 2, 0);
         const intervalMs = intervalSec * 1000;
         
         const sendNext = (count) => {
@@ -20734,13 +20796,18 @@ function executeRoleReply(role) {
             let finalContent = '', type = 'text', quote = null;
             
             if (appData.settings.mergeReplyEnabled) {
-                const mergeRand = Math.random() * 100;
+                const p1 = KSS_settingNum(appData.settings.mergeProb1, 50, 0, 100);
+                const p2 = KSS_settingNum(appData.settings.mergeProb2, 30, 0, 100);
+                const p3 = KSS_settingNum(appData.settings.mergeProb3, 20, 0, 100);
+                /* 按 1/2/3 条各自的概率归一化抽样：某个数值越低，对应条数越不容易出现 */
+                const mergeSum = p1 + p2 + p3;
                 let mergeCount = 1;
-                const p1 = appData.settings.mergeProb1 || 50;
-                const p2 = appData.settings.mergeProb2 || 30;
-                if (mergeRand < p1) mergeCount = 1;
-                else if (mergeRand < p1 + p2) mergeCount = 2;
-                else mergeCount = 3;
+                if (mergeSum > 0) {
+                    const mergeRand = Math.random() * mergeSum;
+                    if (mergeRand < p1) mergeCount = 1;
+                    else if (mergeRand < p1 + p2) mergeCount = 2;
+                    else mergeCount = 3;
+                }
                 const selectedTexts = [];
                 for (let i = 0; i < mergeCount; i++) {
                     const word = all[Math.floor(Math.random() * all.length)];
@@ -20753,7 +20820,7 @@ function executeRoleReply(role) {
             
             const msgs = appData.chats[role.id] || [];
             const lastMe = msgs.slice().reverse().find(m => m.sender === 'me');
-            if (lastMe && Math.random() * 100 < appData.settings.quoteMyProb) {
+            if (lastMe && Math.random() * 100 < KSS_settingNum(appData.settings.quoteMyProb, 20, 0, 100)) {
                 quote = { content: lastMe.content, type: lastMe.type || 'text' };
             }
             
@@ -21261,7 +21328,7 @@ function executePokeWithText(text) {
 
 function maybeTriggerRolePoke() {
     if (currentChatType !== 'role' || !currentRoleId) return;
-    if (Math.random() >= 0.09) return;
+    if (Math.random() * 100 >= KSS_settingNum(appData.settings.rolePokeMeProb, 15, 0, 100)) return;
     
     const role = appData.roles.find(r => r.id === currentRoleId);
     if (!role) return;
@@ -21420,7 +21487,7 @@ function openChatSettings() {
     document.getElementById('setting-auto-mail-interval').value = autoMail.checkInterval;
     document.getElementById('setting-moment-prob').value = appData.settings.moment?.probability ?? 7;
     document.getElementById('setting-moment-my-comment').value = appData.settings.moment?.myPostCommentProb ?? 45;
-    document.getElementById('setting-moment-role-comment').value = appData.settings.moment?.rolePostCommentProb ?? 2;
+    document.getElementById('setting-moment-role-comment').value = appData.settings.moment?.rolePostCommentProb ?? 0.5;
     document.getElementById('setting-moment-user-reply').value = appData.settings.moment?.userCommentReplyProb ?? 65;
     document.getElementById('setting-poke-auto-reply-switch').classList.toggle('active', appData.settings.pokeAutoReplyEnabled !== false);
     document.getElementById('setting-poke-auto-reply-prob').value = appData.settings.pokeAutoReplyProb ?? 95;
@@ -21554,7 +21621,7 @@ async function saveSettings() {
     if (!appData.settings.moment) appData.settings.moment = {};
     appData.settings.moment.probability = KSS_numEl('setting-moment-prob', 7, 0, 100);
     appData.settings.moment.myPostCommentProb = KSS_numEl('setting-moment-my-comment', 45, 0, 100);
-    appData.settings.moment.rolePostCommentProb = KSS_numEl('setting-moment-role-comment', 2, 0, 100);
+    appData.settings.moment.rolePostCommentProb = KSS_numEl('setting-moment-role-comment', 0.5, 0, 100);
     appData.settings.moment.userCommentReplyProb = KSS_numEl('setting-moment-user-reply', 65, 0, 100);
     appData.settings.pokeAutoReplyEnabled = document.getElementById('setting-poke-auto-reply-switch').classList.contains('active');
     appData.settings.pokeAutoReplyProb = KSS_numEl('setting-poke-auto-reply-prob', 95, 0, 100);
@@ -21947,6 +22014,8 @@ async function createContactConfirm() {
         customPokes: [],
         pokeActions: [...PRESET_POKE_ACTIONS],
         chatBackground: null,
+        blockedRoles: [],
+        lastMomentCommentTime: 0,
         emotions: { happy: 0, angry: 0, worried: 0, sad: 0, shy: 0, jealous: 0, depressed: 0, confused: 0 },
         lastEmotionUpdate: 0
     };
@@ -21986,6 +22055,8 @@ async function saveRole() { const name = document.getElementById('role-name-inpu
         customPokes: [], 
         pokeActions: [...PRESET_POKE_ACTIONS], 
         chatBackground: null,
+        blockedRoles: [],
+        lastMomentCommentTime: 0,
         emotions: { happy: 0, angry: 0, worried: 0, sad: 0, shy: 0, jealous: 0, depressed: 0, confused: 0 },
         lastEmotionUpdate: 0
     };
@@ -24048,7 +24119,7 @@ function executePoke() {
         hideRoleTyping(role.id);
     }, delay + 500);
     if (appData.settings.pokeAutoReplyEnabled) {
-        const prob = appData.settings.pokeAutoReplyProb || 45;
+        const prob = KSS_settingNum(appData.settings.pokeAutoReplyProb, 95, 0, 100);
         if (Math.random() * 100 < prob) {
             setTimeout(() => {
                 const allWords = getActiveWordList();
@@ -26129,7 +26200,11 @@ function showMomentDetail(momentId) {
             commentsBlock.appendChild(commentDiv);
         });
     }
-    document.getElementById('detail-comment-input').value = '';
+    const _detailInput = document.getElementById('detail-comment-input');
+    if (_detailInput) {
+        _detailInput.value = '';
+        _autoGrowCommentBox(_detailInput, 96);
+    }
     const navDeleteBtn = document.getElementById('detail-delete-nav-btn');
     if (navDeleteBtn) {
         navDeleteBtn.style.display = 'block';
@@ -26159,6 +26234,7 @@ function startReplyToComment(roleId, roleName, commentId) {
     const input = document.getElementById('detail-comment-input');
     input.placeholder = `回复 ${roleName}：`;
     input.value = '';
+    _autoGrowCommentBox(input, 96);
     input.focus();
 }
 function closeMomentDetail() {
@@ -26257,12 +26333,22 @@ function submitDetailComment() {
     showMomentDetail(currentDetailMomentId);
     triggerRoleReplyToUserComment(moment, newComment);
 }
+function _autoGrowCommentBox(el, maxHeight) {
+    if (!el) return;
+    el.style.height = 'auto';
+    const limit = maxHeight || 120;
+    const h = Math.min(el.scrollHeight, limit);
+    el.style.height = h + 'px';
+    el.style.overflowY = el.scrollHeight > limit ? 'auto' : 'hidden';
+}
+window._autoGrowCommentBox = _autoGrowCommentBox;
 function openCommentModal(momentId) {
     currentCommentMomentId = momentId;
     currentReplyingTo = null;
     const input = document.getElementById('comment-input');
     input.value = '';
     input.placeholder = '写评论...';
+    _autoGrowCommentBox(input, 120);
     const modal = document.getElementById('comment-modal');
     modal.style.display = 'block';
     setTimeout(() => modal.classList.add('active'), 10);
@@ -26273,6 +26359,7 @@ function openCommentModalFromDetail(momentId) {
     input.value = '';
     const placeholder = currentReplyingTo ? `回复 ${currentReplyingTo.roleName}：` : '写评论...';
     input.placeholder = placeholder;
+    _autoGrowCommentBox(input, 120);
     const modal = document.getElementById('comment-modal');
     modal.style.display = 'block';
     setTimeout(() => modal.classList.add('active'), 10);
@@ -26514,7 +26601,7 @@ function runMomentAutoCheck(silent) {
             role.todayMomentCount = 0;
             role.lastMomentDate = today;
         }
-        if (role.todayMomentCount < (appData.settings.moment.maxPerDay || 3)) {
+        if (role.todayMomentCount < (appData.settings.moment.maxPerDay ?? 3)) {
             const checkProb = appData.settings.moment.probability ?? 7;
             if (Math.random() * 100 < checkProb) {
                 generateAutoMoment(role);
@@ -26523,18 +26610,48 @@ function runMomentAutoCheck(silent) {
             }
         }
     }
+    /* ===== 联系人互相拉黑（朋友圈）：每天结算一次 =====
+       - 每个联系人当天 75% 概率拉黑一位其它联系人（用户“我”永远不会被拉黑）
+       - 每条已存在的拉黑关系每天仅 1% 概率被解除（几乎不可能拉出）
+       - 被拉黑的人不能评论/点赞拉黑者的朋友圈 */
+    if (appData.momentBlockKey !== today) {
+        appData.momentBlockKey = today;
+        const BLOCK_CHANCE = 75, UNBLOCK_CHANCE = 1;
+        const blockPool = appData.roles.filter(r => r && r.id !== 'me');
+        blockPool.forEach(actor => {
+            if (!Array.isArray(actor.blockedRoles)) actor.blockedRoles = [];
+            if (actor.blockedRoles.length > 0) {
+                actor.blockedRoles = actor.blockedRoles.filter(id => Math.random() * 100 >= UNBLOCK_CHANCE);
+            }
+            if (Math.random() * 100 < BLOCK_CHANCE) {
+                const pool = blockPool.filter(r => r.id !== actor.id && actor.blockedRoles.indexOf(r.id) === -1);
+                if (pool.length > 0) {
+                    actor.blockedRoles.push(pool[Math.floor(Math.random() * pool.length)].id);
+                }
+            }
+        });
+        debouncedSaveData();
+    }
     const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
     const recentMoments = appData.moments.filter(m => m.time > threeDaysAgo);
+    /* 联系人互评额外限流：每人 6 小时内最多评论一次，整轮最多新增 1 条互评，避免评论刷屏 */
+    const ROLE_COMMENT_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+    const ROLE_COMMENT_MAX_PER_CHECK = 1;
+    let roleCommentsThisCheck = 0;
     recentMoments.forEach(moment => {
         moment.commenters = moment.commenters || [];
         const authorId = moment.roleId;
         const isMyPost = authorId === 'me';
-        let candidates = appData.roles.filter(r => r.id !== authorId && r.id !== 'me');
+        const authorRole = isMyPost ? null : appData.roles.find(r => r.id === authorId);
+        const blockedByAuthor = (authorRole && Array.isArray(authorRole.blockedRoles)) ? authorRole.blockedRoles : [];
+        let candidates = appData.roles.filter(r => r.id !== authorId && r.id !== 'me' && blockedByAuthor.indexOf(r.id) === -1);
         if (isMyPost) candidates = appData.roles.filter(r => r.id !== authorId);
         candidates = candidates.filter(c => !moment.commenters.includes(c.id));
+        if (!isMyPost) candidates = candidates.filter(c => (Date.now() - (c.lastMomentCommentTime || 0)) >= ROLE_COMMENT_COOLDOWN_MS);
         if (candidates.length === 0) return;
-        /* 概率直接使用设置值（不再额外放大）：我的动态默认 45%，联系人互评默认 2% 极低 */
-        const prob = isMyPost ? (appData.settings.moment.myPostCommentProb ?? 45) : (appData.settings.moment.rolePostCommentProb ?? 2);
+        if (!isMyPost && roleCommentsThisCheck >= ROLE_COMMENT_MAX_PER_CHECK) return;
+        /* 概率直接使用设置值（不再额外放大）：我的动态默认 45%，联系人互评默认 0.5% 极低 */
+        const prob = isMyPost ? (appData.settings.moment.myPostCommentProb ?? 45) : (appData.settings.moment.rolePostCommentProb ?? 0.5);
         /* 每次检查中单条动态最多新增的评论人数：我的动态较活跃，他人的动态极克制 */
         const maxNewComments = isMyPost ? 2 : 1;
         /* 日常化：一定概率只点赞不评论，避免每次互动都是完整评论 */
@@ -26555,6 +26672,8 @@ function runMomentAutoCheck(silent) {
             const commentText = pickRandomWordCard();
             moment.comments.push({ roleId: commenter.id, content: commentText, time: Date.now() });
             moment.commenters.push(commenter.id);
+            commenter.lastMomentCommentTime = Date.now();
+            if (!isMyPost) roleCommentsThisCheck++;
             if (Math.random() < 0.6) {
                 if (!moment.likes) moment.likes = [];
                 if (!moment.likes.includes(commenter.id)) {
@@ -38989,8 +39108,8 @@ window.executeRoleReply = function(role) {
         const all = getActiveWordList();
         if (all.length === 0) return;
         
-        const prob2 = appData.settings.prob2 || 0;
-        const prob3 = appData.settings.prob3 || 0;
+        const prob2 = KSS_settingNum(appData.settings.prob2, 20, 0, 100);
+        const prob3 = KSS_settingNum(appData.settings.prob3, 10, 0, 100);
         const rand = Math.random() * 100;
         let msgCount = 1;
         if (rand < prob2) msgCount = 2;
@@ -39027,15 +39146,18 @@ window.executeRoleReply = function(role) {
             let finalContent = '', type = 'text', quote = null;
             
             if (appData.settings.mergeReplyEnabled) {
-                const mergeRand = Math.random() * 100;
-                let mergeCount = 1;
                 const p1 = KSS_settingNum(appData.settings.mergeProb1, 50, 0, 100);
                 const p2 = KSS_settingNum(appData.settings.mergeProb2, 30, 0, 100);
                 const p3 = KSS_settingNum(appData.settings.mergeProb3, 20, 0, 100);
-                if (mergeRand < p1) mergeCount = 1;
-                else if (mergeRand < p1 + p2) mergeCount = 2;
-                else if (mergeRand < p1 + p2 + p3) mergeCount = 3;
-                else mergeCount = 1;
+                /* 按 1/2/3 条各自的概率归一化抽样：某个数值越低，对应条数越不容易出现 */
+                const mergeSum = p1 + p2 + p3;
+                let mergeCount = 1;
+                if (mergeSum > 0) {
+                    const mergeRand = Math.random() * mergeSum;
+                    if (mergeRand < p1) mergeCount = 1;
+                    else if (mergeRand < p1 + p2) mergeCount = 2;
+                    else mergeCount = 3;
+                }
                 const selectedTexts = [];
                 for (let i = 0; i < mergeCount; i++) {
                     const word = all[Math.floor(Math.random() * all.length)];
@@ -42070,6 +42192,7 @@ function showChatHeaderMenu(event) {
             { icon: 'fas fa-thumbtack ricon',          label: '置顶联系人',       fn: 'togglePinContact()' },
             { icon: 'fas fa-images ricon',   label: '设置当前聊天背景', fn: 'setCurrentChatBackground()' },
             { icon: 'fas fa-ban ricon',          label: '移除聊天背景',     fn: 'removeCurrentChatBackground()' },
+            { icon: 'fas fa-users-slash ricon',  label: '查看黑名单',       fn: 'openRoleBlacklist()' },
             { icon: 'fas fa-trash ricon',      label: '清空聊天记录',     fn: 'clearCurrentChat()' },
             { icon: 'fas fa-user-minus ricon',       label: '删除联系人',       fn: 'deleteCurrentRole()', danger: true }
         ];
@@ -42089,6 +42212,42 @@ function showChatHeaderMenu(event) {
 }
 window.showChatHeaderMenu = showChatHeaderMenu;
 window.closeChatHeaderMenu = closeChatHeaderMenu;
+
+/* ===== 联系人黑名单（朋友圈互相拉黑）查看 ===== */
+function openRoleBlacklist() {
+    if (currentChatType !== 'role' || !currentRoleId) { showToast('当前没有可用联系人'); return; }
+    const role = appData.roles.find(r => r.id === currentRoleId);
+    if (!role) { showToast('联系人不存在'); return; }
+    const titleEl = document.getElementById('role-blacklist-title');
+    if (titleEl) titleEl.textContent = (role.name || '联系人') + ' 的黑名单';
+    renderRoleBlacklist(role);
+    const modal = document.getElementById('modal-role-blacklist');
+    if (modal) modal.classList.remove('hidden');
+}
+function closeRoleBlacklist() {
+    const modal = document.getElementById('modal-role-blacklist');
+    if (modal) modal.classList.add('hidden');
+}
+function renderRoleBlacklist(role) {
+    const list = document.getElementById('role-blacklist-list');
+    if (!list) return;
+    const ids = (role && Array.isArray(role.blockedRoles)) ? role.blockedRoles : [];
+    const blocked = ids.map(id => appData.roles.find(r => r.id === id)).filter(Boolean);
+    if (blocked.length === 0) {
+        list.innerHTML = '<div class="blacklist-empty">还没有拉黑任何人</div>';
+        return;
+    }
+    list.innerHTML = blocked.map(r => {
+        const av = r.avatar
+            ? '<img class="bl-avatar" src="' + escapeHtml(r.avatar) + '" alt="">'
+            : '<div class="bl-avatar"><i class="fas fa-user" style="color:var(--text-secondary);"></i></div>';
+        return '<div class="blacklist-item">' + av + '<div class="bl-name">' + escapeHtml(r.name || '联系人') + '</div></div>';
+    }).join('');
+    try { if (typeof window.hydrateIcons === 'function') window.hydrateIcons(); } catch (e) {}
+}
+window.openRoleBlacklist = openRoleBlacklist;
+window.closeRoleBlacklist = closeRoleBlacklist;
+window.renderRoleBlacklist = renderRoleBlacklist;
 
 setInterval(updateDesktopClock, 30 * 1000);
 </script>
