@@ -4284,6 +4284,54 @@ var LINE_ICONS = {
             width: 100%;
             box-sizing: border-box;
         }
+        /* ===== 点赞区 + 评论区（微信朋友圈样式） ===== */
+        .moment-social {
+            background: rgba(128,128,128,.10);
+            border-radius: 6px;
+            margin-top: 8px;
+            padding: 6px 9px;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .moment-likes-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 3px 0 4px 0;
+            line-height: 1.45;
+        }
+        .moment-likes-row.has-comments { border-bottom: 1px solid rgba(128,128,128,.22); margin-bottom: 5px; }
+        .moment-likes-row .ml-heart { color: #E64340; flex-shrink: 0; font-size: 13px; line-height: 1.55; }
+        .moment-likes-row .ml-names { color: #576B95; flex: 1; word-break: break-all; }
+        .moment-comments-list { display: flex; flex-direction: column; }
+        .mcl-item { padding: 2px 0; word-break: break-word; line-height: 1.5; }
+        .mcl-item .mcl-name { color: #576B95; font-weight: 600; }
+        .mcl-item .mcl-text { color: var(--text-primary, #333); }
+        .moment-actions .ml-btn.liked, .moment-actions button.liked { color: #E64340; }
+        .moment-actions .ml-btn { display: flex; align-items: center; gap: 3px; }
+        .moment-actions .ml-btn .ml-ico { font-size: 14px; line-height: 1; }
+        .ml-heart-svg { display:block; flex-shrink:0; }
+        /* 详情页：回复某人时的提示条 */
+        .md-reply-bar { display:none; align-items:center; justify-content:space-between;
+            gap:8px; margin-bottom:6px; padding:5px 10px; border-radius:14px;
+            background:rgba(87,107,149,.12); color:#576B95; font-size:12px; cursor:pointer; }
+        .md-reply-bar.show { display:flex; }
+        .md-reply-bar .md-reply-x { font-size:15px; line-height:1; opacity:.65; }
+        .md-input-row { display:flex; align-items:flex-end; gap:8px; }
+        .md-input-row textarea { flex:1; }
+        #detail-comment-input.replying { border-color:#576B95 !important; box-shadow:0 0 0 2px rgba(87,107,149,.16); }
+        @keyframes ml-heart-pop { 0%{transform:scale(1)} 45%{transform:scale(1.32)} 100%{transform:scale(1)} }
+        .ml-btn.liked .ml-heart-svg, .moment-detail-likes-row .ml-heart-svg { animation: ml-heart-pop .38s cubic-bezier(.34,1.56,.64,1); }
+        /* 详情页点赞行 */
+        .moment-detail-likes-row {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 10px 0 10px 52px; font-size: 14px;
+            border-bottom: 1px solid #f5f5f5; position: relative;
+        }
+        .moment-detail-likes-row .ml-heart { color: #E64340; flex-shrink: 0; }
+        .moment-detail-likes-row .ml-names { color: #576B95; flex: 1; word-break: break-all; }
+
         .moment-comment-item {
             display: flex;
             gap: 2px;
@@ -13970,8 +14018,14 @@ hr{height:0;color:inherit;border-top-width:1px}
         <div class="moment-detail-comments" id="moment-detail-comments-block"></div>
     </div>
     <div class="moment-detail-footer safe-bottom" id="moment-detail-footer">
-        <textarea id="detail-comment-input" rows="1" placeholder="评论" oninput="_autoGrowCommentBox(this,96)"></textarea>
-        <button onclick="submitDetailComment()">发送</button>
+        <div class="md-reply-bar" id="md-reply-bar" onclick="clearReplyTo()">
+            <span class="md-reply-txt" id="md-reply-txt">回复</span>
+            <span class="md-reply-x">×</span>
+        </div>
+        <div class="md-input-row">
+            <textarea id="detail-comment-input" rows="1" placeholder="评论" oninput="_autoGrowCommentBox(this,96)"></textarea>
+            <button onclick="submitDetailComment()">发送</button>
+        </div>
     </div>
 </div>
 
@@ -22940,28 +22994,31 @@ async function updateStorageDisplay() {
 }
 
 function autoCleanChats() {
-    const MAX_MESSAGES = 500;
-    const KEEP = 450;
-    for (let id in appData.chats) {
-        if (appData.chats[id] && appData.chats[id].length > MAX_MESSAGES) {
-            appData.chats[id] = appData.chats[id].slice(-KEEP);
+    /* 默认不再裁剪：用户明确要求聊天记录一条都不能丢。
+       仅当单会话超过 20000 条（极端情况，会拖垮渲染）才保留最近 20000 条。 */
+    const MAX_MESSAGES = 20000;
+    const KEEP = 20000;
+    try {
+        for (let id in appData.chats) {
+            if (appData.chats[id] && appData.chats[id].length > MAX_MESSAGES) {
+                appData.chats[id] = appData.chats[id].slice(-KEEP);
+            }
         }
-    }
-    for (let id in appData.groupChats) {
-        if (appData.groupChats[id] && appData.groupChats[id].length > MAX_MESSAGES) {
-            appData.groupChats[id] = appData.groupChats[id].slice(-KEEP);
+        for (let id in appData.groupChats) {
+            if (appData.groupChats[id] && appData.groupChats[id].length > MAX_MESSAGES) {
+                appData.groupChats[id] = appData.groupChats[id].slice(-KEEP);
+            }
         }
-    }
+    } catch (e) {}
 }
 
 function syncAllReplies() {
-    /* 性能优化：字卡库已独立存储，不再把上万条内容复制进 appData。
-       之前每次保存都要序列化超大数据，是应用卡顿的主因。 */
+    /* 不再清空字卡库：此前 rp.length > 200 会整库清空，导致用户导入的字卡全丢。
+       体量问题改为「单独落盘」解决，不做破坏性删除。 */
     try {
         if (!appData.wordbanks) return;
         var rp = appData.wordbanks.replies;
-        /* 清理历史遗留：之前版本把整库字卡（上万条）写进了 appData，必须移除 */
-        if (!Array.isArray(rp) || rp.length > 200) appData.wordbanks.replies = [];
+        if (!Array.isArray(rp)) appData.wordbanks.replies = [];
     } catch (e) {}
 }
 
@@ -23175,8 +23232,9 @@ document.addEventListener('visibilitychange', function () {
 async function saveDataImmediately() {
     try {
         autoCleanChats();
-        Object.keys(appData.chats).forEach(k => { if (appData.chats[k].length > 500) appData.chats[k] = appData.chats[k].slice(-450); });
-        Object.keys(appData.groupChats).forEach(k => { if (appData.groupChats[k].length > 500) appData.groupChats[k] = appData.groupChats[k].slice(-450); });
+        /* 上限放宽到 20000，不再把用户的聊天记录裁掉 */
+        Object.keys(appData.chats).forEach(k => { if (appData.chats[k] && appData.chats[k].length > 20000) appData.chats[k] = appData.chats[k].slice(-20000); });
+        Object.keys(appData.groupChats).forEach(k => { if (appData.groupChats[k] && appData.groupChats[k].length > 20000) appData.groupChats[k] = appData.groupChats[k].slice(-20000); });
         syncAllReplies();
         const bgObj = appData.appearance?.backgrounds;
         const hasBackgrounds = bgObj && Object.values(bgObj).some(v => v);
@@ -23184,6 +23242,8 @@ async function saveDataImmediately() {
         if (hasBackgrounds) {
             dataToSave = JSON.parse(JSON.stringify(appData));
             delete dataToSave.appearance.backgrounds;
+            /* 背景图单独落盘（不再随主数据一起丢弃），刷新后仍在 */
+            try { await store.setItem('appBackgrounds', bgObj); } catch (e) {}
         } else {
             dataToSave = appData;
         }
@@ -23599,6 +23659,14 @@ function pickRandomWordCards(min, max) {
 async function loadData() {
     try {
         let stored = await store.getItem('appData');
+        /* 背景图单独存储，加载时合并回来（避免主数据每次序列化大图） */
+        try {
+            const bg = await store.getItem('appBackgrounds');
+            if (bg && typeof bg === 'object') {
+                appData.appearance = appData.appearance || {};
+                appData.appearance.backgrounds = Object.assign({}, appData.appearance.backgrounds || {}, bg);
+            }
+        } catch (e) {}
         /* 主存储缺失（首次 / IndexedDB 未落盘）时用同步镜像兜底，避免刷新后数据丢失 */
         if (!stored) {
             const m = _readMirror();
@@ -36339,6 +36407,62 @@ function refreshVisibleMomentList() {
 }
 window.refreshVisibleMomentList = refreshVisibleMomentList;
 
+/* ===== 朋友圈点赞区 / 评论区（微信样式） ===== */
+function momentLikeNames(moment) {
+    return (moment.likes || []).map(function (id) {
+        if (id === 'me') return (appData.userProfile && appData.userProfile.nickname) || '我';
+        const r = appData.roles.find(function (x) { return x.id === id; });
+        return r ? (r.name || '某人') : '某人';
+    });
+}
+function momentCommenterName(roleId) {
+    if (roleId === 'me') return (appData.userProfile && appData.userProfile.nickname) || '我';
+    const r = appData.roles.find(function (x) { return x.id === roleId; });
+    return r ? (r.name || '未知') : '未知';
+}
+/* 生成「点赞行 + 评论列表」区块：有点赞或有评论时才输出 */
+/* ===== 点赞爱心：统一用 SVG，避免 ♡/♥ 在不同字体下渲染不一致 ===== */
+const HEART_PATH = 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
+/* on=true → 实心红心；on=false → 空心描边 */
+function heartSVG(on, size) {
+    const w = size || 15;
+    if (on) {
+        return '<svg class="ml-heart-svg" viewBox="0 0 24 24" width="' + w + '" height="' + w +
+            '" fill="#E64340" aria-hidden="true"><path d="' + HEART_PATH + '"/></svg>';
+    }
+    return '<svg class="ml-heart-svg" viewBox="0 0 24 24" width="' + w + '" height="' + w +
+        '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="' + HEART_PATH + '"/></svg>';
+}
+window.heartSVG = heartSVG;
+
+function momentSocialHTML(moment) {
+    const names = momentLikeNames(moment);
+    const comments = moment.comments || [];
+    if (!names.length && !comments.length) return '';
+    let html = '<div class="moment-social">';
+    if (names.length) {
+        html += '<div class="moment-likes-row' + (comments.length ? ' has-comments' : '') + '">' +
+                '<span class="ml-heart">' + heartSVG(true, 13) + '</span>' +
+                '<span class="ml-names">' + names.map(escapeHtml).join('\u3001') + '</span></div>';
+    }
+    if (comments.length) {
+        html += '<div class="moment-comments-list">';
+        comments.forEach(function (c) {
+            const nm = momentCommenterName(c.roleId);
+            const txt = c.replyTo
+                ? ('\u56de\u590d ' + c.replyTo.roleName + '\uff1a' + c.content)
+                : c.content;
+            html += '<div class="mcl-item"><span class="mcl-name">' + escapeHtml(nm) +
+                    '</span><span class="mcl-name">\uff1a</span><span class="mcl-text">' +
+                    escapeHtml(txt) + '</span></div>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+window.momentSocialHTML = momentSocialHTML;
+
 function renderMomentList(filter = 'all', opts = {}) {
     const container = document.getElementById(opts.containerId || 'moment-list');
     if (!container) return;
@@ -36390,26 +36514,8 @@ function renderMomentList(filter = 'all', opts = {}) {
             const isLiked = moment.likes && moment.likes.includes('me');
             const likeCount = moment.likes ? moment.likes.length : 0;
             const commentCount = moment.comments ? moment.comments.length : 0;
-            let likeText = '';
-            if (likeCount > 0) {
-                const firstLikeId = moment.likes[0];
-                let firstName = '';
-                if (firstLikeId === 'me') firstName = appData.userProfile?.nickname || '我';
-                else {
-                    const likeRole = appData.roles.find(r => r.id === firstLikeId);
-                    firstName = likeRole?.name || '某人';
-                }
-                if (likeCount === 1) {
-                    likeText = `<span style="color:#E64340;">❤️</span> <span style="color:#576B95;">${escapeHtml(firstName)}</span>`;
-                } else {
-                    likeText = `<span style="color:#E64340;">❤️</span> <span style="color:#576B95;">${escapeHtml(firstName)}</span> 等${likeCount}人`;
-                }
-                if (!isLiked) {
-                    likeText = `<span style="color:#999;">♡</span> ${likeText}`;
-                }
-            } else {
-                likeText = '<span style="color:#999;">♡</span> 赞';
-            }
+            /* 按钮只显示赞状态；点赞名单统一放到下方 .moment-social 区块 */
+            const likeText = '<span class="ml-ico">' + heartSVG(isLiked, 15) + '</span> 赞';
             let cardHTML = `
                 <div class="moment-header">
                     <img src="${role.avatar}" alt="${escapeHtml(role.name)}">
@@ -36439,29 +36545,10 @@ function renderMomentList(filter = 'all', opts = {}) {
             }
             cardHTML += `<div class="moment-time">${fullDate} ${timeStr}</div>`;
             cardHTML += `<div class="moment-actions">
-                <button class="${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleMomentLike('${moment.id}')">${likeText}</button>
+                <button class="ml-btn${isLiked ? ' liked' : ''}" onclick="event.stopPropagation(); toggleMomentLike('${moment.id}')">${likeText}</button>
                 <button onclick="event.stopPropagation(); openCommentModal('${moment.id}')">💬 ${commentCount > 0 ? commentCount : '评论'}</button>
             </div>`;
-            if (moment.comments && moment.comments.length > 0) {
-                cardHTML += '<div class="moment-comments">';
-                const lastComment = moment.comments[moment.comments.length - 1];
-                let lastCommenter = '';
-                if (lastComment.roleId === 'me') {
-                    lastCommenter = appData.userProfile?.nickname || '我';
-                } else {
-                    const commenterRole = appData.roles.find(r => r.id === lastComment.roleId);
-                    lastCommenter = commenterRole?.name || '未知';
-                }
-                let previewText;
-                if (lastComment.replyTo) {
-                    previewText = `${escapeHtml(lastCommenter)} 回复 ${escapeHtml(lastComment.replyTo.roleName)}：${escapeHtml(lastComment.content)}`;
-                } else {
-                    previewText = `${escapeHtml(lastCommenter)}：${escapeHtml(lastComment.content)}`;
-                }
-                cardHTML += `<div class="moment-comment-item"><span class="comment-author" style="color:#576B95;">${previewText}</span></div>`;
-                if (moment.comments.length > 1) cardHTML += `<div class="moment-comment-item" style="color:#aaa;font-size:12px;">共 ${moment.comments.length} 条评论</div>`;
-                cardHTML += '</div>';
-            }
+            cardHTML += momentSocialHTML(moment);
             cardHTML += `</div>`;
             card.innerHTML = cardHTML;
             const av = card.querySelector('.moment-header img');
@@ -36548,7 +36635,7 @@ function showMomentDetail(momentId) {
     }
     postHTML += `<div class="moment-time" style="font-size:12px;color:#aaa;margin-top:6px;">${fullDate} ${timeStr}</div>
         <div class="moment-actions" style="display:flex;gap:20px;margin-top:6px;">
-            <button class="${isLiked ? 'liked' : ''}" onclick="toggleMomentLike('${moment.id}')" style="background:none;border:none;font-size:13px;cursor:pointer;color:${isLiked?'#E64340':'#576B95'};">${likeText}</button>
+            <button class="ml-btn${isLiked ? ' liked' : ''}" onclick="toggleMomentLike('${moment.id}')" style="background:none;border:none;font-size:13px;cursor:pointer;color:${isLiked?'#E64340':'#576B95'}"><span class="ml-ico">${heartSVG(isLiked, 15)}</span> 赞</button>
             <button onclick="openCommentModalFromDetail('${moment.id}')" style="background:none;border:none;font-size:13px;color:#576B95;cursor:pointer;">💬 ${commentCount > 0 ? commentCount : '评论'}</button>
         </div>`;
     postHTML += `</div></div>`;
@@ -36561,6 +36648,14 @@ function showMomentDetail(momentId) {
     }
     const commentsBlock = document.getElementById('moment-detail-comments-block');
     commentsBlock.innerHTML = '';
+    const _dLikes = momentLikeNames(moment);
+    if (_dLikes.length) {
+        const lr = document.createElement('div');
+        lr.className = 'moment-detail-likes-row';
+        lr.innerHTML = '<span class="ml-heart">' + heartSVG(true, 13) + '</span><span class="ml-names">' +
+            _dLikes.map(escapeHtml).join('\u3001') + '</span>';
+        commentsBlock.appendChild(lr);
+    }
     if (moment.comments) {
         moment.comments.forEach((comment, index) => {
             let commenterName = '';
@@ -36594,7 +36689,12 @@ function showMomentDetail(momentId) {
             commentDiv.innerHTML = `
                 <img class="comment-avatar" src="${commenterAvatar}" alt="${escapeHtml(commenterName)}">
                 <div class="comment-body">${bodyHTML}</div>
-                <button class="comment-reply-btn" onclick="event.stopPropagation(); startReplyToComment('${comment.roleId}', '${escapeHtml(commenterName)}', '${comment.id || ''}')">回复</button>`;
+                <button class="comment-reply-btn" onclick="event.stopPropagation(); startReplyToCommentByIdx(${index})">回复</button>`;
+            /* 点评论条目本身 = 回复 TA（点头像除外，那是进 TA 主页） */
+            commentDiv.onclick = function (e) {
+                if (e.target.closest('.comment-avatar')) return;
+                startReplyToCommentByIdx(index);
+            };
             addCommentLongPress(commentDiv, moment, index);
             const _cAv = commentDiv.querySelector('.comment-avatar');
             if (_cAv && comment.roleId && comment.roleId !== currentContactMomentRoleId && typeof openContactMoments === 'function') {
@@ -36634,14 +36734,50 @@ function addCommentLongPress(el, moment, commentIndex) {
     el.addEventListener('touchend', () => clearTimeout(timer));
     el.addEventListener('touchmove', () => clearTimeout(timer));
 }
+/* 按索引回复：避免昵称里的引号破坏内联 onclick，并自动唤起输入框 */
+function startReplyToCommentByIdx(idx) {
+    const moment = appData.moments.find(m => m.id === currentDetailMomentId);
+    if (!moment || !moment.comments || !moment.comments[idx]) return;
+    const c = moment.comments[idx];
+    const nm = momentCommenterName(c.roleId);
+    startReplyToComment(c.roleId, nm, c.id || '');
+    /* 滚动到底部，保证输入框在可视区（手机端键盘弹出时不遮挡） */
+    try {
+        const body = document.getElementById('moment-detail-scroll');
+        if (body) setTimeout(function () { body.scrollTop = body.scrollHeight; }, 60);
+    } catch (e) {}
+}
+window.startReplyToCommentByIdx = startReplyToCommentByIdx;
+
 function startReplyToComment(roleId, roleName, commentId) {
     currentReplyingTo = { roleId, roleName, commentId };
     const input = document.getElementById('detail-comment-input');
     input.placeholder = `回复 ${roleName}：`;
     input.value = '';
+    input.classList.add('replying');
+    /* 提示条：让用户清楚「正在回复谁」，点一下可取消 */
+    try {
+        const bar = document.getElementById('md-reply-bar');
+        const txt = document.getElementById('md-reply-txt');
+        if (bar && txt) { txt.textContent = '回复 ' + roleName + '：'; bar.classList.add('show'); }
+    } catch (e) {}
     _autoGrowCommentBox(input, 96);
     input.focus();
+    try {
+        const body = document.getElementById('moment-detail-scroll');
+        if (body) setTimeout(function () { body.scrollTop = body.scrollHeight; }, 60);
+    } catch (e) {}
 }
+function clearReplyTo() {
+    currentReplyingTo = null;
+    try {
+        const bar = document.getElementById('md-reply-bar');
+        if (bar) bar.classList.remove('show');
+        const input = document.getElementById('detail-comment-input');
+        if (input) { input.classList.remove('replying'); input.placeholder = '评论'; }
+    } catch (e) {}
+}
+window.clearReplyTo = clearReplyTo;
 function closeMomentDetail() {
     document.getElementById('page-moment-detail').classList.remove('active');
     currentDetailMomentId = null;
@@ -36729,7 +36865,12 @@ function submitDetailComment() {
             commentId: currentReplyingTo.commentId
         };
         currentReplyingTo = null;
+        input.classList.remove('replying');
         input.placeholder = '评论';
+        try {
+            const bar = document.getElementById('md-reply-bar');
+            if (bar) bar.classList.remove('show');
+        } catch (e) {}
     }
     moment.comments.push(newComment);
     moment.commenters = moment.commenters || [];
@@ -36943,7 +37084,22 @@ async function submitMoment() {
     }
     appData.moments.push(moment); await saveData(); closePostMoment(); renderMomentList(currentMomentFilter); showToast('动态已发表');
 }
-function toggleMomentLike(momentId) { const moment = appData.moments.find(m => m.id === momentId); if (!moment) return; if (!moment.likes) moment.likes = []; const idx = moment.likes.indexOf('me'); if (idx >= 0) { moment.likes.splice(idx, 1); } else { moment.likes.push('me'); } debouncedSaveData(); if (document.getElementById('page-moments').classList.contains('active')) { renderMomentList(currentMomentFilter); } else if (document.getElementById('page-moment-detail').classList.contains('active')) { showMomentDetail(momentId); } else if (document.getElementById('page-contact-moments').classList.contains('active')) { refreshVisibleMomentList(); } }
+function toggleMomentLike(momentId) {
+    const moment = appData.moments.find(m => m.id === momentId);
+    if (!moment) return;
+    if (!moment.likes) moment.likes = [];
+    const idx = moment.likes.indexOf('me');
+    if (idx >= 0) { moment.likes.splice(idx, 1); } else { moment.likes.push('me'); }
+    debouncedSaveData();
+    /* 详情页优先，其次联系人朋友圈页，最后兜底刷朋友圈列表 */
+    if (document.getElementById('page-moment-detail').classList.contains('active')) {
+        showMomentDetail(momentId);
+    } else if (document.getElementById('page-contact-moments').classList.contains('active')) {
+        refreshVisibleMomentList();
+    } else {
+        renderMomentList(currentMomentFilter);
+    }
+}
 function generateAutoMoment(role) {
     const typeRand = Math.random() * 100; let type, images, musicId, bookId;
     /* 联系人自己的表情库（聊天界面加号面板「对方表情库」），会话级优先、全局兜底 */
