@@ -10211,6 +10211,31 @@ var LINE_ICONS = {
         .pf-rl-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; }
         .pf-rl-slide.on { opacity: 1; }
         .pf-rl-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* —— 完整显示：不裁切，长图也能看全（留白用相纸色填底）—— */
+        .pf-fit-contain .pf-rl-slide img,
+        .pf-fit-contain .pf-pola img,
+        .pf-fit-contain .pf-g-grid img,
+        .pf-fit-contain .pf-c-cover img,
+        .pf-fit-contain .pf-c-wideimg img,
+        .pf-fit-contain .pf-f-polaimg img,
+        .pf-fit-contain .pf-f-roundimg img,
+        .pf-fit-contain .pf-m-img img,
+        .pf-fit-contain .pf-d-main img,
+        .pf-fit-contain .pf-v-pola img,
+        .pf-fit-contain .pf-v-sq img,
+        .pf-fit-contain .pf-t-glass img,
+        .pf-fit-contain .pf-t-sq img,
+        .pf-fit-contain .pf-k-img img { object-fit: contain !important; }
+        .pf-fit-contain .pf-rl-stage { background: #FBFBFB; }
+        .pf-fit-contain .pf-pola, .pf-fit-contain .pf-g-grid,
+        .pf-fit-contain .pf-c-cover, .pf-fit-contain .pf-c-wide,
+        .pf-fit-contain .pf-f-pola, .pf-fit-contain .pf-f-round,
+        .pf-fit-contain .pf-m-tall, .pf-fit-contain .pf-m-sq, .pf-fit-contain .pf-m-wide,
+        .pf-fit-contain .pf-d-main, .pf-fit-contain .pf-v-pola, .pf-fit-contain .pf-v-sq,
+        .pf-fit-contain .pf-t-glass, .pf-fit-contain .pf-t-sq, .pf-fit-contain .pf-k-img { background: #FBFBFB; }
+        /* 长图时竖框更高，让图片有足够展示空间 */
+        .pf-rl-tall .pf-rl-stage { left: 6%; right: 6%; top: 5%; bottom: 12%; }
+        .pf-rl-frame { transition: none; }
         /* 十个指示点 */
         .pf-rl-dots { position: absolute; left: 0; right: 0; bottom: -13%; height: 10%;
             display: flex; justify-content: center; align-items: center; gap: 4px; z-index: 5;
@@ -52596,6 +52621,32 @@ function pfPickImage(widgetId, slotIdx) {
 }
 window.pfPickImage = pfPickImage;
 
+/* 切换显示方式：完整显示 / 裁切填充 */
+function pfSetFitMode(widgetId, mode) {
+    const w = pfFindWidget(widgetId);
+    if (!w) return;
+    w.fitMode = (mode === 'cover') ? 'cover' : 'contain';
+    try { debouncedSaveData(); } catch (e) {}
+    renderDesktopWidgets();
+    try { if (typeof pfStartSlides === 'function') pfStartSlides(); } catch (e) {}
+    try { if (typeof pfRenderSlotPanel === 'function') pfRenderSlotPanel(w); } catch (e) {}
+    try { if (typeof updateWidgetPreview === 'function') updateWidgetPreview(); } catch (e) {}
+}
+window.pfSetFitMode = pfSetFitMode;
+
+/* 切换十图轮播的框比例（更高的框更适合长图） */
+function pfSetReelAspect(widgetId, aspectId) {
+    const w = pfFindWidget(widgetId);
+    if (!w) return;
+    w.reelAspect = aspectId;
+    try { debouncedSaveData(); } catch (e) {}
+    renderDesktopWidgets();
+    try { if (typeof pfStartSlides === 'function') pfStartSlides(); } catch (e) {}
+    try { if (typeof pfRenderSlotPanel === 'function') pfRenderSlotPanel(w); } catch (e) {}
+    try { if (typeof updateWidgetPreview === 'function') updateWidgetPreview(); } catch (e) {}
+}
+window.pfSetReelAspect = pfSetReelAspect;
+
 /* 多选上传：一次选多张，从起始槽位开始依次填充（超出槽位数自动停止） */
 function pfPickImages(widgetId, startSlot) {
     const w = pfFindWidget(widgetId);
@@ -52627,8 +52678,24 @@ async function pfHandleFilePicked(input) {
         /* —— 单张：走裁剪器 —— */
         const file = files[0];
         const slot = def.slots[pend.slot] || def.slots[0];
+        const _keepWhole = (typeof pfGetFitMode === 'function') ? (pfGetFitMode(w) === 'contain') : false;
         try { showToast('处理中...'); } catch (e) {}
         try {
+            if (_keepWhole) {
+                /* 完整显示模式：不动刀，整张压缩后存入，长图也保留全貌 */
+                const dataUrl = await pfAutoCrop(file, slot.aspect || 1, slot.cropW || 520, true);
+                if (!dataUrl) return;
+                const im2 = pfGetImages(w);
+                im2[pend.slot] = dataUrl;
+                w.images = im2;
+                try { await debouncedSaveData(); } catch (e) {}
+                renderDesktopWidgets();
+                try { if (typeof pfStartSlides === 'function') pfStartSlides(); } catch (e) {}
+                try { if (typeof updateWidgetPreview === 'function' && editingWidgetId === w.id) updateWidgetPreview(); } catch (e) {}
+                try { if (typeof pfRenderSlotPanel === 'function' && editingWidgetId === w.id) pfRenderSlotPanel(w); } catch (e) {}
+                showToast(slot.label + ' 已更新（完整显示）');
+                return;
+            }
             const res = await cropImageFile(file, { aspect: slot.aspect, maxWidth: slot.cropW || 420, quality: 0.85 });
             if (!res || res.canceled) return;
             const imgs = pfGetImages(w);
@@ -52661,7 +52728,8 @@ async function pfHandleFilePicked(input) {
         const slot = def.slots[idx];
         if (!slot) break;
         try {
-            const dataUrl = await pfAutoCrop(use[n], slot.aspect || 1, slot.cropW || 420);
+            const _keep = (typeof pfGetFitMode === 'function') ? (pfGetFitMode(w) === 'contain') : false;
+            const dataUrl = await pfAutoCrop(use[n], slot.aspect || 1, slot.cropW || 420, _keep);
             if (dataUrl) { imgs[idx] = dataUrl; ok++; }
         } catch (err) { console.warn('第 ' + (idx + 1) + ' 张失败', err); }
     }
@@ -52677,7 +52745,7 @@ async function pfHandleFilePicked(input) {
 window.pfHandleFilePicked = pfHandleFilePicked;
 
 /* 多选时的自动裁剪：按目标比例居中裁切并压缩，不弹窗打扰 */
-function pfAutoCrop(file, aspect, maxW) {
+function pfAutoCrop(file, aspect, maxW, keepWhole) {
     return new Promise(function (resolve) {
         const reader = new FileReader();
         reader.onload = function () {
@@ -52686,11 +52754,15 @@ function pfAutoCrop(file, aspect, maxW) {
                 try {
                     const sw = img.naturalWidth, sh = img.naturalHeight;
                     if (!sw || !sh) return resolve('');
-                    /* 居中裁出目标比例的最大区域 */
-                    let cw = sw, ch = Math.round(sw / aspect);
-                    if (ch > sh) { ch = sh; cw = Math.round(sh * aspect); }
-                    const sx = Math.round((sw - cw) / 2), sy = Math.round((sh - ch) / 2);
-                    const scale = Math.min(1, (maxW || 420) / cw);
+                    let cw = sw, ch = sh;
+                    if (!keepWhole) {
+                        /* 居中裁出目标比例的最大区域 */
+                        cw = sw; ch = Math.round(sw / aspect);
+                        if (ch > sh) { ch = sh; cw = Math.round(sh * aspect); }
+                    }
+                    const sx = keepWhole ? 0 : Math.round((sw - cw) / 2);
+                    const sy = keepWhole ? 0 : Math.round((sh - ch) / 2);
+                    const scale = Math.min(1, (maxW || 420) / Math.max(cw, ch));
                     const dw = Math.max(1, Math.round(cw * scale));
                     const dh = Math.max(1, Math.round(ch * scale));
                     const cv = document.createElement('canvas');
@@ -52812,7 +52884,9 @@ function renderDesktopWidgets() {
         const isMP = (typeof MUSIC_PLAYER_TYPES !== 'undefined') && w.type &&
             MUSIC_PLAYER_TYPES.find(function (t) { return t.id === w.type; });
         /* 横版播放器用独立宽高，避免被压成正方形 */
-        let bw = s, bh = pfDef2 ? Math.round(s * (pfDef2.ratio || 1)) : s;
+        const _reelRatio = (typeof pfGetReelRatio === 'function') ? pfGetReelRatio(w) : null;
+        const _effRatio = _reelRatio || (pfDef2 ? (pfDef2.ratio || 1) : 1);
+        let bw = s, bh = pfDef2 ? Math.round(s * _effRatio) : s;
         if (isMP) {
             bw = w.w || s || 208;
             bh = w.h || Math.round(bw * 0.625);
@@ -52829,7 +52903,8 @@ function renderDesktopWidgets() {
         el.style.left = x + 'px';
         el.style.top = y + 'px';
         const pfDef = (typeof pfGetDef === 'function') ? pfGetDef(w.type) : null;
-        const h = pfDef ? Math.round(s * (pfDef.ratio || 1)) : s;
+        const _r2 = (typeof pfGetReelRatio === 'function') ? pfGetReelRatio(w) : null;
+        const h = pfDef ? Math.round(s * (_r2 || pfDef.ratio || 1)) : s;
         if (pfDef && w.bgMode === 'transparent') { el.style.background = 'transparent'; el.style.boxShadow = 'none'; }
         el.style.width = bw + 'px';
         el.style.height = bh + 'px';
@@ -53122,6 +53197,26 @@ function pfGetImages(w) {
     if (!Array.isArray(w.images)) w.images = [];
     return w.images;
 }
+function pfGetFitMode(w) {
+    if (w && w.fitMode === 'cover') return 'cover';
+    if (w && w.fitMode === 'contain') return 'contain';
+    return (w && w.type === 'pf_reel') ? 'contain' : 'cover';
+}
+window.pfGetFitMode = pfGetFitMode;
+var PF_REEL_ASPECTS = [
+    { id: '1.16', name: '标准 1:1.16', ratio: 1.16 },
+    { id: '1.35', name: '稍高 3:4', ratio: 1.35 },
+    { id: '1.6',  name: '竖高 5:8', ratio: 1.6 },
+    { id: '1.9',  name: '特长长图', ratio: 1.9 }
+];
+window.PF_REEL_ASPECTS = PF_REEL_ASPECTS;
+function pfGetReelRatio(w) {
+    if (!w || w.type !== 'pf_reel') return null;
+    if (typeof PF_REEL_ASPECTS === 'undefined') return null;
+    var a = PF_REEL_ASPECTS.filter(function (x) { return x.id === String(w.reelAspect || ''); })[0];
+    return a ? a.ratio : null;
+}
+window.pfGetReelRatio = pfGetReelRatio;
 window.PHOTO_FRAME_TYPES = PHOTO_FRAME_TYPES;
 window.pfIsFrame = pfIsFrame;
 window.pfGetDef = pfGetDef;
@@ -53163,6 +53258,10 @@ function pfFrameHTML(w) {
     const imgs = pfGetImages(w);
     const i = function (n) { return imgs[n] || ''; };
     let body = '';
+    /* 完整显示 / 裁切填充：加在最外层，配合 CSS 的 object-fit: contain */
+    const _fitCls = (typeof pfGetFitMode === 'function') ? pfGetFitMode(w) : 'cover';
+    const _tallCls = (w.type === 'pf_reel' && String(w.reelAspect || '') === '1.9') ? ' pf-rl-tall' : '';
+    const _wrapCls = (_fitCls === 'contain' ? ' pf-fit-contain' : ' pf-fit-cover') + _tallCls;
 
     if (def.id === 'pf_polaroid') {
         body =
@@ -53283,7 +53382,7 @@ function pfFrameHTML(w) {
             '</div>';
     }
     const mode = w.bgMode || 'follow';
-    return '<div class="dw-pf pf-' + (def.theme || 'cream') + ' pf-bg-' + mode + '">' + body + '</div>';
+    return '<div class="dw-pf pf-' + (def.theme || 'cream') + ' pf-bg-' + mode + _wrapCls + '">' + body + '</div>';
 }
 window.pfFrameHTML = pfFrameHTML;
 
@@ -53892,7 +53991,37 @@ function pfRenderSlotPanel(w) {
     }
 
     const filled = imgs.filter(function (x) { return !!x; }).length;
+    const _fitNow = (typeof pfGetFitMode === 'function') ? pfGetFitMode(w) : 'cover';
+    const _fitRow =
+        '<span class="cs-grid-lbl">显示方式</span>' +
+        '<div class="pf-slot-list" style="margin-bottom:8px;">' +
+            '<div class="pf-slot-item" style="display:flex;gap:6px;">' +
+                '<button type="button" style="flex:1;' + (_fitNow === 'contain' ? 'background:var(--accent-color);color:#fff;' : '') + '"' +
+                    ' onclick="pfSetFitMode(editingWidgetId,\'contain\')">完整显示（长图看全）</button>' +
+                '<button type="button" style="flex:1;' + (_fitNow === 'cover' ? 'background:var(--accent-color);color:#fff;' : '') + '"' +
+                    ' onclick="pfSetFitMode(editingWidgetId,\'cover\')">裁切填充</button>' +
+            '</div>' +
+            '<div class="pf-slot-tip">完整显示：不裁切，长图/全景图可完整看到（会有留白）</div>' +
+        '</div>';
+
+    let _reelRow = '';
+    if (w.type === 'pf_reel') {
+        const _cur = String(w.reelAspect || '1.16');
+        let _btns = '';
+        (window.PF_REEL_ASPECTS || []).forEach(function (a) {
+            _btns += '<button type="button" style="flex:1;font-size:11px;padding:6px 2px;' +
+                (_cur === a.id ? 'background:var(--accent-color);color:#fff;' : '') + '"' +
+                ' onclick="pfSetReelAspect(editingWidgetId,\'' + a.id + '\')">' + a.name.replace(/（.*?）/, '') + '</button>';
+        });
+        _reelRow =
+            '<span class="cs-grid-lbl">框比例（长图选更高）</span>' +
+            '<div class="pf-slot-list" style="margin-bottom:8px;">' +
+                '<div class="pf-slot-item" style="display:flex;gap:4px;">' + _btns + '</div>' +
+            '</div>';
+    }
+
     box.innerHTML =
+        _fitRow + _reelRow +
         '<span class="cs-grid-lbl">照片（' + def.slots.length + ' 张 · 已填 ' + filled + '）</span>' +
         (def.slots.length > 1 ? (
             '<div class="pf-multi-row">' +
@@ -53944,7 +54073,8 @@ function updateWidgetPreview() {
         preview.style.height = Math.round(s * 0.625) + 'px';
     } else {
         preview.style.width = s + 'px';
-        preview.style.height = (pfDef ? Math.round(s * (pfDef.ratio || 1)) : s) + 'px';
+        const _r3 = (typeof pfGetReelRatio === 'function') ? pfGetReelRatio(w) : null;
+        preview.style.height = (pfDef ? Math.round(s * (_r3 || pfDef.ratio || 1)) : s) + 'px';
     }
     preview.style.transform = 'rotate(' + r + 'deg)';
     preview.innerHTML = widgetContentHTML(w);
