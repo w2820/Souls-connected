@@ -6731,12 +6731,14 @@ var LINE_ICONS = {
         /* ===== 卡牌详情（底部面板） ===== */
         #modal-card-detail {
             position: fixed; inset: 0; z-index: 1600;
-            background: rgba(0, 0, 0, 0.45);
-            -webkit-backdrop-filter: blur(4px);
-            backdrop-filter: blur(4px);
+            /* 去掉全屏 backdrop blur：内容长、滚动时手机端会明显掉帧 */
+            background: rgba(0, 0, 0, 0.55);
             display: flex; align-items: flex-end; justify-content: center;
         }
         #modal-card-detail.hidden { display: none; }
+        /* 长内容面板：限制绘制范围，滚动更顺 */
+        .card-detail-sheet { contain: layout paint style; }
+        .card-detail-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; contain: content; }
         .card-detail-sheet {
             width: 100%; max-width: 460px;
             max-height: 80vh; overflow-y: auto;
@@ -9134,6 +9136,14 @@ var LINE_ICONS = {
         .cd-sec .card-detail-field:first-child { margin-top: 0 !important; }
 
         /* 建议句 */
+        .cd-sec { margin-top: 12px; border-radius: 12px; border: 1px solid var(--border-color);
+            background: var(--bg-secondary); padding: 10px 12px; }
+        .cd-sec-h { font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+        .cd-sec-tip { font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; }
+        .cd-obj-row { display: flex; gap: 8px; padding: 5px 0; border-top: 1px dashed var(--border-color); }
+        .cd-obj-row:first-of-type { border-top: none; }
+        .cd-obj-k { flex-shrink: 0; width: 96px; font-size: 11.5px; font-weight: 600; color: #4A7FA5; line-height: 1.5; }
+        .cd-obj-v { flex: 1; font-size: 11.5px; color: var(--text-secondary); line-height: 1.65; }
         .cd-advice {
             margin-top: 12px; padding: 11px 12px; border-radius: 12px;
             background: var(--accent-light, #EAF2FA);
@@ -20921,6 +20931,30 @@ const LENORMAND_SPREADS = {
             { n: '④', d: '', gc: 1, gr: 2 }, { n: '⑤核心', d: '', gc: 2, gr: 2 }, { n: '⑥', d: '', gc: 3, gr: 2 },
             { n: '⑦', d: '', gc: 1, gr: 3 }, { n: '⑧', d: '', gc: 2, gr: 3 }, { n: '⑨', d: '', gc: 3, gr: 3 }
         ]
+    },
+    lnm5: {
+        name: '五张线型', n: 5, cols: 5, cat: '日常',
+        hint: '过去 · 现在 · 核心 · 影响 · 结果',
+        tip: '第 3 张是核心，被左右各两张修饰；比三张更细，但不像九宫格那样铺开。',
+        pos: [
+            { n: '过去', d: '事情从何而来' },
+            { n: '现在', d: '当前状态' },
+            { n: '核心', d: '真正的关键' },
+            { n: '影响', d: '什么在左右它' },
+            { n: '结果', d: '会走向哪里' }
+        ]
+    },
+    lnmgt: {
+        name: '大桌法 4×9', n: 36, cols: 9, grid: true, cat: '综合',
+        hint: '36 张全铺：四角定基调，人物牌定位，四邻与骑士法串事件',
+        tip: '这是最有信息量的牌阵，也是最难的。宫位/骑士/镜像属流派技法，各家规则略有差异。',
+        pos: (function () {
+            var arr = [];
+            for (var i = 1; i <= 36; i++) {
+                arr.push({ n: String(i), d: '', gc: ((i - 1) % 9) + 1, gr: Math.floor((i - 1) / 9) + 1 });
+            }
+            return arr;
+        })()
     }
 };
 
@@ -21124,6 +21158,1579 @@ const TAROT_VIEWS = {
     'P13': { story: '王后端坐丰盛花园中，一手持星币、一手轻抚座椅，脚边幼苗与新叶显示她不只拥有资源，也懂得照料生长。她把物质转化为可感知的照顾，而非单纯囤积。5', mind: '你重视实际支持、身体舒适与他人福祉，愿意用行动表达关心。课题是让照顾可持续，不让养育责任吞噬自己的需要', real: '适合园艺、家庭管理、财务支持、营养与健康管理、以资源帮助他人。现实上可是一位踏实、慷慨、有生产力的人，也可能提示你应培养这类能力', soul: '成熟的土元素女王把财富转成生命滋养，课题是让资源服务成长。她提醒丰盛不是只拥有，而是懂得浇水与等待', schools: 'Biddy Tarot 强调养育、务实与提供物质支持；向日葵一类华语资料突出丰饶、踏实与关心；Rachel Pollack 式读法会同时看见女性权威与现实智慧。焦点在慷慨滋养还是物质占有', revMany: '内收型 自我照顾不足、资源收回；延迟型 支持延后；过度型 控制式照顾、过度消费、把爱等同于给钱；另可能是反向显化 从照顾他人转回建立自己的安全', fields: '感情：以行动照顾伴侣；事业：有生产力与支持力；财运：务实理财；健康：营养与照护；家庭：照顾家庭资源；人际：可靠且实际的朋友', caution: '她的丰盛必须与脚边幼苗一起读；只拥有星币却不照料关系，不算完整王后能量', asks: '我如何用具体行动支持他人？我的照顾是否让双方都成长？哪些资源值得持续投入？' },
     'P14': { story: '国王端坐繁茂植物与牛头装饰的王座，一手持星币，整体环境显示长期经营后的稳固成果；他没有像权杖国王那样冲向前方，而是让资源、事业与身体条件进入治理体系。8', mind: '你以能力、纪律与结果获得自信，重视可靠与长期稳定。课题是让成功服务更大系统，不让身份过度绑定财富、地位与控制', real: '适合财务管理、企业经营、长期投资、担任主管、建立可持续系统。现实上可是一位专业、富有与保守的人，也可能提示该采用其工作方式', soul: '土元素在国王成为成熟的资源管理，课题是从拥有转向善用。真正的丰盛包含把价值传递出去，而不只是守住账户', schools: 'Benebell Wen 的Holistic Tarot把国王读成需要依问题、位置与邻牌判断的角色或能量；Biddy Tarot 侧重财富、管理与商业智慧；传统 伟特 牌义强调事业、知识与数学能力。焦点在可靠治理还是物质主义', revMany: '内收型 失去稳定、管理混乱；延迟型 财务或事业决策延后；过度型 贪婪、顽固、用财富控制；另可能是反向显化 从掌控位置退下，重新学习基础', fields: '感情：以稳定与责任经营关系；事业：企业经营者；财运：擅长理财；健康：重视身体与长期保健；家庭：经济支柱；人际：可信赖的现实顾问', caution: '他坐在成果上不代表永远正确；成熟国王的权威应建立在实际能力，而非拥有多少资源', asks: '我管理的资源真正服务于什么目标？现在的制度是否可持续？成功之后，我要把价值传递给谁？ 1 Biddy also described the hand reaching out from the clouds holding the sprouting wand… sprouting wand\'… leaves symbolize \'the potential is alive\'. 2 权杖六象征凯旋、成功与公众的肯定……权杖七象征勇气、韧性……权杖十象征不堪重负的责任……权杖国王象征创业精神、权威与受灵感驱动的行动。 3 圣杯五代表失落、悲伤、失望……圣杯八象征情感的过渡……圣杯九象征情感的满足、愿望的实现……圣杯十象征家庭的幸福、情感的圆满……圣杯国王象征情感的平衡、明智的领导。 4 宝剑三象征痛苦的分离和心灵的痛楚……宝剑四意味着暂时的停滞和反思……宝剑五表示胜利的代价……宝剑八象征着束缚和压迫……宝剑一代表着理智的启示。 5 星币Ace……一个新的财务或事业机会……星币2……灵活周旋……星币3……通过协作和学习精进技艺……星币4……对物质安全的守护……星币7……投入后等待收获……星币9……通过自己的努力实现了物质充裕。 6 Psychologically… a phase of material and emotional self-protection is not a vice but a survival mechanism… The danger is that the walls outlast their purpose. 7 星币五……核心常不是真的山穷水尽，而是独自站在大雪里、无处取暖的不被支撑感；帮助从不缺席，缺的是抬头那一眼。 8 The card is about responsibility reliability and building systems that protect value over time rather than chasing quick gain.' },
 };
+
+/* ===== 雷诺曼组合引擎 =====
+   LN_ROLES：36 张牌的句法角色（名词/形容词/动词）与倾向
+   LN_COMBOS：人工策展的有序对组合（A+B，顺序有意义）
+   每条含 m=稳定含义  d=问题域  alt=可选含义  conf=置信度
+===== */
+var LN_ROLES = {"1":{"noun":"消息/来访","adj":"快速的、传来的","verb":"传来、抵达、启动","tone":"neutral","speed":"fast"},"2":{"noun":"小幸运/短暂机会","adj":"轻松的、短暂的","verb":"带来转机","tone":"positive","speed":"fast"},"3":{"noun":"远行/迁移/贸易","adj":"远距离的、外地的","verb":"离开、驶向、运输","tone":"neutral","speed":"medium"},"4":{"noun":"家庭/住所/根基","adj":"稳定的、私人的","verb":"安顿、归属","tone":"neutral","speed":"slow"},"5":{"noun":"健康/长期成长","adj":"缓慢的、长期的","verb":"生长、扎根","tone":"neutral","speed":"slow"},"6":{"noun":"困惑/不明","adj":"模糊的、可疑的","verb":"遮蔽、混淆","tone":"negative","speed":"medium"},"7":{"noun":"复杂/迂回/竞争","adj":"曲折的、有竞争的","verb":"绕行、周旋","tone":"negative","speed":"medium"},"8":{"noun":"结束/停滞","adj":"终结的、关闭的","verb":"结束、放下","tone":"negative","speed":"medium"},"9":{"noun":"礼物/社交愉悦","adj":"令人愉快的、受欢迎的","verb":"赠予、庆祝","tone":"positive","speed":"fast"},"10":{"noun":"突然切断/决定","adj":"突然的、果断的","verb":"切断、收割、决定","tone":"negative","speed":"fast"},"11":{"noun":"争执/重复","adj":"反复的、冲突的","verb":"争论、重复","tone":"negative","speed":"medium"},"12":{"noun":"对话/焦虑/一对","adj":"交谈的、不安的","verb":"交谈、议论","tone":"neutral","speed":"fast"},"13":{"noun":"孩子/新开始/小","adj":"新的、小的、初级的","verb":"开始、试探","tone":"neutral","speed":"medium"},"14":{"noun":"自保/策略/欺骗","adj":"精明的、需要防备的","verb":"谋算、周旋","tone":"negative","speed":"medium"},"15":{"noun":"资源/权威/掌控","adj":"有力的、强势的","verb":"掌控、提供资源","tone":"neutral","speed":"slow"},"16":{"noun":"希望/愿景/网络","adj":"清晰的、有愿景的","verb":"指引、点亮","tone":"positive","speed":"slow"},"17":{"noun":"转变/提升/搬家","adj":"变化的、递进的","verb":"转变、提升","tone":"neutral","speed":"medium"},"18":{"noun":"朋友/忠诚","adj":"友善的、可靠的","verb":"陪伴、支持","tone":"positive","speed":"slow"},"19":{"noun":"机构/官方/孤立","adj":"官方的、正式的","verb":"规范、隔离","tone":"neutral","speed":"slow"},"20":{"noun":"社交圈/公共场合","adj":"公开的、群体的","verb":"聚会、公开","tone":"neutral","speed":"medium"},"21":{"noun":"阻碍/延迟","adj":"困难的、阻滞的","verb":"阻挡、延缓","tone":"negative","speed":"slow"},"22":{"noun":"选择/分岔","adj":"两难的、可选的","verb":"选择、分开","tone":"neutral","speed":"medium"},"23":{"noun":"损耗/焦虑/侵蚀","adj":"消耗的、令人不安的","verb":"损耗、侵蚀","tone":"negative","speed":"medium"},"24":{"noun":"感情/爱","adj":"有感情的、用心的","verb":"爱、在乎","tone":"positive","speed":"medium"},"25":{"noun":"承诺/合约/循环","adj":"有约束的、循环的","verb":"约定、绑定","tone":"neutral","speed":"slow"},"26":{"noun":"秘密/知识/学习","adj":"未知的、需要研究的","verb":"学习、隐藏","tone":"neutral","speed":"slow"},"27":{"noun":"消息/文件/通知","adj":"书面的、通知的","verb":"通知、传达","tone":"neutral","speed":"fast"},"28":{"noun":"男性当事人","adj":"男性的","verb":"","tone":"neutral","speed":"medium"},"29":{"noun":"女性当事人","adj":"女性的","verb":"","tone":"neutral","speed":"medium"},"30":{"noun":"平和/成熟/长辈","adj":"平和的、成熟的","verb":"安抚、沉淀","tone":"positive","speed":"slow"},"31":{"noun":"成功/明朗/能量","adj":"成功的、明朗的","verb":"照亮、成就","tone":"positive","speed":"medium"},"32":{"noun":"情绪/声誉/暧昧","adj":"感性的、声誉相关的","verb":"感受、映照","tone":"neutral","speed":"medium"},"33":{"noun":"关键/解答/开启","adj":"关键的、确定的","verb":"解开、开启","tone":"positive","speed":"medium"},"34":{"noun":"金钱/生意/流动","adj":"财务的、生意的","verb":"交易、赚钱","tone":"neutral","speed":"medium"},"35":{"noun":"稳定/目标/长期","adj":"稳定的、长期的","verb":"稳固、锚定","tone":"positive","speed":"slow"},"36":{"noun":"重担/宿命/考验","adj":"沉重的、必然的","verb":"承担、承受","tone":"negative","speed":"slow"}};
+
+
+/* ===== 雷诺曼组合引擎 =====
+   LN_ROLES：36 张牌的句法角色（名词/形容词/动词）与倾向
+   LN_COMBOS：人工策展的有序对组合（A+B，顺序有意义）
+   每条含 m=稳定含义  d=问题域  alt=可选含义  conf=置信度
+===== */
+
+var LN_COMBOS = {
+  "1-2": { m: "很快就有小消息，快而轻", d: "timing", conf: "high" },
+  "1-3": { m: "消息来自远方，或出行通知", d: "timing", conf: "high" },
+  "1-4": { m: "家里的消息，或与家有关的通知", d: "timing", conf: "high" },
+  "1-5": { m: "消息需要等，或健康相关的消息", d: "timing", conf: "high" },
+  "1-6": { m: "消息模糊不清、真假难辨，先别急着相信或转发", d: "communication", alt: "也可能是对方还没想清楚就先说了", conf: "high" },
+  "1-7": { m: "消息有弯绕，可能是误导、套话或不坦诚的沟通", d: "communication", alt: "high", conf: "high" },
+  "1-8": { m: "消息终结，或不再有下文", d: "timing", conf: "high" },
+  "1-9": { m: "很快有让人开心的消息", d: "timing", conf: "high" },
+  "1-10": { m: "突然传来的消息，或行程/安排被临时取消", d: "general", conf: "high" },
+  "1-11": { m: "反复的消息，或消息引发争执", d: "timing", conf: "high" },
+  "1-12": { m: "很快会有对话，或消息带来讨论", d: "timing", conf: "high" },
+  "1-13": { m: "关于孩子的新消息，或新的小动态", d: "timing", conf: "high" },
+  "1-14": { m: "需要留心的消息，别全信", d: "timing", conf: "high" },
+  "1-15": { m: "来自权威/老板的消息", d: "timing", conf: "high" },
+  "1-16": { m: "好消息带来希望", d: "timing", conf: "high" },
+  "1-17": { m: "消息带来变动", d: "timing", conf: "high" },
+  "1-18": { m: "朋友的消息", d: "timing", conf: "high" },
+  "1-19": { m: "官方通知很快到", d: "timing", conf: "high" },
+  "1-20": { m: "公开的消息，或社交圈里的通知", d: "timing", conf: "high" },
+  "1-21": { m: "消息被挡住：迟迟不来、被卡在某环节", d: "timing", conf: "high" },
+  "1-22": { m: "消息让你要做选择", d: "timing", conf: "high" },
+  "1-23": { m: "消息带来焦虑，或坏消息的到来", d: "timing", conf: "high" },
+  "1-24": { m: "恋爱消息，或新恋情开始；对方正在向你靠近", d: "love", conf: "high" },
+  "1-25": { m: "关于承诺的消息：邀约、约定、婚期相关通知", d: "love", conf: "high" },
+  "1-26": { m: "需要了解的消息，或还没公开的信息", d: "timing", conf: "high" },
+  "1-27": { m: "消息落地：通知、函件、邮件等书面信息到达", d: "communication", conf: "high" },
+  "1-28": { m: "这位男性传来消息", d: "timing", conf: "high" },
+  "1-29": { m: "这位女性传来消息", d: "timing", conf: "high" },
+  "1-30": { m: "来自长辈的消息，或平和的通知", d: "timing", conf: "high" },
+  "1-31": { m: "明确的好消息，事情有明朗进展", d: "general", conf: "high" },
+  "1-32": { m: "消息引发情绪波动，或关于声誉的消息", d: "timing", conf: "high" },
+  "1-33": { m: "关键消息，答案就要来了", d: "timing", conf: "high" },
+  "1-34": { m: "与钱有关的到账通知、催款或商务邀约", d: "money", conf: "high" },
+  "1-35": { m: "消息确认、稳定下来", d: "timing", conf: "high" },
+  "1-36": { m: "沉重的消息，需要承受", d: "timing", conf: "high" },
+  "2-3": { m: "出行中的小幸运，或短暂的外出机会", d: "general", conf: "high" },
+  "2-4": { m: "家里的小确幸，居家的小开心", d: "general", conf: "high" },
+  "2-5": { m: "健康好转的小迹象", d: "health", conf: "high" },
+  "2-6": { m: "看似的好运其实不明朗，别高兴太早", d: "general", conf: "high" },
+  "2-7": { m: "小运气里有弯绕，别太轻信", d: "general", conf: "high" },
+  "2-8": { m: "小机会结束，或轻松的阶段告一段落", d: "general", conf: "high" },
+  "2-9": { m: "令人愉快的小惊喜，像一份不期而遇的礼物", d: "general", conf: "high" },
+  "2-10": { m: "机会一闪而过，或好运被突然打断", d: "timing", conf: "high" },
+  "2-11": { m: "小争执后雨过天晴", d: "general", conf: "high" },
+  "2-12": { m: "轻松愉快的交谈", d: "general", conf: "high" },
+  "2-13": { m: "孩子带来的小快乐，或小小的开始", d: "general", conf: "high" },
+  "2-14": { m: "好运但要留个心眼", d: "general", conf: "high" },
+  "2-15": { m: "有实力的人给的小机会", d: "general", conf: "high" },
+  "2-16": { m: "小小的希望，让人开心的期待", d: "general", conf: "high" },
+  "2-17": { m: "小变化带来好运", d: "general", conf: "high" },
+  "2-18": { m: "朋友带来的小幸运", d: "general", conf: "high" },
+  "2-19": { m: "机构里的小顺利，流程上的便利", d: "work", conf: "high" },
+  "2-20": { m: "社交场合的小愉快", d: "general", conf: "high" },
+  "2-21": { m: "好运受阻：机会出现但条件不成熟", d: "general", conf: "high" },
+  "2-22": { m: "两个小机会之间选一个", d: "general", conf: "high" },
+  "2-23": { m: "开心被小事损耗", d: "general", conf: "high" },
+  "2-24": { m: "感情里的小甜蜜，轻松愉快的浪漫", d: "love", conf: "high" },
+  "2-25": { m: "小承诺，或短暂的约定", d: "general", conf: "high" },
+  "2-26": { m: "学到的小技巧，或轻松的知识", d: "general", conf: "high" },
+  "2-27": { m: "让人开心的小消息", d: "communication", conf: "high" },
+  "2-28": { m: "这位男性带来好运", d: "general", conf: "high" },
+  "2-29": { m: "这位女性带来好运", d: "general", conf: "high" },
+  "2-30": { m: "安稳的小幸福", d: "general", conf: "high" },
+  "2-31": { m: "小幸运变大明朗，是值得把握的转机", d: "general", conf: "high" },
+  "2-32": { m: "小小的心动，或让人愉快的好感", d: "love", conf: "high" },
+  "2-33": { m: "好运就是关键，机会来了要抓住", d: "general", conf: "high" },
+  "2-34": { m: "小额偏财、零钱进账或临时收益", d: "money", conf: "high" },
+  "2-35": { m: "短暂的好运若能抓住，可以转成稳定", d: "general", alt: "三叶草本身不保证长久，锚给了它落地的可能", conf: "high" },
+  "2-36": { m: "小小的重担里有转机", d: "general", conf: "high" },
+  "3-1": { m: "出行通知，或来自远方的消息", d: "general", conf: "high" },
+  "3-2": { m: "短途出行的小幸运", d: "general", conf: "high" },
+  "3-4": { m: "搬家、迁居，或离开熟悉环境去别处安顿", d: "general", conf: "high" },
+  "3-5": { m: "远行疗养，或健康问题与出行有关", d: "health", conf: "high" },
+  "3-6": { m: "行程方向不明，计划待定", d: "general", conf: "high" },
+  "3-7": { m: "出行有波折，或旅途中的复杂", d: "general", conf: "high" },
+  "3-8": { m: "旅程结束、外派终止，或离开的决定已定", d: "general", conf: "high" },
+  "3-9": { m: "愉快的旅程，或出行收到礼物", d: "general", conf: "high" },
+  "3-10": { m: "突然出发，或行程被临时截断", d: "timing", conf: "high" },
+  "3-11": { m: "旅途中的争执，或行程反复", d: "general", conf: "high" },
+  "3-12": { m: "旅途中的交谈，或关于出行的讨论", d: "general", conf: "high" },
+  "3-13": { m: "带孩子出行，或第一次出远门", d: "general", conf: "high" },
+  "3-14": { m: "出行需谨慎规划，或差旅中的周旋", d: "general", conf: "high" },
+  "3-15": { m: "商务出行，或大人物/资源的移动", d: "general", conf: "high" },
+  "3-16": { m: "远方的希望，或为理想出发", d: "general", conf: "high" },
+  "3-17": { m: "搬迁、换环境，是一次明确的变动", d: "general", conf: "high" },
+  "3-18": { m: "与朋友同行，或去见朋友", d: "general", conf: "high" },
+  "3-19": { m: "公务出差，或跨地区的机构事务", d: "work", conf: "high" },
+  "3-20": { m: "去往社交场合，或出远门参加聚会", d: "general", conf: "high" },
+  "3-21": { m: "行程受阻、计划搁浅，走不成", d: "timing", conf: "high" },
+  "3-22": { m: "在去留之间犹豫：留下还是离开", d: "general", conf: "high" },
+  "3-23": { m: "旅途损耗，或出行让人疲惫", d: "general", conf: "high" },
+  "3-24": { m: "异地恋、远距离感情，或为感情奔波", d: "love", conf: "high" },
+  "3-25": { m: "出行相关的约定，或异地承诺", d: "general", conf: "high" },
+  "3-26": { m: "游学，或去外地学习", d: "general", conf: "high" },
+  "3-27": { m: "出行通知，或旅途中的消息", d: "communication", conf: "high" },
+  "3-28": { m: "这位男性要离开或远行", d: "general", conf: "high" },
+  "3-29": { m: "这位女性要离开或远行", d: "general", conf: "high" },
+  "3-30": { m: "长辈出行，或安顿的长途安排", d: "general", conf: "high" },
+  "3-31": { m: "出行成功，旅程顺利", d: "general", conf: "high" },
+  "3-32": { m: "旅途中的情绪，或为心情出发", d: "general", conf: "high" },
+  "3-33": { m: "出行是解法，或旅程带来答案", d: "general", conf: "high" },
+  "3-34": { m: "外贸生意，或为钱奔波", d: "money", conf: "high" },
+  "3-35": { m: "远方安顿，长期驻外或异地扎根", d: "general", conf: "high" },
+  "4-1": { m: "家里的消息，或家庭事务的通知", d: "general", conf: "high" },
+  "4-2": { m: "家里的小确幸", d: "general", conf: "high" },
+  "4-3": { m: "搬家，或家人出行", d: "general", conf: "high" },
+  "4-5": { m: "家与健康相连：居家休养，或家族体质问题", d: "health", conf: "high" },
+  "4-6": { m: "家庭事务不明，或家里情况看不清", d: "general", conf: "high" },
+  "4-7": { m: "家里有复杂的事，或家庭关系绕", d: "general", conf: "high" },
+  "4-8": { m: "搬家、房屋事务结束，或一段居家生活告终", d: "general", conf: "high" },
+  "4-9": { m: "家里有喜事，或收到家居礼物", d: "general", conf: "high" },
+  "4-10": { m: "家庭突然变动，或搬家决定很急", d: "general", conf: "high" },
+  "4-11": { m: "家中争执、家庭内部反复的矛盾", d: "general", conf: "high" },
+  "4-12": { m: "家里的对话，或与家人的沟通", d: "communication", conf: "high" },
+  "4-13": { m: "家里有孩子，或家庭的新成员", d: "general", conf: "high" },
+  "4-14": { m: "家里需要留个心眼，或家庭事务要谨慎", d: "general", conf: "high" },
+  "4-15": { m: "家庭里的主事者，或家里的资源", d: "general", conf: "high" },
+  "4-16": { m: "对家的希望，或居家生活的愿景", d: "general", conf: "high" },
+  "4-17": { m: "搬家、换住处", d: "general", conf: "high" },
+  "4-18": { m: "家里有可靠的人，或亲友同住的和睦", d: "general", conf: "high" },
+  "4-19": { m: "官方的房产事务，或家庭与机构交涉", d: "general", conf: "high" },
+  "4-20": { m: "家里来客，或家庭聚会", d: "general", conf: "high" },
+  "4-21": { m: "家庭事务受阻，房子/家人方面有难解的结", d: "general", conf: "high" },
+  "4-22": { m: "家庭相关的选择", d: "general", conf: "high" },
+  "4-23": { m: "家里有损耗：漏水、虫害、维修，或家中让人心累", d: "general", conf: "high" },
+  "4-24": { m: "想有个家，或感情进入家庭阶段", d: "love", conf: "high" },
+  "4-25": { m: "家庭承诺：婚约、同居约定、家族责任", d: "love", conf: "high" },
+  "4-26": { m: "在家里学习，或家庭相关的知识", d: "general", conf: "high" },
+  "4-27": { m: "家里的信件，或寄到家的通知", d: "communication", conf: "high" },
+  "4-28": { m: "这位男性与家有关：家人、室友", d: "general", conf: "high" },
+  "4-29": { m: "这位女性与家有关：家人、室友", d: "general", conf: "high" },
+  "4-30": { m: "家庭和睦，或长辈在家", d: "general", conf: "high" },
+  "4-31": { m: "家宅安好、家庭有喜事，或居家状态很舒心", d: "general", conf: "high" },
+  "4-32": { m: "家里的情绪氛围，或家庭声誉", d: "general", conf: "high" },
+  "4-33": { m: "家庭的关键，或回家的答案", d: "general", conf: "high" },
+  "4-34": { m: "家庭财务：家用、房租房贷、家庭开支", d: "money", conf: "high" },
+  "4-35": { m: "稳定的家，长期定居", d: "general", conf: "high" },
+  "4-36": { m: "家庭责任的重担", d: "general", conf: "high" },
+  "5-1": { m: "健康消息：体检结果、复查通知", d: "health", conf: "high" },
+  "5-2": { m: "健康小幅好转，或短期的恢复", d: "health", conf: "high" },
+  "5-3": { m: "疗养、转院，或去外地就医", d: "health", conf: "high" },
+  "5-4": { m: "居家休养，或家族体质相关", d: "health", conf: "high" },
+  "5-6": { m: "健康状况不明，建议进一步检查", d: "health", alt: "不要凭牌猜病，去检查", conf: "high" },
+  "5-8": { m: "长期问题结束，或健康告一段落（有向好的可能）", d: "health", conf: "high" },
+  "5-9": { m: "健康好转让人开心，或收到健康相关的好消息", d: "health", conf: "high" },
+  "5-10": { m: "健康突发状况，或需要当机立断的处理", d: "health", alt: "突发不适请及时就医，牌不能替代诊断", conf: "high" },
+  "5-11": { m: "健康反复：旧疾复发或症状反复", d: "health", conf: "high" },
+  "5-12": { m: "关于健康的讨论，或问诊沟通", d: "health", conf: "high" },
+  "5-13": { m: "孩子的健康，或健康的新开始", d: "health", conf: "high" },
+  "5-14": { m: "需要留意的健康策略，或第二诊疗意见", d: "health", conf: "high" },
+  "5-15": { m: "体质强健，或需要权威医生的判断", d: "health", conf: "high" },
+  "5-16": { m: "康复的希望，或健康上的愿景", d: "health", conf: "high" },
+  "5-17": { m: "健康状况转变，或在恢复中", d: "health", conf: "high" },
+  "5-18": { m: "有人照顾，或康复路上的陪伴", d: "health", conf: "high" },
+  "5-19": { m: "医院、诊所，或住院治疗", d: "health", conf: "high" },
+  "5-20": { m: "公共健康，或在群体中的健康话题", d: "health", conf: "high" },
+  "5-21": { m: "恢复缓慢，健康或事情长期卡住", d: "health", conf: "high" },
+  "5-22": { m: "治疗方案的抉择", d: "health", conf: "high" },
+  "5-23": { m: "健康在损耗：慢性疲劳、久病不愈或体力下滑", d: "health", alt: "这是需要认真对待的提示，建议看医生", conf: "high" },
+  "5-24": { m: "感情根基深，是长久的爱", d: "love", conf: "high" },
+  "5-25": { m: "长期治疗约定，或需要坚持的方案", d: "health", conf: "high" },
+  "5-26": { m: "学习健康知识，或了解病情", d: "health", conf: "high" },
+  "5-27": { m: "健康相关的通知、报告单", d: "health", conf: "high" },
+  "5-28": { m: "这位男性的健康", d: "health", conf: "high" },
+  "5-29": { m: "这位女性的健康", d: "health", conf: "high" },
+  "5-30": { m: "养生、长期调养，或长辈的健康", d: "health", conf: "high" },
+  "5-31": { m: "健康好转、活力回升，状态明朗起来", d: "health", conf: "high" },
+  "5-32": { m: "情绪与身体相关，或身心状态", d: "health", conf: "high" },
+  "5-33": { m: "健康的关键：找到症结，或对体质有明确认知", d: "health", conf: "high" },
+  "5-34": { m: "长期财务：稳定收入、理财、养老规划", d: "money", conf: "high" },
+  "5-35": { m: "非常长期且稳定，像扎根一样的事", d: "general", conf: "high" },
+  "5-36": { m: "长期的健康课题，需要耐心对待", d: "health", alt: "请配合专业医疗，牌不能替代诊断", conf: "high" },
+  "6-1": { m: "消息模糊，或来的消息不清楚", d: "communication", conf: "high" },
+  "6-2": { m: "看不清的小机会，或好运存疑", d: "general", conf: "high" },
+  "6-3": { m: "行程不明，方向待定", d: "general", conf: "high" },
+  "6-4": { m: "家庭情况不明", d: "general", conf: "high" },
+  "6-5": { m: "健康状况不明", d: "health", conf: "high" },
+  "6-7": { m: "迷雾里有弯绕，最容易误判", d: "general", conf: "high" },
+  "6-8": { m: "困惑结束，或混乱期终止", d: "general", conf: "high" },
+  "6-9": { m: "看不清的好事，别高兴太早", d: "general", conf: "high" },
+  "6-10": { m: "突然清醒，或混乱被打破", d: "general", conf: "high" },
+  "6-11": { m: "因误会而争执", d: "general", conf: "high" },
+  "6-12": { m: "对话没说明白，或听错了", d: "communication", conf: "high" },
+  "6-13": { m: "孩子的事不明，或新的事还看不清", d: "general", conf: "high" },
+  "6-14": { m: "有隐瞒，或事情背后有保留", d: "general", conf: "high" },
+  "6-15": { m: "权威态度不明，或看不清局势", d: "general", conf: "high" },
+  "6-16": { m: "希望被遮蔽，愿景不明", d: "general", conf: "high" },
+  "6-17": { m: "变动不明，看不清会怎么变", d: "general", conf: "high" },
+  "6-18": { m: "朋友态度不明，或看不清对方", d: "general", conf: "high" },
+  "6-19": { m: "官方信息不透明", d: "work", conf: "high" },
+  "6-20": { m: "社交圈里的闲话，或公开信息含糊", d: "general", conf: "high" },
+  "6-21": { m: "问题不明且受阻，两头都难", d: "general", conf: "high" },
+  "6-22": { m: "迷茫中的选择", d: "general", conf: "high" },
+  "6-23": { m: "不确定带来焦虑", d: "general", conf: "high" },
+  "6-24": { m: "感情不明朗，看不清对方心意", d: "love", conf: "high" },
+  "6-25": { m: "承诺含糊，或约定不清楚", d: "general", conf: "high" },
+  "6-26": { m: "秘密还没揭开，或知识不明", d: "general", conf: "high" },
+  "6-27": { m: "消息含糊、通知内容不明确", d: "communication", conf: "high" },
+  "6-28": { m: "这位男性态度不明", d: "general", conf: "high" },
+  "6-29": { m: "这位女性态度不明", d: "general", conf: "high" },
+  "6-30": { m: "表面平静但心里没底", d: "general", conf: "high" },
+  "6-31": { m: "困惑消散、事情明朗，是拨云见日", d: "general", conf: "high" },
+  "6-32": { m: "情绪不明，心里没底", d: "love", conf: "high" },
+  "6-33": { m: "答案将要揭晓，云雾会散开", d: "general", alt: "钥匙是解法，说明困惑有出路", conf: "high" },
+  "6-34": { m: "财务不清楚：账目混乱、收入不明或有模糊支出", d: "money", conf: "high" },
+  "6-35": { m: "看似稳定但心里没底", d: "general", conf: "high" },
+  "6-36": { m: "重压下的迷茫", d: "general", conf: "high" },
+  "7-6": { m: "看不清又绕，最容易误判的组合", d: "general", conf: "high" },
+  "7-10": { m: "果断切断复杂关系或麻烦事", d: "general", conf: "high" },
+  "7-14": { m: "双重周旋：两个人都在算计，局面复杂", d: "general", conf: "high" },
+  "7-21": { m: "复杂的阻碍，绕不过去的结", d: "general", conf: "high" },
+  "7-24": { m: "感情里有复杂：绕弯的沟通或难解的结", d: "love", conf: "high" },
+  "7-25": { m: "承诺里有复杂：合约有坑，或关系绑定得不清爽", d: "love", conf: "high" },
+  "7-27": { m: "消息有诈、话里有话，需核实", d: "communication", conf: "high" },
+  "7-29": { m: "一位有手段的女性，需要留意但也别预设恶意", d: "general", alt: "传统读法；现代应理解为\"有手腕的人\"，不宜直接扣帽子", conf: "high" },
+  "7-33": { m: "解开复杂：看穿弯绕，找到真相", d: "general", conf: "high" },
+  "7-34": { m: "财务上有弯绕：账目不清、隐性支出或商业竞争", d: "money", conf: "high" },
+  "8-1": { m: "消息终结，或不再有下文", d: "communication", conf: "high" },
+  "8-2": { m: "小机会结束", d: "general", conf: "high" },
+  "8-3": { m: "旅程结束，或离开的决定已定", d: "general", conf: "high" },
+  "8-4": { m: "搬家，或房屋事务结束", d: "general", conf: "high" },
+  "8-5": { m: "长期问题的终结，或健康阶段的收尾", d: "health", conf: "high" },
+  "8-6": { m: "困惑结束，或误会解开", d: "general", conf: "high" },
+  "8-7": { m: "结束复杂的关系/局面", d: "general", conf: "high" },
+  "8-9": { m: "开心结束，或一段愉快期告终", d: "general", conf: "high" },
+  "8-10": { m: "彻底且突然的结束", d: "general", conf: "high" },
+  "8-11": { m: "争吵停止，或内耗结束", d: "general", conf: "high" },
+  "8-12": { m: "对话终止，或不再沟通", d: "communication", conf: "high" },
+  "8-13": { m: "某个开始夭折，或孩子相关的事结束", d: "general", conf: "high" },
+  "8-14": { m: "策略终止，或不再周旋", d: "general", conf: "high" },
+  "8-15": { m: "权威终结，或失去资源/靠山", d: "general", conf: "high" },
+  "8-16": { m: "希望破灭，或愿景结束", d: "general", conf: "high" },
+  "8-17": { m: "结束带来转变，旧阶段终结才有新开始", d: "general", conf: "high" },
+  "8-18": { m: "朋友关系结束，或失去依靠", d: "general", conf: "high" },
+  "8-19": { m: "离职、结案，机构事务办理完成", d: "work", conf: "high" },
+  "8-20": { m: "社交活动结束，或退出圈子", d: "general", conf: "high" },
+  "8-21": { m: "双重停滞，事情完全卡死", d: "general", conf: "high" },
+  "8-22": { m: "在结束与继续之间抉择", d: "general", conf: "high" },
+  "8-23": { m: "结束带来难过与消耗", d: "general", conf: "high" },
+  "8-24": { m: "感情结束，或关系进入冷停滞", d: "love", conf: "high" },
+  "8-25": { m: "解除约定、合约终止、承诺作废", d: "general", conf: "high" },
+  "8-26": { m: "秘密公开，或学习阶段结束", d: "general", conf: "high" },
+  "8-27": { m: "不再有消息，或通知终止", d: "communication", conf: "high" },
+  "8-28": { m: "与这位男性的关系结束", d: "general", conf: "high" },
+  "8-29": { m: "与这位女性的关系结束", d: "general", conf: "high" },
+  "8-30": { m: "平静的结束，或安宁被打破", d: "general", conf: "high" },
+  "8-31": { m: "阴霾过去，结束后转明朗", d: "general", conf: "high" },
+  "8-32": { m: "情绪告一段落，或暧昧结束", d: "love", conf: "high" },
+  "8-33": { m: "结束即是解法，放下这件事就是答案", d: "general", conf: "high" },
+  "8-34": { m: "财务上的结束：结清、坏账", d: "money", conf: "high" },
+  "8-36": { m: "重担结束，或艰难期告终", d: "general", conf: "high" },
+  "9-1": { m: "好消息的到来，让人开心", d: "communication", conf: "high" },
+  "9-2": { m: "双重的小确幸，非常轻松愉快", d: "general", conf: "high" },
+  "9-3": { m: "旅途中的愉快，或出行是件开心事", d: "general", conf: "high" },
+  "9-4": { m: "家里有喜事，或温馨的家居", d: "general", conf: "high" },
+  "9-5": { m: "身心愉悦，或健康让人开心", d: "health", conf: "high" },
+  "9-6": { m: "看似的好事其实不明，别太当真", d: "general", conf: "high" },
+  "9-7": { m: "看似美好但要留意，别被表象迷惑", d: "general", conf: "high" },
+  "9-8": { m: "美好结束，或喜悦转为失落", d: "general", conf: "high" },
+  "9-10": { m: "喜悦被突然打断，或好事来得快去得快", d: "general", conf: "high" },
+  "9-11": { m: "开心与争执交织", d: "general", conf: "high" },
+  "9-12": { m: "愉快的交谈", d: "communication", conf: "high" },
+  "9-13": { m: "孩子带来的喜悦，或天真可爱", d: "general", conf: "high" },
+  "9-14": { m: "示好背后有目的，需留个心眼", d: "general", conf: "high" },
+  "9-15": { m: "来自权威/长辈的礼物或认可", d: "general", conf: "high" },
+  "9-16": { m: "希望带来喜悦", d: "general", conf: "high" },
+  "9-17": { m: "喜悦带来转变", d: "general", conf: "high" },
+  "9-18": { m: "朋友的善意：来自好友的礼物或帮助", d: "general", conf: "high" },
+  "9-19": { m: "机构里的好事，或官方的表彰", d: "work", conf: "high" },
+  "9-20": { m: "社交场合的愉快：聚会、被欢迎、人气好", d: "general", conf: "high" },
+  "9-21": { m: "开心被阻碍，好事不那么顺", d: "general", conf: "high" },
+  "9-22": { m: "两个愉快的选择", d: "general", conf: "high" },
+  "9-23": { m: "开心被损耗：好事里夹着小麻烦", d: "general", conf: "high" },
+  "9-24": { m: "浪漫的示好", d: "love", conf: "high" },
+  "9-25": { m: "带承诺意味的礼物：订婚、正式的表白", d: "love", conf: "high" },
+  "9-26": { m: "学习的乐趣，或知识带来的愉悦", d: "general", conf: "high" },
+  "9-27": { m: "让人开心的消息或邀请函", d: "communication", conf: "high" },
+  "9-28": { m: "这位男性让人愉快", d: "general", conf: "high" },
+  "9-29": { m: "这位女性让人愉快", d: "general", conf: "high" },
+  "9-30": { m: "温和的喜悦，或长辈的关爱", d: "general", conf: "high" },
+  "9-31": { m: "成功带来喜悦，是被认可、被庆祝的好事", d: "general", conf: "high" },
+  "9-32": { m: "被欣赏、有好感，或情绪上的满足", d: "general", conf: "high" },
+  "9-33": { m: "喜悦的关键，或让人开心的答案", d: "general", conf: "high" },
+  "9-34": { m: "意外之财、收到的钱或让人开心的收入", d: "money", conf: "high" },
+  "9-35": { m: "长久的快乐，稳定的幸福", d: "general", conf: "high" },
+  "9-36": { m: "苦中有甜，或重担里的慰藉", d: "general", conf: "high" },
+  "10-1": { m: "消息突然传来，或通知很急", d: "communication", conf: "high" },
+  "10-2": { m: "机会一闪而过", d: "timing", conf: "high" },
+  "10-3": { m: "行程突然中断", d: "timing", conf: "high" },
+  "10-4": { m: "家庭突然变动", d: "general", conf: "high" },
+  "10-5": { m: "健康突发状况", d: "health", alt: "请优先就医，牌不能替代诊断", conf: "high" },
+  "10-6": { m: "突然清醒，或混乱被打破", d: "general", conf: "high" },
+  "10-7": { m: "果断切断复杂关系", d: "general", conf: "high" },
+  "10-8": { m: "彻底结束，来得快也断得干净", d: "general", conf: "high" },
+  "10-9": { m: "喜悦被突然打断", d: "general", conf: "high" },
+  "10-11": { m: "争执突然爆发，或突然的冲突", d: "general", conf: "high" },
+  "10-12": { m: "对话突然中断，或话说到一半", d: "communication", conf: "high" },
+  "10-13": { m: "突然的开始，或孩子相关的突发", d: "general", conf: "high" },
+  "10-14": { m: "当机立断的应对策略", d: "general", conf: "high" },
+  "10-15": { m: "权威的突然决定，或被强力切断", d: "general", conf: "high" },
+  "10-16": { m: "希望突然破灭，或突然看清", d: "general", conf: "high" },
+  "10-17": { m: "突然的变动", d: "general", conf: "high" },
+  "10-18": { m: "朋友关系突然断裂", d: "general", conf: "high" },
+  "10-19": { m: "机构突然的决定：裁员、撤案", d: "work", conf: "high" },
+  "10-20": { m: "社交场合的突然状况", d: "general", conf: "high" },
+  "10-21": { m: "双重阻断：突然的意外导致停滞", d: "general", conf: "high" },
+  "10-22": { m: "必须马上做选择", d: "timing", conf: "high" },
+  "10-23": { m: "突然的损耗：意外支出、突发亏损", d: "money", conf: "high" },
+  "10-24": { m: "感情突然断裂", d: "love", conf: "high" },
+  "10-25": { m: "解除合约、突然分手，或约定被打破", d: "general", conf: "high" },
+  "10-26": { m: "突然明白，或秘密被揭开", d: "general", conf: "high" },
+  "10-27": { m: "突然的通知", d: "communication", conf: "high" },
+  "10-28": { m: "这位男性突然出现/离开", d: "general", conf: "high" },
+  "10-29": { m: "这位女性突然出现/离开", d: "general", conf: "high" },
+  "10-30": { m: "打破平静的突发", d: "general", conf: "high" },
+  "10-31": { m: "果断之后迎来明朗，决定是对的", d: "general", conf: "high" },
+  "10-32": { m: "情绪突然波动，或声誉突变", d: "general", conf: "high" },
+  "10-33": { m: "果断的决定就是解法，快刀斩乱麻", d: "general", conf: "high" },
+  "10-34": { m: "财务上需要当机立断：止损、砍掉支出", d: "money", conf: "high" },
+  "10-35": { m: "打破稳定，长期状态的突变", d: "general", conf: "high" },
+  "10-36": { m: "重担突然压来，或果断卸下", d: "general", conf: "high" },
+  "11-1": { m: "消息引发争执，或反复的消息", d: "communication", conf: "high" },
+  "11-2": { m: "小争执，吵完就好了", d: "general", conf: "high" },
+  "11-3": { m: "旅途中的冲突，或出行的反复", d: "general", conf: "high" },
+  "11-4": { m: "家庭内部的争执", d: "general", conf: "high" },
+  "11-5": { m: "长期反复的问题，或健康上的慢性困扰", d: "health", conf: "high" },
+  "11-6": { m: "争执源于误会，吵不清楚", d: "general", conf: "high" },
+  "11-7": { m: "复杂的争执，绕不清的矛盾", d: "general", conf: "high" },
+  "11-8": { m: "争吵终于停止", d: "general", conf: "high" },
+  "11-9": { m: "争执与和解交替", d: "general", conf: "high" },
+  "11-10": { m: "突然的争吵，或争执被强行打断", d: "general", conf: "high" },
+  "11-12": { m: "言语冲突：争论、互相指责的对话", d: "communication", conf: "high" },
+  "11-13": { m: "孩子相关的争执，或为小事吵", d: "general", conf: "high" },
+  "11-14": { m: "争执里有算计，或话里有话", d: "general", conf: "high" },
+  "11-15": { m: "与权威的冲突，或与强势者的矛盾", d: "general", conf: "high" },
+  "11-16": { m: "希望与争执并存", d: "general", conf: "high" },
+  "11-17": { m: "变动引发的冲突", d: "general", conf: "high" },
+  "11-19": { m: "与机构的纠纷", d: "work", conf: "high" },
+  "11-20": { m: "公开场合的冲突，或社交圈里的争议", d: "general", conf: "high" },
+  "11-21": { m: "争执卡住，谁也不让步", d: "general", conf: "high" },
+  "11-22": { m: "选择引发争执", d: "general", conf: "high" },
+  "11-23": { m: "反复的消耗：争执不断、越吵越累", d: "general", conf: "high" },
+  "11-24": { m: "感情里的争吵", d: "love", conf: "high" },
+  "11-25": { m: "围绕承诺的争执", d: "general", conf: "high" },
+  "11-26": { m: "争论中的学习，或反复研究", d: "general", conf: "high" },
+  "11-27": { m: "争执的消息，或反复的沟通", d: "communication", conf: "high" },
+  "11-28": { m: "这位男性引发争执", d: "general", conf: "high" },
+  "11-29": { m: "这位女性引发争执", d: "general", conf: "high" },
+  "11-30": { m: "打破平静的争执", d: "general", conf: "high" },
+  "11-31": { m: "争执后的明朗，吵开了就好", d: "general", conf: "high" },
+  "11-32": { m: "情绪化的争执", d: "general", conf: "high" },
+  "11-33": { m: "争执有解法：把话说开，找到关键", d: "general", conf: "high" },
+  "11-34": { m: "为钱争执", d: "money", conf: "high" },
+  "11-35": { m: "长期反复的争执，或稳定中的摩擦", d: "general", conf: "high" },
+  "11-36": { m: "沉重的争执，或争执是长期课题", d: "general", conf: "high" },
+  "12-1": { m: "消息传来并引发讨论", d: "communication", conf: "high" },
+  "12-3": { m: "关于出行的讨论", d: "general", conf: "high" },
+  "12-4": { m: "家里的对话，或与家人的通话", d: "general", conf: "high" },
+  "12-5": { m: "关于健康的交谈", d: "health", conf: "high" },
+  "12-6": { m: "对话不清楚：没说明白，或听错了", d: "communication", conf: "high" },
+  "12-7": { m: "谈话有弯绕，或闲言碎语", d: "communication", conf: "high" },
+  "12-8": { m: "对话结束，或不再谈论", d: "communication", conf: "high" },
+  "12-9": { m: "愉快的交谈", d: "communication", conf: "high" },
+  "12-10": { m: "对话突然中断", d: "communication", conf: "high" },
+  "12-11": { m: "争论、互相指责的对话", d: "communication", conf: "high" },
+  "12-13": { m: "关于孩子的讨论，或稚嫩的对话", d: "general", conf: "high" },
+  "12-14": { m: "谈话中有保留，或小心翼翼的沟通", d: "communication", conf: "high" },
+  "12-15": { m: "与权威的对话，或与长辈谈话", d: "general", conf: "high" },
+  "12-16": { m: "充满希望的对话，或谈论愿景", d: "general", conf: "high" },
+  "12-17": { m: "对话带来转变", d: "communication", conf: "high" },
+  "12-18": { m: "朋友间的谈心，可靠的交流", d: "general", conf: "high" },
+  "12-19": { m: "机构里的沟通，或会议讨论", d: "work", conf: "high" },
+  "12-20": { m: "社交中的议论，或群体里的闲话", d: "general", conf: "high" },
+  "12-21": { m: "沟通受阻，谈不下去", d: "communication", conf: "high" },
+  "12-22": { m: "讨论中的选择", d: "general", conf: "high" },
+  "12-23": { m: "焦虑的对话，越聊越不安", d: "general", conf: "high" },
+  "12-24": { m: "情侣的对话", d: "love", conf: "high" },
+  "12-25": { m: "关于承诺的对话", d: "general", conf: "high" },
+  "12-26": { m: "讨论中的学习，或交流知识", d: "general", conf: "high" },
+  "12-27": { m: "消息与对话：通知引发的讨论，或口头转述", d: "communication", conf: "high" },
+  "12-28": { m: "与这位男性的对话", d: "general", conf: "high" },
+  "12-29": { m: "与这位女性的对话", d: "general", conf: "high" },
+  "12-30": { m: "平和的对话，或与长辈谈心", d: "general", conf: "high" },
+  "12-31": { m: "愉快的交谈、好消息的沟通", d: "general", conf: "high" },
+  "12-32": { m: "情绪化的交谈", d: "general", conf: "high" },
+  "12-33": { m: "关键对话，谈开了就有答案", d: "general", conf: "high" },
+  "12-34": { m: "关于钱的讨论", d: "money", conf: "high" },
+  "12-35": { m: "长期的沟通，或稳定的对话", d: "general", conf: "high" },
+  "12-36": { m: "沉重的对话，或难以启齿的话题", d: "communication", conf: "high" },
+  "13-1": { m: "关于孩子/新事物的消息", d: "general", conf: "high" },
+  "13-2": { m: "小小的幸运，轻松的新尝试", d: "general", conf: "high" },
+  "13-3": { m: "孩子出行，或初次尝试远行", d: "general", conf: "high" },
+  "13-4": { m: "家里有孩子，或家庭增添新成员", d: "general", conf: "high" },
+  "13-5": { m: "孩子的健康，或新事物的成长", d: "health", conf: "high" },
+  "13-6": { m: "新事物还不明朗", d: "general", conf: "high" },
+  "13-7": { m: "新手遇到复杂，或小事绕弯", d: "general", conf: "high" },
+  "13-8": { m: "小小的结束，或开始夭折", d: "general", conf: "high" },
+  "13-9": { m: "新生命般的喜悦：怀孕、新生儿，或让人开心的新开始", d: "general", conf: "high" },
+  "13-10": { m: "突然的开始，或快速夭折", d: "general", conf: "high" },
+  "13-11": { m: "为小事争执，或孩子间的争吵", d: "general", conf: "high" },
+  "13-12": { m: "孩子间的对话，或稚嫩的沟通", d: "general", conf: "high" },
+  "13-14": { m: "天真但需留个心眼，或新手的策略", d: "general", conf: "high" },
+  "13-15": { m: "有实力的新人，或新的资源", d: "general", conf: "high" },
+  "13-16": { m: "新的希望", d: "general", conf: "high" },
+  "13-17": { m: "新阶段带来转变，成长中的变化", d: "general", conf: "high" },
+  "13-18": { m: "孩子与朋友，或天真的陪伴", d: "general", conf: "high" },
+  "13-19": { m: "入学，或机构里的新开始", d: "general", conf: "high" },
+  "13-20": { m: "孩子进入社交场合，或初次公开", d: "general", conf: "high" },
+  "13-21": { m: "新手上路遇阻，经验不足导致卡住", d: "general", conf: "high" },
+  "13-22": { m: "新阶段的选择", d: "general", conf: "high" },
+  "13-23": { m: "小事带来烦恼，或孩子相关的事情让人操心", d: "general", conf: "high" },
+  "13-24": { m: "感情的初期", d: "love", conf: "high" },
+  "13-25": { m: "新的约定、刚建立的承诺", d: "general", conf: "high" },
+  "13-26": { m: "刚开始学习，或接触新的知识", d: "general", conf: "high" },
+  "13-27": { m: "关于孩子的消息，或初步的通知", d: "communication", conf: "high" },
+  "13-28": { m: "年轻的男性，或这位男性比较稚嫩", d: "general", conf: "high" },
+  "13-29": { m: "年轻的女性，或这位女性比较稚嫩", d: "general", conf: "high" },
+  "13-30": { m: "孩子与长辈，或天真又安稳", d: "general", conf: "high" },
+  "13-31": { m: "小小的成功，新事物的明朗", d: "general", conf: "high" },
+  "13-32": { m: "孩子般的情绪，或天真的感受", d: "general", conf: "high" },
+  "13-33": { m: "小事是关键，或新的解法", d: "general", conf: "high" },
+  "13-34": { m: "小额的钱、零钱，或刚起步的收入", d: "money", conf: "high" },
+  "13-35": { m: "从小开始，长期培养", d: "general", conf: "high" },
+  "13-36": { m: "小小的重担，或新手的压力", d: "general", conf: "high" },
+  "14-1": { m: "消息需要核实，别全信", d: "communication", conf: "high" },
+  "14-2": { m: "小聪明带来小机会", d: "general", conf: "high" },
+  "14-3": { m: "出行要谨慎规划，或差旅中的周旋", d: "general", conf: "high" },
+  "14-4": { m: "家里要留个心眼，或家庭事务需谨慎", d: "general", conf: "high" },
+  "14-5": { m: "健康上要留意，或需要进一步确认", d: "health", conf: "high" },
+  "14-6": { m: "不清不楚又有保留，容易误判", d: "general", conf: "high" },
+  "14-7": { m: "双重弯绕，最需要警惕的组合", d: "general", conf: "high" },
+  "14-8": { m: "策略结束，或不再周旋", d: "general", conf: "high" },
+  "14-9": { m: "示好背后有目的", d: "general", conf: "high" },
+  "14-10": { m: "当机立断的应对", d: "general", conf: "high" },
+  "14-11": { m: "争执里有算计", d: "general", conf: "high" },
+  "14-12": { m: "谈话有保留，或话里有话", d: "communication", conf: "high" },
+  "14-13": { m: "新手的谨慎，或小事上精明", d: "general", conf: "high" },
+  "14-15": { m: "与权威周旋，或对资源精打细算", d: "general", conf: "high" },
+  "14-16": { m: "希望中有算计，或愿景需要策略", d: "general", conf: "high" },
+  "14-17": { m: "变动中需要策略", d: "general", conf: "high" },
+  "14-18": { m: "看似友善其实有保留，或朋友给的建议要甄别", d: "general", conf: "high" },
+  "14-19": { m: "职场/官方事务里的周旋：走流程、找关系、应对策略", d: "work", conf: "high" },
+  "14-20": { m: "社交场合要留心，或人际中的策略", d: "general", conf: "high" },
+  "14-21": { m: "策略受阻，或被精明的人挡住", d: "general", conf: "high" },
+  "14-22": { m: "选择要精明，或谨慎的抉择", d: "general", conf: "high" },
+  "14-23": { m: "消耗中的自保，或焦虑下的谨慎", d: "general", conf: "high" },
+  "14-24": { m: "感情里需留个心眼", d: "love", conf: "high" },
+  "14-25": { m: "合约要看清条款", d: "general", conf: "high" },
+  "14-26": { m: "暗中了解、私下调查，或学东西时有保留", d: "general", conf: "high" },
+  "14-27": { m: "消息要核实", d: "communication", conf: "high" },
+  "14-28": { m: "这位男性很精明，需留意", d: "general", conf: "high" },
+  "14-29": { m: "这位女性很精明，需留意", d: "general", conf: "high" },
+  "14-30": { m: "成熟者的谨慎，或老练的处世", d: "general", conf: "high" },
+  "14-31": { m: "策略带来成功", d: "general", conf: "high" },
+  "14-32": { m: "声誉需要经营，或情绪上的算计", d: "general", conf: "high" },
+  "14-33": { m: "看穿策略，找到关键破绽", d: "general", conf: "high" },
+  "14-34": { m: "财务上要精明：议价、防坑、看清条款", d: "money", conf: "high" },
+  "14-35": { m: "长期的自保策略", d: "general", conf: "high" },
+  "14-36": { m: "重担下的应对，或沉重的算计", d: "general", conf: "high" },
+  "15-1": { m: "权威的消息，或来自老板的通知", d: "communication", conf: "high" },
+  "15-2": { m: "资源带来的小机会", d: "general", conf: "high" },
+  "15-3": { m: "大笔资金流动，或商务出行", d: "money", conf: "high" },
+  "15-4": { m: "家庭里的主事者，或家族资源的掌控", d: "general", conf: "high" },
+  "15-5": { m: "体质强健，或长期的资源", d: "health", conf: "high" },
+  "15-6": { m: "权威态度不明，或资源情况不清", d: "general", conf: "high" },
+  "15-7": { m: "与强势者的复杂关系，或资源上的竞争", d: "general", conf: "high" },
+  "15-8": { m: "失去权威/资源，或强势结束", d: "general", conf: "high" },
+  "15-9": { m: "来自权威的礼物或认可", d: "general", conf: "high" },
+  "15-10": { m: "权威的突然决定", d: "general", conf: "high" },
+  "15-11": { m: "与权威的冲突，或强势引发的争执", d: "general", conf: "high" },
+  "15-12": { m: "与权威的对话", d: "general", conf: "high" },
+  "15-13": { m: "新的资源，或强势的新人", d: "general", conf: "high" },
+  "15-16": { m: "资源带来希望", d: "general", conf: "high" },
+  "15-17": { m: "资源变动，或权威的更替", d: "general", conf: "high" },
+  "15-18": { m: "可靠又有实力的朋友，或有人罩着", d: "general", conf: "high" },
+  "15-19": { m: "权威机构、上级领导，或体制里的权力", d: "work", conf: "high" },
+  "15-20": { m: "社交圈里的权威人物", d: "general", conf: "high" },
+  "15-21": { m: "强势的阻碍：被权威挡住，或资源不足", d: "general", conf: "high" },
+  "15-22": { m: "资源相关的选择", d: "general", conf: "high" },
+  "15-23": { m: "资源被损耗，或强势带来的消耗", d: "general", conf: "high" },
+  "15-24": { m: "强势的感情，或被保护的关系", d: "love", conf: "high" },
+  "15-25": { m: "资源相关的约定，或强势的承诺", d: "general", conf: "high" },
+  "15-26": { m: "专业的知识，或深入学习", d: "general", conf: "high" },
+  "15-27": { m: "权威的文件，或大人物来的通知", d: "communication", conf: "high" },
+  "15-28": { m: "这位男性很有实力/掌控力", d: "general", conf: "high" },
+  "15-29": { m: "这位女性很有实力/掌控力", d: "general", conf: "high" },
+  "15-30": { m: "成熟且有力的长辈", d: "general", conf: "high" },
+  "15-31": { m: "权威带来的成功，或靠实力获得认可", d: "work", conf: "high" },
+  "15-32": { m: "权威的声誉，或强势下的情绪", d: "general", conf: "high" },
+  "15-33": { m: "掌握关键资源，或权威给出答案", d: "general", conf: "high" },
+  "15-34": { m: "财务上的主导者：老板、投资人，或大笔资金", d: "money", conf: "high" },
+  "15-35": { m: "长期稳定的资源", d: "general", conf: "high" },
+  "15-36": { m: "沉重的权威，或背负资源压力", d: "general", conf: "high" },
+  "16-1": { m: "好消息带来希望", d: "communication", conf: "high" },
+  "16-2": { m: "小小的希望", d: "general", conf: "high" },
+  "16-3": { m: "远方的希望，或为理想远行", d: "general", conf: "high" },
+  "16-4": { m: "对家的希望，或家庭的愿景", d: "general", conf: "high" },
+  "16-5": { m: "健康的希望，或长期的愿景", d: "health", conf: "high" },
+  "16-6": { m: "希望被迷雾遮住，愿景不明朗", d: "general", conf: "high" },
+  "16-7": { m: "希望中有复杂，或愿景需要看清", d: "general", conf: "high" },
+  "16-8": { m: "希望破灭", d: "general", conf: "high" },
+  "16-9": { m: "希望带来喜悦", d: "general", conf: "high" },
+  "16-10": { m: "希望突然破灭，或突然看清", d: "general", conf: "high" },
+  "16-11": { m: "希望与现实的冲突", d: "general", conf: "high" },
+  "16-12": { m: "关于希望的对话，或谈论理想", d: "general", conf: "high" },
+  "16-13": { m: "新的希望，或小小的愿景", d: "general", conf: "high" },
+  "16-14": { m: "希望需要策略，或愿景要谨慎", d: "general", conf: "high" },
+  "16-15": { m: "权威带来希望，或资源的愿景", d: "general", conf: "high" },
+  "16-17": { m: "希望带来转变", d: "general", conf: "high" },
+  "16-18": { m: "朋友带来希望", d: "general", conf: "high" },
+  "16-20": { m: "网络社交、线上社群，或公开平台上的曝光", d: "general", conf: "high" },
+  "16-21": { m: "希望受阻，进展比预期慢", d: "general", conf: "high" },
+  "16-22": { m: "希望与选择，或两条愿景之路", d: "general", conf: "high" },
+  "16-23": { m: "希望被消耗，或对未来的焦虑", d: "general", conf: "high" },
+  "16-24": { m: "对爱的希望", d: "love", conf: "high" },
+  "16-25": { m: "关于未来的约定，或希望成承诺", d: "general", conf: "high" },
+  "16-26": { m: "学习与希望：通过网络/课程获得启发", d: "general", conf: "high" },
+  "16-27": { m: "网络消息、线上通知，或通过互联网传来的信息", d: "communication", conf: "high" },
+  "16-28": { m: "这位男性带来希望", d: "general", conf: "high" },
+  "16-29": { m: "这位女性带来希望", d: "general", conf: "high" },
+  "16-30": { m: "平和的希望，或成熟的愿景", d: "general", conf: "high" },
+  "16-31": { m: "愿望成真、明朗的成功", d: "general", conf: "high" },
+  "16-32": { m: "情绪的希望，或声誉的愿景", d: "general", conf: "high" },
+  "16-33": { m: "希望成为现实，愿景有了明确解法", d: "general", conf: "high" },
+  "16-34": { m: "财务的希望", d: "money", conf: "high" },
+  "16-35": { m: "长期稳定的愿景，或一直在坚持的方向", d: "general", conf: "high" },
+  "16-36": { m: "重担中的希望，最需要坚持的时候", d: "general", conf: "high" },
+  "17-1": { m: "变动的消息，或通知带来变化", d: "communication", conf: "high" },
+  "17-2": { m: "小小的变动带来好运", d: "general", conf: "high" },
+  "17-4": { m: "搬家、换住处，家庭环境的变动", d: "general", conf: "high" },
+  "17-5": { m: "健康的转变，或身体的变化", d: "health", conf: "high" },
+  "17-6": { m: "变动不明，不知道会怎么变", d: "general", conf: "high" },
+  "17-7": { m: "复杂的变动，或转变中有波折", d: "general", conf: "high" },
+  "17-8": { m: "结束即转变，旧阶段终止才有新局", d: "general", conf: "high" },
+  "17-9": { m: "开心的变动，或让人喜悦的变化", d: "general", conf: "high" },
+  "17-10": { m: "突然的变动", d: "general", conf: "high" },
+  "17-11": { m: "变动引发争执，或反复的变化", d: "general", conf: "high" },
+  "17-12": { m: "关于变动的讨论", d: "general", conf: "high" },
+  "17-13": { m: "新生命：怀孕、生育，或家里添丁", d: "general", conf: "high" },
+  "17-14": { m: "变动需要策略，或谨慎的转变", d: "general", conf: "high" },
+  "17-15": { m: "资源的变动，或权威的调整", d: "general", conf: "high" },
+  "17-16": { m: "变动带来希望", d: "general", conf: "high" },
+  "17-18": { m: "朋友的变动，或关系的变化", d: "general", conf: "high" },
+  "17-19": { m: "机构变动、工作调动，或官方流程的变化", d: "work", conf: "high" },
+  "17-20": { m: "社交圈的变动", d: "general", conf: "high" },
+  "17-21": { m: "转变受阻，想变却变不动", d: "general", conf: "high" },
+  "17-22": { m: "转变中的选择，或变动带来分岔", d: "general", conf: "high" },
+  "17-23": { m: "变动带来消耗", d: "general", conf: "high" },
+  "17-24": { m: "感情升级", d: "love", conf: "high" },
+  "17-25": { m: "承诺的变动，或约定的改变", d: "general", conf: "high" },
+  "17-26": { m: "学习带来转变", d: "general", conf: "high" },
+  "17-27": { m: "变动的通知", d: "communication", conf: "high" },
+  "17-28": { m: "这位男性有变动", d: "general", conf: "high" },
+  "17-29": { m: "这位女性有变动", d: "general", conf: "high" },
+  "17-30": { m: "成熟期的转变，或长辈的变化", d: "general", conf: "high" },
+  "17-31": { m: "转变带来成功，是往好的方向变", d: "general", conf: "high" },
+  "17-32": { m: "情绪的转变", d: "general", conf: "high" },
+  "17-34": { m: "资金流转，收入变动", d: "money", conf: "high" },
+  "17-35": { m: "长期的变化：生活重心的迁移", d: "general", conf: "high" },
+  "17-36": { m: "重大的转变，或人生阶段的更替", d: "general", conf: "high" },
+  "18-1": { m: "朋友的消息", d: "communication", conf: "high" },
+  "18-2": { m: "朋友带来小幸运", d: "general", conf: "high" },
+  "18-3": { m: "朋友出行，或去见朋友", d: "general", conf: "high" },
+  "18-4": { m: "家里养的宠物，或像家人一样的朋友", d: "general", conf: "high" },
+  "18-5": { m: "朋友的健康，或长期的友情", d: "health", conf: "high" },
+  "18-6": { m: "朋友关系不明，或看不清对方是否真心", d: "general", conf: "high" },
+  "18-7": { m: "朋友关系复杂，或需留意的朋友", d: "general", conf: "high" },
+  "18-8": { m: "友情结束", d: "general", conf: "high" },
+  "18-9": { m: "朋友的礼物或善意", d: "general", conf: "high" },
+  "18-10": { m: "友情突然断裂", d: "general", conf: "high" },
+  "18-11": { m: "与朋友的争执", d: "general", conf: "high" },
+  "18-12": { m: "与朋友的对话", d: "communication", conf: "high" },
+  "18-13": { m: "孩子的朋友，或新的友谊", d: "general", conf: "high" },
+  "18-14": { m: "朋友里有精明的人，或要甄别建议", d: "general", conf: "high" },
+  "18-15": { m: "有实力的朋友，或朋友给你资源", d: "general", conf: "high" },
+  "18-16": { m: "朋友带来希望", d: "general", conf: "high" },
+  "18-17": { m: "友情的变动", d: "general", conf: "high" },
+  "18-19": { m: "机构里的朋友，或同事关系", d: "work", conf: "high" },
+  "18-20": { m: "社交圈里的朋友", d: "general", conf: "high" },
+  "18-21": { m: "朋友帮不上忙，或被友情所累", d: "general", conf: "high" },
+  "18-22": { m: "朋友与选择，或友情的分岔", d: "general", conf: "high" },
+  "18-23": { m: "为朋友操心，或友情里有消耗", d: "general", conf: "high" },
+  "18-24": { m: "既是恋人也是朋友", d: "love", conf: "high" },
+  "18-25": { m: "对朋友的承诺", d: "general", conf: "high" },
+  "18-26": { m: "朋友的知识，或一起学习", d: "general", conf: "high" },
+  "18-27": { m: "朋友的来信/通知", d: "communication", conf: "high" },
+  "18-28": { m: "这位男性是可靠的朋友", d: "general", conf: "high" },
+  "18-29": { m: "这位女性是可靠的朋友", d: "general", conf: "high" },
+  "18-30": { m: "成熟可靠的长辈或朋友", d: "general", conf: "high" },
+  "18-31": { m: "朋友带来的好事，或友情明朗愉快", d: "general", conf: "high" },
+  "18-32": { m: "朋友的情绪，或友情的声誉", d: "general", conf: "high" },
+  "18-33": { m: "关键的朋友，或通过朋友得到答案", d: "general", conf: "high" },
+  "18-34": { m: "朋友与钱：借钱、合伙", d: "money", conf: "high" },
+  "18-35": { m: "长久的友谊", d: "general", conf: "high" },
+  "18-36": { m: "友情中的责任，或为朋友承担", d: "general", conf: "high" },
+  "19-1": { m: "官方通知很快到", d: "work", conf: "high" },
+  "19-2": { m: "机构里的小顺利", d: "work", conf: "high" },
+  "19-3": { m: "公务出差", d: "work", conf: "high" },
+  "19-4": { m: "政府/机构相关的房产事务，或家庭与官方的交涉", d: "general", conf: "high" },
+  "19-5": { m: "体制内的稳定，或长期的结构", d: "work", conf: "high" },
+  "19-6": { m: "官方信息不明，流程不透明", d: "general", conf: "high" },
+  "19-7": { m: "机构里的复杂，或流程有弯绕", d: "work", conf: "high" },
+  "19-8": { m: "机构事务结束，离职、结案、办理完成", d: "work", conf: "high" },
+  "19-9": { m: "机构里的好事", d: "work", conf: "high" },
+  "19-10": { m: "机构突然的决定", d: "work", conf: "high" },
+  "19-11": { m: "与机构的纠纷", d: "work", conf: "high" },
+  "19-12": { m: "机构里的沟通", d: "work", conf: "high" },
+  "19-13": { m: "入职新人", d: "work", conf: "high" },
+  "19-14": { m: "机构里要留个心眼", d: "work", conf: "high" },
+  "19-15": { m: "权威机构与掌权者：上级部门、公司高层", d: "work", conf: "high" },
+  "19-16": { m: "机构的愿景，或官方规划", d: "work", conf: "high" },
+  "19-17": { m: "工作调动", d: "work", conf: "high" },
+  "19-18": { m: "同事关系", d: "work", conf: "high" },
+  "19-20": { m: "行业会议", d: "work", conf: "high" },
+  "19-21": { m: "机构带来的阻碍：流程卡住、被规章制度挡住", d: "work", conf: "high" },
+  "19-22": { m: "流程中的选择", d: "work", conf: "high" },
+  "19-23": { m: "机构里的消耗", d: "work", conf: "high" },
+  "19-24": { m: "感情受制于外部规则", d: "love", conf: "high" },
+  "19-25": { m: "官方合约", d: "work", conf: "high" },
+  "19-26": { m: "学校、教育体系", d: "general", conf: "high" },
+  "19-27": { m: "官方文件", d: "communication", conf: "high" },
+  "19-28": { m: "机构里的男性", d: "work", conf: "high" },
+  "19-29": { m: "机构里的女性", d: "work", conf: "high" },
+  "19-30": { m: "资深者，或稳定的体制内工作", d: "work", conf: "high" },
+  "19-31": { m: "获批、通过、拿到资质", d: "work", conf: "high" },
+  "19-32": { m: "机构里的声誉", d: "work", conf: "high" },
+  "19-33": { m: "官方许可", d: "general", conf: "high" },
+  "19-34": { m: "银行、金融机构", d: "money", conf: "high" },
+  "19-35": { m: "铁饭碗", d: "work", conf: "high" },
+  "19-36": { m: "机构带来的压力", d: "work", conf: "high" },
+  "20-1": { m: "公开的消息，或社交圈里的通知", d: "communication", conf: "high" },
+  "20-2": { m: "社交场合的小愉快", d: "general", conf: "high" },
+  "20-3": { m: "去参加聚会，或社交出行", d: "general", conf: "high" },
+  "20-4": { m: "家庭聚会，或家里的社交", d: "general", conf: "high" },
+  "20-5": { m: "公共健康，或长期的人脉", d: "health", conf: "high" },
+  "20-6": { m: "社交圈里的闲言碎语，或公开信息不明", d: "general", conf: "high" },
+  "20-7": { m: "社交圈里有复杂，或人际的弯绕", d: "general", conf: "high" },
+  "20-8": { m: "社交活动结束，或退出圈子", d: "general", conf: "high" },
+  "20-9": { m: "社交场合的愉快", d: "general", conf: "high" },
+  "20-10": { m: "社交突然中断", d: "general", conf: "high" },
+  "20-11": { m: "社交场合的冲突，或群体里的争议", d: "general", conf: "high" },
+  "20-12": { m: "社交中的议论", d: "communication", conf: "high" },
+  "20-13": { m: "孩子进入社交场合，或新的社交圈", d: "general", conf: "high" },
+  "20-14": { m: "社交要留个心眼", d: "general", conf: "high" },
+  "20-15": { m: "社交圈里的权威人物", d: "general", conf: "high" },
+  "20-16": { m: "线上社群、网络平台上的公开互动", d: "general", conf: "high" },
+  "20-17": { m: "社交圈的变动", d: "general", conf: "high" },
+  "20-18": { m: "朋友圈子", d: "general", conf: "high" },
+  "20-19": { m: "行业会议、公开活动", d: "work", conf: "high" },
+  "20-21": { m: "社交受阻，或在群体里感到孤立", d: "general", conf: "high" },
+  "20-22": { m: "社交中的选择", d: "general", conf: "high" },
+  "20-23": { m: "应酬太多，人情往来的消耗", d: "general", conf: "high" },
+  "20-24": { m: "公开的恋情", d: "love", conf: "high" },
+  "20-25": { m: "公开的约定，或社交场合的承诺", d: "general", conf: "high" },
+  "20-26": { m: "社群里的学习，或公开的知识", d: "general", conf: "high" },
+  "20-27": { m: "公开的通知，或社群消息", d: "communication", conf: "high" },
+  "20-28": { m: "这位男性在社交场合", d: "general", conf: "high" },
+  "20-29": { m: "这位女性在社交场合", d: "general", conf: "high" },
+  "20-30": { m: "成熟社交圈，或长辈的圈子", d: "general", conf: "high" },
+  "20-31": { m: "公开的成功、被大家认可", d: "general", conf: "high" },
+  "20-32": { m: "社交中的情绪，或公众的感受", d: "general", conf: "high" },
+  "20-33": { m: "在公开场合得到关键信息，或通过社交找到答案", d: "general", conf: "high" },
+  "20-34": { m: "公开场合的生意，或市场上的交易", d: "money", conf: "high" },
+  "20-35": { m: "长期稳定的社交圈", d: "general", conf: "high" },
+  "20-36": { m: "社交带来的压力", d: "general", conf: "high" },
+  "21-1": { m: "消息被挡住", d: "timing", conf: "high" },
+  "21-2": { m: "好运受阻", d: "general", conf: "high" },
+  "21-3": { m: "出行受阻，走不成", d: "timing", conf: "high" },
+  "21-4": { m: "家庭事务受阻", d: "general", conf: "high" },
+  "21-5": { m: "健康恢复慢，或长期的健康课题", d: "health", conf: "high" },
+  "21-6": { m: "既受阻又不明，最难判断的组合", d: "general", conf: "high" },
+  "21-7": { m: "复杂的阻碍，绕不过去", d: "general", conf: "high" },
+  "21-8": { m: "阻碍彻底终结，或僵局被打破", d: "general", conf: "high" },
+  "21-9": { m: "开心被阻碍", d: "general", conf: "high" },
+  "21-10": { m: "突然突破阻碍，或阻碍被强行切断", d: "general", conf: "high" },
+  "21-11": { m: "争执僵持，谁也不让步", d: "general", conf: "high" },
+  "21-12": { m: "沟通受阻，谈不下去", d: "communication", conf: "high" },
+  "21-13": { m: "新手遇阻，或小事卡住", d: "general", conf: "high" },
+  "21-14": { m: "阻碍需要策略应对", d: "general", conf: "high" },
+  "21-15": { m: "强势的阻碍，或被权威挡住", d: "general", conf: "high" },
+  "21-16": { m: "希望受阻", d: "general", conf: "high" },
+  "21-17": { m: "变动受阻", d: "general", conf: "high" },
+  "21-18": { m: "朋友帮不上忙", d: "general", conf: "high" },
+  "21-19": { m: "机构流程卡住", d: "work", conf: "high" },
+  "21-20": { m: "社交受阻", d: "general", conf: "high" },
+  "21-22": { m: "阻碍面前的选择：绕行、翻越还是放弃", d: "general", conf: "high" },
+  "21-23": { m: "阻碍带来消耗", d: "general", conf: "high" },
+  "21-24": { m: "感情受阻", d: "love", conf: "high" },
+  "21-25": { m: "承诺履行有困难", d: "general", conf: "high" },
+  "21-26": { m: "学习受阻，或因为不了解卡住", d: "general", conf: "high" },
+  "21-27": { m: "通知迟迟不来", d: "communication", conf: "high" },
+  "21-28": { m: "这位男性遇到阻碍", d: "general", conf: "high" },
+  "21-29": { m: "这位女性遇到阻碍", d: "general", conf: "high" },
+  "21-30": { m: "平静中的停滞", d: "general", conf: "high" },
+  "21-31": { m: "翻过山就是明朗，阻碍之后会好起来", d: "general", conf: "high" },
+  "21-32": { m: "情绪受阻", d: "general", conf: "high" },
+  "21-33": { m: "阻碍将被解决，找到翻越的方法", d: "general", alt: "钥匙给出解法，说明山不是绝路", conf: "high" },
+  "21-34": { m: "资金不到位", d: "money", conf: "high" },
+  "21-35": { m: "长期阻碍，事情会拖很久", d: "timing", conf: "high" },
+  "21-36": { m: "双重压力，最沉重的阻碍", d: "general", conf: "high" },
+  "22-1": { m: "消息带来选择，或两条通知", d: "communication", conf: "high" },
+  "22-2": { m: "两条小机会，或轻松的选择", d: "general", conf: "high" },
+  "22-3": { m: "去或留的抉择，与出行/迁移有关的选择", d: "general", conf: "high" },
+  "22-4": { m: "家庭相关的选择", d: "general", conf: "high" },
+  "22-5": { m: "健康方案的抉择", d: "health", conf: "high" },
+  "22-6": { m: "看不清选项，选择困难", d: "general", conf: "high" },
+  "22-7": { m: "选择很复杂，或两难都有弯绕", d: "general", conf: "high" },
+  "22-8": { m: "结束与继续的抉择", d: "general", conf: "high" },
+  "22-9": { m: "两个愉快的选择", d: "general", conf: "high" },
+  "22-10": { m: "必须马上决定", d: "timing", conf: "high" },
+  "22-11": { m: "选择引发争执，或反复在两难间摇摆", d: "general", conf: "high" },
+  "22-12": { m: "讨论中的选择", d: "general", conf: "high" },
+  "22-13": { m: "新方向的选择", d: "general", conf: "high" },
+  "22-14": { m: "选择要谨慎", d: "general", conf: "high" },
+  "22-15": { m: "资源相关的选择", d: "general", conf: "high" },
+  "22-16": { m: "两条愿景之路", d: "general", conf: "high" },
+  "22-17": { m: "变动中的选择", d: "general", conf: "high" },
+  "22-18": { m: "朋友与选择", d: "general", conf: "high" },
+  "22-19": { m: "流程中的选择", d: "work", conf: "high" },
+  "22-20": { m: "社交中的选择", d: "general", conf: "high" },
+  "22-21": { m: "选择被卡住，两条路都不好走", d: "general", conf: "high" },
+  "22-23": { m: "选择带来焦虑", d: "general", conf: "high" },
+  "22-24": { m: "感情里的抉择", d: "love", conf: "high" },
+  "22-25": { m: "承诺相关的选择：要不要定下来", d: "love", conf: "high" },
+  "22-26": { m: "需要了解更多再做选择", d: "general", conf: "high" },
+  "22-27": { m: "通知让你做选择", d: "communication", conf: "high" },
+  "22-28": { m: "这位男性面临选择", d: "general", conf: "high" },
+  "22-29": { m: "这位女性面临选择", d: "general", conf: "high" },
+  "22-30": { m: "成熟的选择，或安稳的抉择", d: "general", conf: "high" },
+  "22-31": { m: "选对了路，结果是明朗的", d: "general", conf: "high" },
+  "22-32": { m: "情绪上的抉择", d: "general", conf: "high" },
+  "22-33": { m: "选择有明确答案，或关键就在于做决定", d: "general", conf: "high" },
+  "22-34": { m: "财务上的选择：投资方向、花钱还是存钱", d: "money", conf: "high" },
+  "22-35": { m: "长期方向的选择", d: "general", conf: "high" },
+  "22-36": { m: "沉重的抉择", d: "general", conf: "high" },
+  "23-1": { m: "消息带来焦虑，或坏消息", d: "communication", conf: "high" },
+  "23-2": { m: "开心被小事损耗", d: "general", conf: "high" },
+  "23-3": { m: "旅途损耗，或出行让人疲惫", d: "general", conf: "high" },
+  "23-4": { m: "家里有损耗，或需要修补", d: "general", conf: "high" },
+  "23-5": { m: "健康被慢慢损耗，长期的消耗需要重视", d: "health", conf: "high" },
+  "23-6": { m: "不明原因的消耗，越想越焦虑", d: "general", conf: "high" },
+  "23-7": { m: "复杂的损耗，或暗中的侵蚀", d: "general", conf: "high" },
+  "23-8": { m: "损耗结束，或决定不再被消耗", d: "general", conf: "high" },
+  "23-9": { m: "好事里夹着小麻烦", d: "general", conf: "high" },
+  "23-10": { m: "突然的损耗，或果断止损", d: "money", conf: "high" },
+  "23-11": { m: "反复的消耗", d: "general", conf: "high" },
+  "23-12": { m: "焦虑的对话", d: "communication", conf: "high" },
+  "23-13": { m: "小事带来烦恼", d: "general", conf: "high" },
+  "23-14": { m: "损耗需要留意根源", d: "general", conf: "high" },
+  "23-15": { m: "资源被损耗", d: "general", conf: "high" },
+  "23-16": { m: "希望被消耗", d: "general", conf: "high" },
+  "23-17": { m: "变动带来消耗", d: "general", conf: "high" },
+  "23-18": { m: "为朋友操心", d: "general", conf: "high" },
+  "23-19": { m: "机构里的消耗", d: "work", conf: "high" },
+  "23-20": { m: "应酬太多", d: "general", conf: "high" },
+  "23-21": { m: "损耗加上阻碍，双重压力", d: "general", conf: "high" },
+  "23-22": { m: "选择带来焦虑", d: "general", conf: "high" },
+  "23-24": { m: "感情里的内耗", d: "love", conf: "high" },
+  "23-25": { m: "承诺的损耗，或约定的消耗", d: "general", conf: "high" },
+  "23-26": { m: "学习中的焦虑，或未知的消耗", d: "general", conf: "high" },
+  "23-27": { m: "烦人的通知", d: "communication", conf: "high" },
+  "23-28": { m: "这位男性让你操心", d: "general", conf: "high" },
+  "23-29": { m: "这位女性让你操心", d: "general", conf: "high" },
+  "23-30": { m: "平静下的消耗", d: "general", conf: "high" },
+  "23-31": { m: "焦虑消散", d: "general", conf: "high" },
+  "23-32": { m: "情绪内耗", d: "general", conf: "high" },
+  "23-33": { m: "找到损耗的根源，堵住漏洞", d: "general", conf: "high" },
+  "23-34": { m: "钱在流失：漏财、亏损、被持续扣钱", d: "money", conf: "high" },
+  "23-35": { m: "长期的小损耗", d: "general", conf: "high" },
+  "23-36": { m: "损耗是长期课题", d: "general", conf: "high" },
+  "24-1": { m: "爱的消息，或对方主动靠近", d: "love", conf: "high" },
+  "24-2": { m: "感情里的小甜蜜", d: "love", conf: "high" },
+  "24-3": { m: "异地恋，或为感情奔波", d: "love", conf: "high" },
+  "24-4": { m: "家的温暖，或想和你有个家", d: "love", conf: "high" },
+  "24-5": { m: "长久的爱", d: "love", conf: "high" },
+  "24-6": { m: "感情不明，对方心思看不透", d: "love", conf: "high" },
+  "24-7": { m: "感情里有复杂", d: "love", conf: "high" },
+  "24-8": { m: "心碎、失恋，或感情告一段落", d: "love", conf: "high" },
+  "24-9": { m: "浪漫的示好", d: "love", conf: "high" },
+  "24-10": { m: "感情突然断裂，或需要果断做决定", d: "love", conf: "high" },
+  "24-11": { m: "感情里的争吵", d: "love", conf: "high" },
+  "24-12": { m: "情侣的对话", d: "love", conf: "high" },
+  "24-13": { m: "感情的初期", d: "love", conf: "high" },
+  "24-14": { m: "感情里需留个心眼", d: "love", conf: "high" },
+  "24-15": { m: "强势的感情", d: "love", conf: "high" },
+  "24-16": { m: "对爱的希望", d: "love", conf: "high" },
+  "24-17": { m: "爱在升级", d: "love", conf: "high" },
+  "24-18": { m: "像朋友一样的恋人", d: "love", conf: "high" },
+  "24-19": { m: "感情受制于外部规则", d: "love", conf: "high" },
+  "24-20": { m: "公开的恋情", d: "love", conf: "high" },
+  "24-21": { m: "感情受阻，有缘无分或外部阻力", d: "love", conf: "high" },
+  "24-22": { m: "感情里的抉择", d: "love", conf: "high" },
+  "24-23": { m: "感情里的内耗，爱得很累", d: "love", conf: "high" },
+  "24-25": { m: "爱的承诺：订婚、结婚，或关系正式确定", d: "love", conf: "high" },
+  "24-26": { m: "感情里有未说出口的事", d: "love", conf: "high" },
+  "24-27": { m: "情书、表白的信息，或关于感情的通知", d: "love", conf: "high" },
+  "24-28": { m: "他对你有感情", d: "love", conf: "high" },
+  "24-29": { m: "她对你有感情", d: "love", conf: "high" },
+  "24-30": { m: "成熟安稳的爱", d: "love", conf: "high" },
+  "24-31": { m: "明朗的爱，感情里的幸福与成功", d: "love", conf: "high" },
+  "24-32": { m: "浪漫的心动", d: "love", conf: "high" },
+  "24-33": { m: "感情的关键，或爱就是这件事的答案", d: "love", conf: "high" },
+  "24-34": { m: "感情与钱挂钩", d: "love", conf: "high" },
+  "24-35": { m: "长久稳定的爱", d: "love", conf: "high" },
+  "24-36": { m: "爱里的重担", d: "love", conf: "high" },
+  "25-1": { m: "邀约、约定相关的通知", d: "love", conf: "high" },
+  "25-2": { m: "小承诺，或短暂的约定", d: "general", conf: "high" },
+  "25-3": { m: "异地约定，或出行相关的约定", d: "general", conf: "high" },
+  "25-4": { m: "家庭承诺", d: "general", conf: "high" },
+  "25-5": { m: "长期承诺，或健康相关的约定", d: "general", conf: "high" },
+  "25-6": { m: "承诺不明，条款含糊或对方态度不清", d: "general", conf: "high" },
+  "25-7": { m: "合约有坑，或承诺里有复杂", d: "general", conf: "high" },
+  "25-8": { m: "合约终止、承诺解除，或一段循环结束", d: "general", conf: "high" },
+  "25-9": { m: "带承诺意味的礼物", d: "love", conf: "high" },
+  "25-10": { m: "约定被打破", d: "general", conf: "high" },
+  "25-11": { m: "围绕承诺的争执", d: "general", conf: "high" },
+  "25-12": { m: "关于承诺的对话", d: "general", conf: "high" },
+  "25-13": { m: "新的约定", d: "general", conf: "high" },
+  "25-14": { m: "合约要看清", d: "general", conf: "high" },
+  "25-15": { m: "资源相关的约定", d: "general", conf: "high" },
+  "25-16": { m: "未来的约定", d: "general", conf: "high" },
+  "25-17": { m: "约定的变动", d: "general", conf: "high" },
+  "25-18": { m: "对朋友的承诺", d: "general", conf: "high" },
+  "25-19": { m: "官方登记、法律合约，或机构盖章的约定", d: "general", conf: "high" },
+  "25-20": { m: "公开的约定", d: "general", conf: "high" },
+  "25-21": { m: "承诺受阻：谈不下来，或履行有困难", d: "general", conf: "high" },
+  "25-22": { m: "要不要定下来", d: "love", conf: "high" },
+  "25-23": { m: "承诺的损耗", d: "general", conf: "high" },
+  "25-24": { m: "爱的承诺", d: "love", conf: "high" },
+  "25-26": { m: "需要了解的约定", d: "general", conf: "high" },
+  "25-27": { m: "合约相关的通知，或书面约定的消息", d: "communication", conf: "high" },
+  "25-28": { m: "这位男性有承诺", d: "general", conf: "high" },
+  "25-29": { m: "这位女性有承诺", d: "general", conf: "high" },
+  "25-30": { m: "安稳的约定", d: "general", conf: "high" },
+  "25-31": { m: "成功带来承诺", d: "general", conf: "high" },
+  "25-32": { m: "暧昧变成承诺", d: "love", conf: "high" },
+  "25-33": { m: "协议的关键条款，或签不签就是答案", d: "general", conf: "high" },
+  "25-34": { m: "商业合约", d: "money", conf: "high" },
+  "25-35": { m: "长期稳定的承诺，可以信赖的约定", d: "general", conf: "high" },
+  "25-36": { m: "沉重的承诺", d: "general", conf: "high" },
+  "26-1": { m: "需要了解的消息", d: "communication", conf: "high" },
+  "26-2": { m: "学到的小技巧", d: "general", conf: "high" },
+  "26-3": { m: "游学，或关于出行的知识", d: "general", conf: "high" },
+  "26-4": { m: "家庭相关的知识，或在家学习", d: "general", conf: "high" },
+  "26-5": { m: "健康知识，或长期的学习", d: "health", conf: "high" },
+  "26-6": { m: "秘密尚未揭开，事情还不知道", d: "general", conf: "high" },
+  "26-7": { m: "秘密中有复杂", d: "general", conf: "high" },
+  "26-8": { m: "秘密公开，或学习阶段结束", d: "general", conf: "high" },
+  "26-9": { m: "学习的乐趣", d: "general", conf: "high" },
+  "26-10": { m: "突然明白，或秘密被揭开", d: "general", conf: "high" },
+  "26-11": { m: "反复研究，或争论中的学习", d: "general", conf: "high" },
+  "26-12": { m: "交流知识", d: "general", conf: "high" },
+  "26-13": { m: "刚开始学习", d: "general", conf: "high" },
+  "26-14": { m: "私下研究、暗中调查，或学得很精明", d: "general", conf: "high" },
+  "26-15": { m: "专业知识", d: "general", conf: "high" },
+  "26-16": { m: "知识带来希望", d: "general", conf: "high" },
+  "26-17": { m: "学习带来转变", d: "general", conf: "high" },
+  "26-18": { m: "与朋友一起学习", d: "general", conf: "high" },
+  "26-19": { m: "学校、教材、正式的教育体系", d: "general", conf: "high" },
+  "26-20": { m: "社群里的学习", d: "general", conf: "high" },
+  "26-21": { m: "学习受阻，或因为不了解而卡住", d: "general", conf: "high" },
+  "26-22": { m: "需要了解更多再选", d: "general", conf: "high" },
+  "26-23": { m: "学习中的焦虑", d: "general", conf: "high" },
+  "26-24": { m: "感情需要更多了解", d: "love", conf: "high" },
+  "26-25": { m: "需要了解的约定", d: "general", conf: "high" },
+  "26-27": { m: "书面文件、资料、需要阅读的材料", d: "communication", conf: "high" },
+  "26-28": { m: "这位男性有知识/有秘密", d: "general", conf: "high" },
+  "26-29": { m: "这位女性有知识/有秘密", d: "general", conf: "high" },
+  "26-30": { m: "成熟的知识，或长辈的经验", d: "general", conf: "high" },
+  "26-31": { m: "知识带来成功", d: "general", conf: "high" },
+  "26-32": { m: "关于情绪的知识", d: "general", conf: "high" },
+  "26-33": { m: "知识给出答案，通过学习找到解法", d: "general", conf: "high" },
+  "26-34": { m: "学习理财", d: "money", conf: "high" },
+  "26-35": { m: "长期学习", d: "general", conf: "high" },
+  "26-36": { m: "沉重的知识，或难以承受的真相", d: "general", conf: "high" },
+  "27-1": { m: "消息传来，或通知到达", d: "communication", conf: "high" },
+  "27-2": { m: "让人开心的小消息", d: "communication", conf: "high" },
+  "27-3": { m: "出行通知", d: "communication", conf: "high" },
+  "27-4": { m: "家里的信件，或寄到家的通知", d: "communication", conf: "high" },
+  "27-5": { m: "健康报告单", d: "health", conf: "high" },
+  "27-6": { m: "消息内容含糊，通知不清楚", d: "communication", conf: "high" },
+  "27-7": { m: "消息有诈", d: "communication", conf: "high" },
+  "27-8": { m: "通知终结，或不再有消息", d: "communication", conf: "high" },
+  "27-9": { m: "让人开心的消息或邀请", d: "communication", conf: "high" },
+  "27-10": { m: "突然的通知，或沟通被截断", d: "communication", conf: "high" },
+  "27-11": { m: "反复的沟通", d: "communication", conf: "high" },
+  "27-12": { m: "消息引发讨论", d: "communication", conf: "high" },
+  "27-13": { m: "关于孩子的消息，或初步通知", d: "communication", conf: "high" },
+  "27-14": { m: "消息要核实", d: "communication", conf: "high" },
+  "27-15": { m: "权威来的通知", d: "communication", conf: "high" },
+  "27-16": { m: "好消息带来希望", d: "communication", conf: "high" },
+  "27-17": { m: "变动的通知", d: "communication", conf: "high" },
+  "27-18": { m: "朋友的来信", d: "communication", conf: "high" },
+  "27-19": { m: "官方文件、公函、机构通知", d: "general", conf: "high" },
+  "27-20": { m: "公开的通知", d: "communication", conf: "high" },
+  "27-22": { m: "通知让你做选择", d: "communication", conf: "high" },
+  "27-23": { m: "烦人的通知", d: "communication", conf: "high" },
+  "27-24": { m: "情书、表白的信息，或关于感情的书面沟通", d: "love", conf: "high" },
+  "27-25": { m: "合约相关的通知", d: "communication", conf: "high" },
+  "27-26": { m: "需要仔细阅读的文件，或资料类的通知", d: "communication", conf: "high" },
+  "27-28": { m: "这位男性发来消息", d: "communication", conf: "high" },
+  "27-29": { m: "这位女性发来消息", d: "communication", conf: "high" },
+  "27-30": { m: "平和的通知，或长辈来信", d: "communication", conf: "high" },
+  "27-31": { m: "好消息的书面确认", d: "communication", conf: "high" },
+  "27-32": { m: "情绪化的消息", d: "communication", conf: "high" },
+  "27-33": { m: "关键文件或通知，答案就在信里", d: "communication", conf: "high" },
+  "27-34": { m: "账单、对账单、财务函件", d: "money", conf: "high" },
+  "27-35": { m: "长期稳定的沟通", d: "communication", conf: "high" },
+  "27-36": { m: "沉重的消息", d: "communication", conf: "high" },
+  "28-29": { m: "两个人在一起，或男女双方的关系", d: "love", conf: "high" },
+  "29-28": { m: "两个人在一起，或男女双方的关系", d: "love", conf: "high" },
+  "28-1": { m: "这位男性带来消息", d: "general", conf: "high" },
+  "28-2": { m: "这位男性带来小幸运", d: "general", conf: "high" },
+  "28-3": { m: "这位男性要出行", d: "general", conf: "high" },
+  "28-5": { m: "这位男性的健康", d: "health", conf: "high" },
+  "28-6": { m: "这位男性态度不明，或你看不清他", d: "general", conf: "high" },
+  "28-7": { m: "这位男性很复杂", d: "general", conf: "high" },
+  "28-8": { m: "与这位男性的关系结束，或他退出这件事", d: "general", conf: "high" },
+  "28-9": { m: "这位男性让人愉快", d: "general", conf: "high" },
+  "28-10": { m: "这位男性突然出现/离开", d: "general", conf: "high" },
+  "28-12": { m: "与这位男性的对话", d: "general", conf: "high" },
+  "28-13": { m: "年轻的男性，或新手", d: "general", conf: "high" },
+  "28-14": { m: "这位男性很精明", d: "general", conf: "high" },
+  "28-15": { m: "这位男性有实力", d: "general", conf: "high" },
+  "28-16": { m: "这位男性带来希望", d: "general", conf: "high" },
+  "28-17": { m: "这位男性有变动", d: "general", conf: "high" },
+  "28-18": { m: "这位男性是可靠的朋友", d: "general", conf: "high" },
+  "28-19": { m: "这位男性在机构里，或与官方事务有关", d: "work", conf: "high" },
+  "28-20": { m: "这位男性在社交场合", d: "general", conf: "high" },
+  "28-21": { m: "这位男性遇到阻碍，或他给你带来阻力", d: "general", conf: "high" },
+  "28-22": { m: "这位男性面临选择", d: "general", conf: "high" },
+  "28-23": { m: "这位男性让你操心", d: "general", conf: "high" },
+  "28-24": { m: "这位男性在感情里，或是你心中的他", d: "love", conf: "high" },
+  "28-25": { m: "这位男性有承诺，或涉及约定", d: "general", conf: "high" },
+  "28-26": { m: "这位男性有知识/有秘密", d: "general", conf: "high" },
+  "28-30": { m: "成熟的男性，或长辈", d: "general", conf: "high" },
+  "28-31": { m: "这位男性状态好、成功，或他带来好消息", d: "general", conf: "high" },
+  "28-32": { m: "这位男性的情绪", d: "general", conf: "high" },
+  "28-33": { m: "这位男性是关键人物，或他能给出答案", d: "general", conf: "high" },
+  "28-34": { m: "这位男性与钱有关", d: "money", conf: "high" },
+  "28-35": { m: "稳定的男性", d: "general", conf: "high" },
+  "28-36": { m: "这位男性背负重担", d: "general", conf: "high" },
+  "29-1": { m: "这位女性带来消息", d: "general", conf: "high" },
+  "29-2": { m: "这位女性带来小幸运", d: "general", conf: "high" },
+  "29-3": { m: "这位女性要出行", d: "general", conf: "high" },
+  "29-5": { m: "这位女性的健康", d: "health", conf: "high" },
+  "29-6": { m: "这位女性态度不明，或你看不清她", d: "general", conf: "high" },
+  "29-7": { m: "这位女性很复杂", d: "general", conf: "high" },
+  "29-8": { m: "与这位女性的关系结束，或她退出这件事", d: "general", conf: "high" },
+  "29-9": { m: "这位女性让人愉快", d: "general", conf: "high" },
+  "29-10": { m: "这位女性突然出现/离开", d: "general", conf: "high" },
+  "29-12": { m: "与这位女性的对话", d: "general", conf: "high" },
+  "29-13": { m: "年轻的女性，或新手", d: "general", conf: "high" },
+  "29-14": { m: "这位女性很精明", d: "general", conf: "high" },
+  "29-15": { m: "这位女性有实力", d: "general", conf: "high" },
+  "29-16": { m: "这位女性带来希望", d: "general", conf: "high" },
+  "29-17": { m: "这位女性有变动", d: "general", conf: "high" },
+  "29-18": { m: "这位女性是可靠的朋友", d: "general", conf: "high" },
+  "29-19": { m: "这位女性在机构里，或与官方事务有关", d: "work", conf: "high" },
+  "29-20": { m: "这位女性在社交场合", d: "general", conf: "high" },
+  "29-21": { m: "这位女性遇到阻碍，或她给你带来阻力", d: "general", conf: "high" },
+  "29-22": { m: "这位女性面临选择", d: "general", conf: "high" },
+  "29-23": { m: "这位女性让你操心", d: "general", conf: "high" },
+  "29-24": { m: "这位女性在感情里，或是你心中的她", d: "love", conf: "high" },
+  "29-25": { m: "这位女性有承诺，或涉及约定", d: "general", conf: "high" },
+  "29-26": { m: "这位女性有知识/有秘密", d: "general", conf: "high" },
+  "29-30": { m: "成熟的女性，或长辈", d: "general", conf: "high" },
+  "29-31": { m: "这位女性状态好、成功，或她带来好消息", d: "general", conf: "high" },
+  "29-32": { m: "这位女性的情绪", d: "general", conf: "high" },
+  "29-33": { m: "这位女性是关键人物，或她能给出答案", d: "general", conf: "high" },
+  "29-34": { m: "这位女性与钱有关", d: "money", conf: "high" },
+  "29-35": { m: "稳定的女性", d: "general", conf: "high" },
+  "29-36": { m: "这位女性背负重担", d: "general", conf: "high" },
+  "30-1": { m: "平和的消息，或长辈的通知", d: "general", conf: "high" },
+  "30-2": { m: "安稳的小幸福", d: "general", conf: "high" },
+  "30-3": { m: "长辈出行，或安顿的长途", d: "general", conf: "high" },
+  "30-4": { m: "家庭和睦，家里的安宁", d: "general", conf: "high" },
+  "30-5": { m: "养生，或长期的健康", d: "health", conf: "high" },
+  "30-6": { m: "表面平静但心里没底", d: "general", conf: "high" },
+  "30-7": { m: "平和下有复杂，或成熟者的弯绕", d: "general", conf: "high" },
+  "30-8": { m: "平静结束，或安宁被打破", d: "general", conf: "high" },
+  "30-9": { m: "温和的喜悦", d: "general", conf: "high" },
+  "30-10": { m: "打破平静的突发", d: "general", conf: "high" },
+  "30-11": { m: "打破平和的争执，或和谐被扰乱", d: "general", conf: "high" },
+  "30-12": { m: "平和的对话", d: "general", conf: "high" },
+  "30-13": { m: "天真又安稳", d: "general", conf: "high" },
+  "30-14": { m: "老练的处世", d: "general", conf: "high" },
+  "30-15": { m: "成熟且有力", d: "general", conf: "high" },
+  "30-16": { m: "平和的希望", d: "general", conf: "high" },
+  "30-17": { m: "成熟期的转变", d: "general", conf: "high" },
+  "30-19": { m: "资深者，或体制内的安稳", d: "work", conf: "high" },
+  "30-20": { m: "成熟社交圈", d: "general", conf: "high" },
+  "30-21": { m: "平和被阻碍，或因为求稳而停滞", d: "general", conf: "high" },
+  "30-22": { m: "安稳的抉择", d: "general", conf: "high" },
+  "30-23": { m: "平静下的消耗", d: "general", conf: "high" },
+  "30-24": { m: "成熟安稳的爱", d: "love", conf: "high" },
+  "30-25": { m: "安稳的约定", d: "general", conf: "high" },
+  "30-26": { m: "长辈的经验", d: "general", conf: "high" },
+  "30-27": { m: "长辈来信", d: "communication", conf: "high" },
+  "30-28": { m: "一位成熟年长的男性，或长辈", d: "general", conf: "high" },
+  "30-29": { m: "一位成熟年长的女性，或长辈", d: "general", conf: "high" },
+  "30-31": { m: "平和的成功", d: "general", conf: "high" },
+  "30-32": { m: "平和的情绪", d: "general", conf: "high" },
+  "30-33": { m: "成熟的答案，答案就在沉淀之后", d: "general", conf: "high" },
+  "30-34": { m: "靠经验积累的财富", d: "money", conf: "high" },
+  "30-35": { m: "长久的安稳", d: "general", conf: "high" },
+  "30-36": { m: "平静地承受重担", d: "general", conf: "high" },
+  "31-1": { m: "明确的好消息", d: "communication", conf: "high" },
+  "31-2": { m: "小幸运变大明朗", d: "general", conf: "high" },
+  "31-3": { m: "出行顺利", d: "general", conf: "high" },
+  "31-4": { m: "家宅安好", d: "general", conf: "high" },
+  "31-5": { m: "健康好转", d: "health", conf: "high" },
+  "31-6": { m: "明朗中带不明，看似好但还有隐情", d: "general", conf: "high" },
+  "31-7": { m: "明朗中带复杂，别只看表面", d: "general", conf: "high" },
+  "31-8": { m: "成功阶段结束，或好事告一段落", d: "general", conf: "high" },
+  "31-9": { m: "双重喜悦", d: "general", conf: "high" },
+  "31-10": { m: "成功被突然打断", d: "general", conf: "high" },
+  "31-11": { m: "争执后的明朗", d: "general", conf: "high" },
+  "31-12": { m: "愉快的交谈", d: "communication", conf: "high" },
+  "31-13": { m: "小小的成功", d: "general", conf: "high" },
+  "31-14": { m: "成功需要策略", d: "general", conf: "high" },
+  "31-15": { m: "靠实力获得认可", d: "work", conf: "high" },
+  "31-16": { m: "希望成真", d: "general", conf: "high" },
+  "31-17": { m: "转变带来成功", d: "general", conf: "high" },
+  "31-18": { m: "朋友带来的好事", d: "general", conf: "high" },
+  "31-19": { m: "官方认可、机构层面的成功", d: "work", conf: "high" },
+  "31-20": { m: "公开的成功", d: "general", conf: "high" },
+  "31-21": { m: "成功被阻碍，或好事来得没那么顺", d: "general", conf: "high" },
+  "31-22": { m: "选对了路", d: "general", conf: "high" },
+  "31-23": { m: "开心事夹杂烦恼", d: "general", conf: "high" },
+  "31-24": { m: "明朗幸福的爱", d: "love", conf: "high" },
+  "31-25": { m: "成功带来承诺", d: "general", conf: "high" },
+  "31-26": { m: "学会、搞明白", d: "general", conf: "high" },
+  "31-27": { m: "好消息的确认", d: "communication", conf: "high" },
+  "31-28": { m: "这位男性状态好", d: "general", conf: "high" },
+  "31-29": { m: "这位女性状态好", d: "general", conf: "high" },
+  "31-30": { m: "平和的成功", d: "general", conf: "high" },
+  "31-32": { m: "声誉与成功", d: "work", conf: "high" },
+  "31-33": { m: "成功的关键，或明确的解法", d: "general", conf: "high" },
+  "31-34": { m: "财务成功", d: "money", conf: "high" },
+  "31-35": { m: "长期的成功", d: "general", conf: "high" },
+  "31-36": { m: "熬过考验迎来的明朗", d: "general", conf: "high" },
+  "32-1": { m: "消息引发情绪波动", d: "communication", conf: "high" },
+  "32-2": { m: "小小的心动", d: "love", conf: "high" },
+  "32-3": { m: "为心情出发，或旅途中的情绪", d: "general", conf: "high" },
+  "32-4": { m: "家里的情绪氛围", d: "general", conf: "high" },
+  "32-5": { m: "情绪与身体相关", d: "health", conf: "high" },
+  "32-6": { m: "情绪不明、暧昧不清，心里没底", d: "love", conf: "high" },
+  "32-7": { m: "情绪里有复杂，或声誉上的弯绕", d: "general", conf: "high" },
+  "32-8": { m: "情绪告一段落", d: "general", conf: "high" },
+  "32-9": { m: "被欣赏、有好感", d: "general", conf: "high" },
+  "32-10": { m: "情绪突然波动", d: "general", conf: "high" },
+  "32-11": { m: "情绪化的争执", d: "general", conf: "high" },
+  "32-12": { m: "情绪化的交谈", d: "communication", conf: "high" },
+  "32-13": { m: "孩子般的情绪", d: "general", conf: "high" },
+  "32-14": { m: "情绪里的算计", d: "general", conf: "high" },
+  "32-15": { m: "权威的情绪，或强势下的感受", d: "general", conf: "high" },
+  "32-16": { m: "情绪的希望", d: "general", conf: "high" },
+  "32-17": { m: "情绪的转变", d: "general", conf: "high" },
+  "32-18": { m: "朋友的情绪", d: "general", conf: "high" },
+  "32-19": { m: "公众声誉、名声，或在机构里的口碑", d: "work", conf: "high" },
+  "32-20": { m: "公众的感受", d: "general", conf: "high" },
+  "32-21": { m: "情绪受阻，或声誉遇到阻碍", d: "general", conf: "high" },
+  "32-22": { m: "情绪上的抉择", d: "general", conf: "high" },
+  "32-23": { m: "情绪内耗", d: "general", conf: "high" },
+  "32-24": { m: "浪漫暧昧", d: "love", conf: "high" },
+  "32-25": { m: "暧昧变成承诺", d: "love", conf: "high" },
+  "32-26": { m: "了解自己的情绪", d: "general", conf: "high" },
+  "32-27": { m: "情绪化的消息", d: "communication", conf: "high" },
+  "32-28": { m: "这位男性的情绪", d: "general", conf: "high" },
+  "32-29": { m: "这位女性的情绪", d: "general", conf: "high" },
+  "32-30": { m: "平和的情绪", d: "general", conf: "high" },
+  "32-31": { m: "声誉与成功，被认可的好名声", d: "work", conf: "high" },
+  "32-33": { m: "情绪的答案，或看清自己的心意", d: "general", conf: "high" },
+  "32-34": { m: "靠名气赚钱", d: "money", conf: "high" },
+  "32-35": { m: "长期的心境", d: "general", conf: "high" },
+  "32-36": { m: "沉重的情绪", d: "general", conf: "high" },
+  "33-1": { m: "关键消息，答案就要来了", d: "communication", conf: "high" },
+  "33-2": { m: "机会就是关键，要抓住", d: "general", conf: "high" },
+  "33-3": { m: "出行是解法，或旅程带来答案", d: "general", conf: "high" },
+  "33-4": { m: "家庭的关键，或回家的答案", d: "general", conf: "high" },
+  "33-5": { m: "健康的关键", d: "health", conf: "high" },
+  "33-6": { m: "迷雾散开、答案揭晓，不清楚的事会明朗", d: "general", alt: "钥匙对云是最强的解法组合", conf: "high" },
+  "33-7": { m: "看穿复杂", d: "general", conf: "high" },
+  "33-8": { m: "结束即是解法，放下就是答案", d: "general", conf: "high" },
+  "33-9": { m: "喜悦的关键", d: "general", conf: "high" },
+  "33-10": { m: "果断的决定就是解法", d: "general", conf: "high" },
+  "33-11": { m: "把话说开就是解法", d: "general", conf: "high" },
+  "33-12": { m: "关键对话", d: "communication", conf: "high" },
+  "33-13": { m: "小事是关键", d: "general", conf: "high" },
+  "33-14": { m: "看穿策略", d: "general", conf: "high" },
+  "33-15": { m: "掌握关键资源", d: "general", conf: "high" },
+  "33-16": { m: "希望成为现实", d: "general", conf: "high" },
+  "33-17": { m: "变动就是解法", d: "general", conf: "high" },
+  "33-18": { m: "通过朋友得到答案", d: "general", conf: "high" },
+  "33-19": { m: "官方的许可、批准，或通过正规渠道解决", d: "general", conf: "high" },
+  "33-20": { m: "在公开场合得到关键信息", d: "general", conf: "high" },
+  "33-21": { m: "解开阻碍，找到通过的方法", d: "general", conf: "high" },
+  "33-22": { m: "关键就在于做决定", d: "general", conf: "high" },
+  "33-23": { m: "找到损耗根源", d: "general", conf: "high" },
+  "33-24": { m: "爱是这件事的答案", d: "love", conf: "high" },
+  "33-25": { m: "决定性的约定", d: "general", conf: "high" },
+  "33-26": { m: "知识就是钥匙", d: "general", conf: "high" },
+  "33-27": { m: "关键文件", d: "communication", conf: "high" },
+  "33-28": { m: "这位男性是关键", d: "general", conf: "high" },
+  "33-29": { m: "这位女性是关键", d: "general", conf: "high" },
+  "33-30": { m: "成熟的答案", d: "general", conf: "high" },
+  "33-31": { m: "成功的关键", d: "general", conf: "high" },
+  "33-32": { m: "情绪的答案", d: "general", conf: "high" },
+  "33-34": { m: "赚钱的方法", d: "money", conf: "high" },
+  "33-35": { m: "答案就是保持现状", d: "general", conf: "high" },
+  "33-36": { m: "重担有解", d: "general", conf: "high" },
+  "34-1": { m: "到账通知、催款，或商务邀约", d: "money", conf: "high" },
+  "34-2": { m: "小额偏财，零钱或短期收益", d: "money", conf: "high" },
+  "34-3": { m: "跨境生意、外贸，或因业务产生的钱", d: "money", conf: "high" },
+  "34-4": { m: "房产相关的钱：买房、租金、家装", d: "money", conf: "high" },
+  "34-5": { m: "长期财务：稳定收入、理财规划", d: "money", conf: "high" },
+  "34-6": { m: "账目不清", d: "money", conf: "high" },
+  "34-7": { m: "财务上有弯绕", d: "money", conf: "high" },
+  "34-8": { m: "财务上的结束：结清、坏账、生意终止", d: "money", conf: "high" },
+  "34-9": { m: "让人开心的收入，或收到的钱", d: "money", conf: "high" },
+  "34-10": { m: "需要止损", d: "money", conf: "high" },
+  "34-11": { m: "反复的支出", d: "money", conf: "high" },
+  "34-12": { m: "关于钱的讨论，或账单引发的沟通", d: "money", conf: "high" },
+  "34-13": { m: "小额的钱", d: "money", conf: "high" },
+  "34-14": { m: "议价、看清条款", d: "money", conf: "high" },
+  "34-15": { m: "大笔资金、老板、投资人", d: "money", conf: "high" },
+  "34-16": { m: "看好的投资机会", d: "money", conf: "high" },
+  "34-17": { m: "资金流转", d: "money", conf: "high" },
+  "34-18": { m: "借钱、合伙", d: "money", conf: "high" },
+  "34-19": { m: "银行、金融机构，或正式的财务流程", d: "money", conf: "high" },
+  "34-20": { m: "市场交易", d: "money", conf: "high" },
+  "34-21": { m: "财务受阻：资金不到位、钱被卡", d: "money", conf: "high" },
+  "34-22": { m: "投资方向的选择", d: "money", conf: "high" },
+  "34-23": { m: "钱在流失：亏损、漏财、持续支出", d: "money", conf: "high" },
+  "34-24": { m: "为感情花钱", d: "love", conf: "high" },
+  "34-25": { m: "商业合约、买卖协议", d: "money", conf: "high" },
+  "34-26": { m: "学习理财", d: "money", conf: "high" },
+  "34-27": { m: "账单、对账单、财务函件", d: "money", conf: "high" },
+  "34-28": { m: "与钱相关的男性", d: "money", conf: "high" },
+  "34-29": { m: "与钱相关的女性", d: "money", conf: "high" },
+  "34-30": { m: "财务安稳", d: "money", conf: "high" },
+  "34-31": { m: "财务成功、盈利、钱景明朗", d: "money", conf: "high" },
+  "34-32": { m: "靠名气赚钱", d: "money", conf: "high" },
+  "34-33": { m: "财务的关键，或赚钱的方法", d: "money", conf: "high" },
+  "34-35": { m: "长期稳定的收入，或稳健的财务", d: "money", conf: "high" },
+  "34-36": { m: "债务压力", d: "money", conf: "high" },
+  "35-1": { m: "消息确认、稳定下来", d: "general", conf: "high" },
+  "35-2": { m: "抓住机会让它稳定", d: "general", conf: "high" },
+  "35-3": { m: "长期驻外、异地扎根，或远方的稳定", d: "general", conf: "high" },
+  "35-4": { m: "稳定的家", d: "general", conf: "high" },
+  "35-5": { m: "长期的健康与安稳", d: "health", conf: "high" },
+  "35-6": { m: "看似稳但心里没底", d: "general", conf: "high" },
+  "35-7": { m: "稳定中有复杂", d: "general", conf: "high" },
+  "35-8": { m: "稳定结束，或长期状态被打破", d: "general", conf: "high" },
+  "35-9": { m: "长久的快乐", d: "general", conf: "high" },
+  "35-10": { m: "打破稳定", d: "general", conf: "high" },
+  "35-11": { m: "稳定中的摩擦", d: "general", conf: "high" },
+  "35-12": { m: "长期的沟通", d: "communication", conf: "high" },
+  "35-13": { m: "从小开始培养", d: "general", conf: "high" },
+  "35-14": { m: "长期的自保", d: "general", conf: "high" },
+  "35-15": { m: "长期稳定的资源", d: "general", conf: "high" },
+  "35-16": { m: "一直坚持的方向", d: "general", conf: "high" },
+  "35-17": { m: "生活重心的迁移", d: "general", conf: "high" },
+  "35-18": { m: "长久的友谊", d: "general", conf: "high" },
+  "35-19": { m: "铁饭碗", d: "work", conf: "high" },
+  "35-20": { m: "长期稳定的社交圈", d: "general", conf: "high" },
+  "35-21": { m: "稳定被卡住，或因为求稳而错过了变化", d: "general", conf: "high" },
+  "35-22": { m: "长期方向的选择", d: "general", conf: "high" },
+  "35-23": { m: "长期的小问题", d: "general", conf: "high" },
+  "35-24": { m: "长久稳定的爱", d: "love", conf: "high" },
+  "35-25": { m: "长久的承诺", d: "general", conf: "high" },
+  "35-26": { m: "长期学习", d: "general", conf: "high" },
+  "35-27": { m: "长期稳定的沟通", d: "communication", conf: "high" },
+  "35-28": { m: "稳定的男性", d: "general", conf: "high" },
+  "35-29": { m: "稳定的女性", d: "general", conf: "high" },
+  "35-30": { m: "长久的安稳", d: "general", conf: "high" },
+  "35-31": { m: "长期的成功", d: "general", conf: "high" },
+  "35-32": { m: "长期的心境", d: "general", conf: "high" },
+  "35-33": { m: "稳定的关键，或答案就是保持现状", d: "general", conf: "high" },
+  "35-34": { m: "长期稳定的收入", d: "money", conf: "high" },
+  "35-36": { m: "长期背负的重担", d: "general", conf: "high" },
+  "36-1": { m: "沉重的消息", d: "communication", conf: "high" },
+  "36-2": { m: "小小的重担里有转机", d: "general", conf: "high" },
+  "36-3": { m: "艰难的旅程", d: "general", conf: "high" },
+  "36-4": { m: "家庭责任的重担，或家族的牵绊", d: "general", conf: "high" },
+  "36-5": { m: "长期的健康课题", d: "health", conf: "high" },
+  "36-6": { m: "重压下的迷茫", d: "general", conf: "high" },
+  "36-7": { m: "复杂的重担", d: "general", conf: "high" },
+  "36-8": { m: "重担结束，或艰难阶段告终", d: "general", conf: "high" },
+  "36-9": { m: "苦中有甜", d: "general", conf: "high" },
+  "36-10": { m: "重担突然压来", d: "general", conf: "high" },
+  "36-11": { m: "沉重的争执", d: "general", conf: "high" },
+  "36-12": { m: "难以启齿的话题", d: "communication", conf: "high" },
+  "36-13": { m: "小小的重担", d: "general", conf: "high" },
+  "36-14": { m: "重担下的应对", d: "general", conf: "high" },
+  "36-15": { m: "背负资源压力", d: "general", conf: "high" },
+  "36-16": { m: "重担中的希望", d: "general", conf: "high" },
+  "36-17": { m: "人生阶段的更替", d: "general", conf: "high" },
+  "36-18": { m: "为朋友承担", d: "general", conf: "high" },
+  "36-19": { m: "机构带来的压力", d: "work", conf: "high" },
+  "36-20": { m: "社交带来的压力", d: "general", conf: "high" },
+  "36-21": { m: "双重压力，最沉重的阻碍", d: "general", conf: "high" },
+  "36-22": { m: "沉重的抉择", d: "general", conf: "high" },
+  "36-23": { m: "损耗是长期课题", d: "general", conf: "high" },
+  "36-24": { m: "爱里的重担", d: "love", conf: "high" },
+  "36-25": { m: "必须承担的责任", d: "general", conf: "high" },
+  "36-26": { m: "难以承受的真相", d: "general", conf: "high" },
+  "36-27": { m: "沉重的消息", d: "communication", conf: "high" },
+  "36-28": { m: "这位男性背负重担", d: "general", conf: "high" },
+  "36-29": { m: "这位女性背负重担", d: "general", conf: "high" },
+  "36-30": { m: "平静地承受，或在安稳中背负责任", d: "general", conf: "high" },
+  "36-31": { m: "苦尽甘来", d: "general", conf: "high" },
+  "36-32": { m: "沉重的情绪", d: "general", conf: "high" },
+  "36-33": { m: "重担有解，或承受之后得到答案", d: "general", conf: "high" },
+  "36-34": { m: "债务压力", d: "money", conf: "high" },
+  "36-35": { m: "长期背负的重担", d: "general", conf: "high" }
+};
+
+
+
+/* ==========================================================
+   雷诺曼组合引擎
+   核心：不是关键词堆叠，而是「名词 + 修饰语」生成句子
+   ========================================================== */
+
+/* 取一张牌的句法角色 */
+function lnRole(id) {
+    if (typeof LN_ROLES === 'undefined') return null;
+    return LN_ROLES[String(id)] || null;
+}
+/* 取牌名 */
+function lnName(id) {
+    if (typeof LENORMAND_CARDS === 'undefined') return String(id);
+    var c = LENORMAND_CARDS.filter(function (x) { return String(x.id) === String(id); })[0];
+    return c ? c.name : String(id);
+}
+/* 问题域中文名 */
+function lnDomainName(d) {
+    var M = { general: '通用', love: '感情', work: '事业', money: '财运',
+              health: '健康', timing: '时间', communication: '沟通' };
+    return M[d] || '通用';
+}
+
+/* ---- 核心：查一组有序对 ----
+   返回 { text, domain, alt, conf, source, reversed }
+   reversed=true 表示用的是反向顺序（B+A）的解释 */
+function lnCombo(aId, bId, domain) {
+    var a = String(aId), b = String(bId);
+    if (typeof LN_COMBOS === 'undefined') return null;
+    var hit = LN_COMBOS[a + '-' + b];
+    var rev = false;
+    if (!hit) {
+        hit = LN_COMBOS[b + '-' + a];
+        rev = !!hit;
+    }
+    if (hit) {
+        /* 若指定了问题域且组合标注域不匹配，仍优先用策展文本（它更准），但标记 */
+        return {
+            text: hit.m, domain: hit.d || 'general', alt: hit.alt || '',
+            conf: hit.conf || 'high', source: 'curated', reversed: rev,
+            a: a, b: b
+        };
+    }
+    return lnComboDraft(a, b, domain);
+}
+
+/* ---- 模板兜底：未策展的组合用句法生成，标记为 draft ---- */
+function lnComboDraft(a, b, domain) {
+    var ra = lnRole(a), rb = lnRole(b);
+    if (!ra || !rb) return null;
+    var na = lnName(a), nb = lnName(b);
+    var text;
+    /* 名词 + 修饰语：B 修饰 A */
+    /* 人物牌（28/29）做修饰语时，用「X 这一方」而不是形容词，避免出现「男性当事人是女性的」这类不通顺句 */
+    var _isPersonB = (b === '28' || b === '29');
+    if (_isPersonB) {
+        text = na + '与' + nb + '相邻，这件事主要落在' + nb + '这一方身上';
+    } else if (rb.adj) {
+        var _adj = rb.adj.split('、')[0];
+        if (_adj.slice(-1) !== '的') _adj += '的';
+        text = ra.noun.split('/')[0] + '带着' + _adj + '色彩——' + nb + '限定了它的方向';
+    } else if (rb.verb) {
+        text = na + '之后出现' + nb + '，' + ra.noun.split('/')[0] + '被' + rb.verb + '';
+    } else {
+        text = na + '与' + nb + '相邻，' + nb + '限定了' + na + '的具体方向';
+    }
+    var tone = '两者叠加，整体倾向' + lnToneWord(ra.tone) + '偏' + lnToneWord(rb.tone) + '，具体要看问题是什么';
+    return {
+        text: text, domain: domain || 'general', alt: tone,
+        conf: 'draft', source: 'algorithmic', reversed: false, a: a, b: b
+    };
+}
+function lnToneWord(t) {
+    return t === 'positive' ? '正面' : (t === 'negative' ? '挑战' : '中性');
+}
+
+/* ---- 把组合结果渲染成用户可读的一句话 ---- */
+function lnComboText(a, b, domain) {
+    var r = lnCombo(a, b, domain);
+    if (!r) return lnName(a) + ' + ' + lnName(b);
+    var out = r.text;
+    /* 反向命中时要说明顺序差异 */
+    if (r.reversed) {
+        out = '（按「' + lnName(b) + ' + ' + lnName(a) + '」的常用读法）' + out;
+    }
+    return out;
+}
+
+/* ---- 句子生成：把 3 张牌串成一句话 ---- */
+function lnSentence3(c1, c2, c3, domain) {
+    var n1 = lnName(c1), n2 = lnName(c2), n3 = lnName(c3);
+    var r12 = lnCombo(c1, c2, domain);
+    var r23 = lnCombo(c2, c3, domain);
+    var mid = lnRole(c2);
+    var parts = [];
+    /* 主句：中心牌被两侧修饰 */
+    var core = n2;
+    if (mid && mid.noun) core = mid.noun;
+    var left = (r12 && r12.source === 'curated')
+        ? (r12.reversed ? '（按常用读法 ' + n2 + '+' + n1 + '）' + r12.text : r12.text)
+        : (n1 + '是' + core + '的背景，两者连着读');
+    var right = (r23 && r23.source === 'curated')
+        ? (r23.reversed ? '（按常用读法 ' + n3 + '+' + n2 + '）' + r23.text : r23.text)
+        : (core + '之后，往' + n3 + '的方向发展');
+    parts.push('这一组读作一句话：' + n1 + '（背景）之后，重心落在' + n2 + '上，接着往' + n3 + '的方向走。');
+    parts.push('左·' + n1 + ' + 中·' + n2 + '：' + left + '。');
+    parts.push('中·' + n2 + ' + 右·' + n3 + '：' + right + '。');
+    return parts;
+}
+
+/* ---- 九宫格：中心 + 四邻 ---- */
+function lnSentence9(cards, domain) {
+    if (!cards || cards.length < 9) return [];
+    var center = cards[4];
+    var out = [];
+    out.push('中心牌「' + lnName(center) + '」定主题，先读它再看四周的修饰。');
+    var ring = [
+        { i: 1, n: '上方' }, { i: 3, n: '左侧' },
+        { i: 5, n: '右侧' }, { i: 7, n: '下方' }
+    ];
+    ring.forEach(function (p) {
+        var r = lnCombo(cards[p.i], center, domain);
+        if (r) out.push(p.n + '·' + lnName(cards[p.i]) + ' + 中心：' + r.text + '。');
+    });
+    return out;
+}
+
+/* ---- 组合提示：给单张牌详情页用 ---- */
+function lnComboHints(id, domain, limit) {
+    var out = [];
+    if (typeof LN_COMBOS === 'undefined') return out;
+    var n = 0;
+    Object.keys(LN_COMBOS).forEach(function (k) {
+        if (n >= (limit || 6)) return;
+        var seg = k.split('-');
+        if (seg[0] === String(id)) {
+            out.push({ with: lnName(seg[1]), text: LN_COMBOS[k].m, domain: LN_COMBOS[k].d });
+            n++;
+        }
+    });
+    return out;
+}
+
+window.lnRole = lnRole;
+window.lnName = lnName;
+window.lnCombo = lnCombo;
+window.lnComboText = lnComboText;
+window.lnSentence3 = lnSentence3;
+window.lnSentence9 = lnSentence9;
+window.lnComboHints = lnComboHints;
+window.lnDomainName = lnDomainName;
+
+
+/* ==========================================================
+   雷诺曼大桌法（Grand Tableau）位置法
+   说明：宫位/距离/镜像/骑士 属流派扩展，各家不完全一致
+   这里采用最通行的做法，并明确标注「非统一标准」
+   ========================================================== */
+
+/* 36 宫位：传统 House 含义（通行版本） */
+var LN_HOUSES = {
+    1: { n: '本人宫', d: '问卜者自身状态、身心灵整体' },
+    2: { n: '财富宫', d: '金钱、资产、收支' },
+    3: { n: '沟通宫', d: '消息、对话、文书、短途' },
+    4: { n: '家宅宫', d: '家庭、住所、根源、家人' },
+    5: { n: '乐趣宫', d: '玩乐、创意、子女、恋爱' },
+    6: { n: '健康宫', d: '身体、日常作息、劳务' },
+    7: { n: '伴侣宫', d: '伴侣、合作关系、对方' },
+    8: { n: '转化宫', d: '深层变化、他人资源、危机与重生' },
+    9: { n: '远行宫', d: '长途、异地、学业、信念' },
+    10: { n: '事业宫', d: '事业、社会地位、目标' },
+    11: { n: '社交宫', d: '朋友、圈子、愿望' },
+    12: { n: '隐秘宫', d: '隐藏的事、牺牲、潜意识' },
+    13: { n: '变动宫', d: '突发变化、意外' },
+    14: { n: '耐心宫', d: '需要等待、缓慢推进' },
+    15: { n: '阻碍宫', d: '障碍、限制、难题' },
+    16: { n: '帮助宫', d: '助力、支援、贵人' },
+    17: { n: '转机宫', d: '改善、好转、转折' },
+    18: { n: '忠告宫', d: '建议、该做的事' },
+    19: { n: '结果宫', d: '事件的结果、外在影响' },
+    20: { n: '内心宫', d: '内在感受、真实想法' },
+    21: { n: '环境宫', d: '周遭环境、外部条件' },
+    22: { n: '担忧宫', d: '恐惧、焦虑、挂心的事' },
+    23: { n: '助力宫', d: '可用资源、方法' },
+    24: { n: '关系宫', d: '感情、连结、亲密' },
+    25: { n: '承诺宫', d: '约定、合约、责任' },
+    26: { n: '知识宫', d: '学习、研究、未知' },
+    27: { n: '讯息宫', d: '通知、文书、来得快的事' },
+    28: { n: '本人/他人宫', d: '问卜者或关键男性' },
+    29: { n: '他人/本人宫', d: '关键女性或问卜者' },
+    30: { n: '安稳宫', d: '平静、沉淀、成熟' },
+    31: { n: '成就宫', d: '成功、明朗、能量' },
+    32: { n: '声誉宫', d: '名声、情绪、公众印象' },
+    33: { n: '关键宫', d: '答案、关键、突破点' },
+    34: { n: '事业财宫', d: '生意、现金流、经营' },
+    35: { n: '长远宫', d: '长期趋势、稳定结果' },
+    36: { n: '考验宫', d: '重担、宿命、必须面对的' }
+};
+
+/* 大桌法 4×9 布局（36 张） */
+function lnGTLayout(cards) {
+    var rows = [];
+    for (var r = 0; r < 4; r++) {
+        var row = [];
+        for (var c = 0; c < 9; c++) {
+            var idx = r * 9 + c;
+            row.push({ idx: idx, house: idx + 1, card: cards[idx] });
+        }
+        rows.push(row);
+    }
+    return rows;
+}
+
+/* 找人物牌位置（28 男人 / 29 女人） */
+function lnFindPerson(cards, pid) {
+    for (var i = 0; i < cards.length; i++) {
+        if (String(cards[i]) === String(pid)) return i;
+    }
+    return -1;
+}
+
+/* 宫位读法：第 n 张落在第 n 宫时的含义 */
+function lnHouseReading(houseNum, cardId) {
+    var h = LN_HOUSES[houseNum];
+    if (!h) return '';
+    var r = lnCombo(String(cardId), '33');   /* 与该宫主题的组合感 */
+    return '第 ' + houseNum + ' 宫（' + h.n + '·' + h.d + '）落「' + lnName(cardId) + '」';
+}
+
+/* 四邻：某张牌周围的牌（上下左右） */
+function lnNeighbors(cards, idx) {
+    var r = Math.floor(idx / 9), c = idx % 9;
+    var out = [];
+    if (r > 0) out.push({ pos: '上方', i: idx - 9 });
+    if (c > 0) out.push({ pos: '左侧', i: idx - 1 });
+    if (c < 8) out.push({ pos: '右侧', i: idx + 1 });
+    if (r < 3) out.push({ pos: '下方', i: idx + 9 });
+    return out.map(function (x) {
+        return { pos: x.pos, card: cards[x.i], idx: x.i };
+    }).filter(function (x) { return x.card; });
+}
+
+/* 骑士法：从人物牌出发，按固定步距跳跃（流派技法，非统一标准） */
+function lnKnighting(cards, startIdx, step) {
+    step = step || 4;
+    var out = [], i = startIdx, guard = 0;
+    while (guard++ < 10) {
+        i += step;
+        if (i >= cards.length) i -= cards.length;
+        out.push({ idx: i, card: cards[i] });
+        if (out.length >= 5) break;
+    }
+    return out;
+}
+
+/* 镜像牌：位置关于中心对称（流派技法） */
+function lnMirroring(cards, idx) {
+    var r = Math.floor(idx / 9), c = idx % 9;
+    var mr = 3 - r, mc = 8 - c;
+    var mi = mr * 9 + mc;
+    return { idx: mi, card: cards[mi] };
+}
+
+/* 四角：整局的总结（流派技法） */
+function lnFourCorners(cards) {
+    return [
+        { pos: '左上·起点', card: cards[0] },
+        { pos: '右上·趋势', card: cards[8] },
+        { pos: '左下·基础', card: cards[27] },
+        { pos: '右下·结果', card: cards[35] }
+    ];
+}
+
+/* 距离法：人物牌与主题牌的距离（远/近） */
+function lnDistance(cards, personIdx, topicIdx) {
+    var pr = Math.floor(personIdx / 9), pc = personIdx % 9;
+    var tr = Math.floor(topicIdx / 9), tc = topicIdx % 9;
+    var d = Math.abs(pr - tr) + Math.abs(pc - tc);
+    var level = d <= 1 ? '紧邻·影响直接' : (d <= 3 ? '较近·影响明显' :
+                (d <= 6 ? '中等·间接影响' : '很远·影响微弱或来自远方'));
+    return { dist: d, level: level };
+}
+
+/* ---- 生成大桌法解读 ---- */
+function lnGrandTableau(cards, personCardId) {
+    if (!cards || cards.length < 36) return [];
+    var out = [];
+    var pIdx = lnFindPerson(cards, personCardId || '29');
+    if (pIdx < 0) pIdx = 0;
+
+    out.push('【整体】先看四角定基调，再看人物牌所在宫位。');
+    var fc = lnFourCorners(cards);
+    fc.forEach(function (x) {
+        out.push(x.pos + '：' + lnName(x.card));
+    });
+
+    out.push('');
+    out.push('【人物牌】「' + lnName(cards[pIdx]) + '」落在第 ' + (pIdx + 1) + ' 宫——'
+        + (LN_HOUSES[pIdx + 1] ? LN_HOUSES[pIdx + 1].n + '，' + LN_HOUSES[pIdx + 1].d : ''));
+
+    var nb = lnNeighbors(cards, pIdx);
+    if (nb.length) {
+        out.push('【四邻】人物牌周围是解读重点：');
+        nb.forEach(function (x) {
+            var cm = lnCombo(String(x.card), String(cards[pIdx]));
+            out.push('  ' + x.pos + '·' + lnName(x.card) + ' + 本人：'
+                + (cm && cm.source === 'curated' ? cm.text : cm.text));
+        });
+    }
+
+    var kn = lnKnighting(cards, pIdx);
+    if (kn.length) {
+        out.push('【骑士法·流派技法】从人物牌每 4 格跳一次，串出事件链：');
+        out.push('  ' + kn.map(function (x) { return lnName(x.card); }).join(' → '));
+    }
+
+    var mi = lnMirroring(cards, pIdx);
+    out.push('【镜像·流派技法】人物牌的镜像位是「' + lnName(mi.card) + '」，常指隐性联系或对方的真实状态。');
+
+    out.push('');
+    out.push('【说明】宫位含义、骑士法与镜像属流派扩展，不同作者规则不尽相同；以上采用最通行读法。');
+    return out;
+}
+
+window.LN_HOUSES = LN_HOUSES;
+window.lnGTLayout = lnGTLayout;
+window.lnFindPerson = lnFindPerson;
+window.lnHouseReading = lnHouseReading;
+window.lnNeighbors = lnNeighbors;
+window.lnKnighting = lnKnighting;
+window.lnMirroring = lnMirroring;
+window.lnFourCorners = lnFourCorners;
+window.lnDistance = lnDistance;
+window.lnGrandTableau = lnGrandTableau;
+
+
 
 const LENORMAND_VIEWS = {
     '1': { story: '一人策马奔来，马鬃飞扬、马蹄离地，尘土在身后扬起。他不是站在原地等你，而是正在路上、带着明确目的接近你——快，且有方向', classic: '德法传统都把骑士读作消息、来访者、迅速推进，是整副牌最快的到来信号。它回答有没有新动静时几乎等于有，而且很快', modern: '当代读法把骑士扩展为启动与主动，鼓励不要拖延、立刻行动追目标；也常指快递、跑腿、常出门的人，以及一切需要提速的事', schools: 'Andy Boroveshengra 把骑士列在正—中性一侧；Iris Treppner 则把骑士放进正面牌。区别在于 Treppner 更看重消息来了，Boroveshengra 更强调消息内容仍由邻牌决定——骑士只保证快，不保证好', comboMany: '本牌三叶草好消息或幸运机遇；本牌云消息混乱、传来的是误传；本牌蛇带来欺骗的消息；本牌心恋爱消息或新恋情开始', pos: '近位消息已到、近在眼前；远位消息从远方或国外来，且慢；上方消息来自外部推动；下方你主动发出；左侧关于过去的消息；右侧即将到来的通知', fields: '感情：恋爱消息或新对象出现；事业：工作机会、面试通知、外勤岗位；财运：到账通知、快速进账；健康：体检结果或健康资讯；家庭：家中来客或家庭消息；人际：有人主动联系你', caution: '骑士只承诺快，不承诺好；邻牌是云或蛇时，它带来的就是坏消息或误传，别见骑士就当喜讯', asks: '我在等的那个消息什么时候到？这份工作机会是否值得我主动追？对方会主动联系我吗？' },
@@ -21637,6 +23244,28 @@ function synthTarot(spreadKey, cards, rev) {
             (rp >= 60 ? ' · 能量多在内收或延迟' : rp <= 20 ? ' · 能量相对外放' : ' · 顺阻交替'));
     }
 
+    /* 重复模式识别（报告 P1：镜像与重复模式） */
+    if (typeof tarotPatterns === 'function' && st.total >= 2) {
+        var _pats = tarotPatterns(cards.map(function (c, i) {
+            return { suit: c.suit, rank: c.rank, reversed: !!rev[i] };
+        }));
+        if (_pats.length) {
+            out.tags.push('牌阵模式：' + _pats.slice(0, 3).map(function (p) { return p.k; }).join('、'));
+        }
+        var _patLines = _pats.slice(0, 3).map(function (p) { return p.k + '：' + p.m; });
+        out._patterns = _patLines;
+    }
+
+    /* 相邻牌对组合 */
+    if (typeof tarotPair === 'function' && st.total >= 2) {
+        var _pairLines = [];
+        for (var _i = 0; _i + 1 < st.total; _i++) {
+            var _pr = tarotPair(String(cards[_i].id), String(cards[_i + 1].id));
+            if (_pr) _pairLines.push(NM(_i) + ' + ' + NM(_i + 1) + '：' + _pr.m);
+        }
+        out._pairs = _pairLines.slice(0, 3);
+    }
+
     const tension = (a, b) => {
         const pa = P(a), pb = P(b);
         if (pa >= 1 && pb >= 1) return '两股力量方向一致，';
@@ -21836,6 +23465,16 @@ function synthTarot(spreadKey, cards, rev) {
         else if (st.revN / st.total <= 0.2) out.lines.push('本轮正位为主（' + (st.total - st.revN) + '/' + st.total + '），整体提示：能量相对外放，是适合行动的窗口。');
         if (st.major >= st.total / 2) out.lines.push('大牌占了 ' + st.major + ' 张，说明这件事牵涉的不是小打小闹，而是阶段性的主题。');
     }
+    /* 模式与组合补充到正文 */
+    if (out._patterns && out._patterns.length) {
+        out.lines.push('—— 牌阵模式 ——');
+        out._patterns.forEach(function (t) { out.lines.push(t); });
+    }
+    if (out._pairs && out._pairs.length) {
+        out.lines.push('—— 相邻牌对 ——');
+        out._pairs.forEach(function (t) { out.lines.push(t); });
+    }
+    delete out._patterns; delete out._pairs;
     return out;
 }
 
@@ -21844,11 +23483,39 @@ function synthLenormand(spreadKey, cards) {
     const sp = LENORMAND_SPREADS[spreadKey];
     const out = { title: '', lines: [], tags: [] };
     const K = (i) => cards[i] ? (cards[i].meaning || '').split('、')[0] : '';
+    if (spreadKey === 'lnm5') {
+        var _ids5 = cards.map(function (c) { return String(c.id); });
+        out.title = '五张线型 · 核心是「' + cards[2].name + '」';
+        out.lines.push('第 3 张「' + cards[2].name + '」是核心，被第 1、2 张（过去/现在）和第 4、5 张（影响/结果）修饰。');
+        var _pair23 = lnCombo(_ids5[1], _ids5[2], 'general');
+        var _pair34 = lnCombo(_ids5[2], _ids5[3], 'general');
+        var _pair45 = lnCombo(_ids5[3], _ids5[4], 'general');
+        if (_pair23) out.lines.push('现在 + 核心：' + _pair23.text + '。');
+        if (_pair34) out.lines.push('核心 + 影响：' + _pair34.text + '。');
+        if (_pair45) out.lines.push('影响 + 结果：' + _pair45.text + '。');
+        out.tags.push('组合读法 · 五张线');
+        return out;
+    }
+    if (spreadKey === 'lnmgt') {
+        var _idsg = cards.map(function (c) { return String(c.id); });
+        var _gt = (typeof lnGrandTableau === 'function') ? lnGrandTableau(_idsg, '29') : [];
+        out.title = '大桌法 · 36 张全铺';
+        _gt.forEach(function (t) { out.lines.push(t); });
+        out.tags.push('位置法 · 宫位/骑士/镜像（流派技法）');
+        return out;
+    }
     if (spreadKey === 'lnm3') {
         out.title = K(0) + ' — ' + K(1) + ' — ' + K(2);
-        out.lines.push('三张连成一句话读：' + K(0) + '（背景）之后，现在的核心是' + K(1) + '，接下来会往' + K(2) + '走。');
+        /* 优先用组合引擎生成真正的句子 */
+        var _s3 = (typeof lnSentence3 === 'function')
+            ? lnSentence3(cards[0].id, cards[1].id, cards[2].id, 'general') : null;
+        if (_s3 && _s3.length) {
+            _s3.forEach(function (t) { out.lines.push(t); });
+            out.tags.push('组合读法 · 按「名词+修饰语」成句');
+        } else {
+            out.lines.push('三张连成一句话读：' + K(0) + '（背景）之后，现在的核心是' + K(1) + '，接下来会往' + K(2) + '走。');
+        }
         out.lines.push('重点是中间那张「' + cards[1].name + '」——它被左边「' + cards[0].name + '」和右边「' + cards[2].name + '」修饰，而不是三张各自解释。');
-        out.lines.push('组合提示：' + cards[0].name + ' + ' + cards[1].name + ' 说明' + K(0) + '与' + K(1) + '是连着的；' + cards[1].name + ' + ' + cards[2].name + ' 说明结果带着' + K(2) + '的色彩。');
     } else {
         const center = cards[4];
         out.title = '中心是「' + center.name + '」——' + (center.meaning || '').split('、')[0];
@@ -21862,6 +23529,14 @@ function synthLenormand(spreadKey, cards) {
         out.lines.push('两条对角线：' + [0, 4, 8].map(j => cards[j].name).join(' + ') + '（主线索）；' + [2, 4, 6].map(j => cards[j].name).join(' + ') + '（隐性联系）。');
         const near = [1, 3, 5, 7].map(j => cards[j].name);
         out.lines.push('中心牌的四邻是：' + near.join('、') + '——它们直接修饰「' + center.name + '」的性质，是这局最该先读的组合。');
+        /* 组合引擎：中心与四邻的真正组合含义 */
+        var _ids = cards.map(function (c) { return String(c.id); });
+        var _s9 = (typeof lnSentence9 === 'function') ? lnSentence9(_ids, 'general') : null;
+        if (_s9 && _s9.length) {
+            out.lines.push('—— 中心与四邻的组合 ——');
+            _s9.forEach(function (t) { out.lines.push(t); });
+            out.tags.push('组合读法 · 中心被四邻修饰');
+        }
     }
     out.tags.push('雷诺曼以相邻组合、方向与距离优先于单牌主题');
     return out;
@@ -21898,6 +23573,491 @@ function tarotDetailOf(card) {
 }
 
 // 塔罗情境详解（详细解读 / 感情 / 事业 / 财运）
+/* ===== 塔罗扩充：物件释义 / 领域补全 / 行动建议 =====
+   TAROT_OBJECTS：牌面物件逐条释义（报告称为「形成产品差异」的核心）
+   TAROT_DOMAINS：学业/人际/健康 三领域 正逆位（与已有 love/career/money 并列）
+   TAROT_ACTIONS：每日一牌的行动建议
+===== */
+var TAROT_OBJECTS = {
+  "0": [["悬崖","未知的边界，提醒勇气不等于鲁莽"], ["行囊","轻装上路，经验尚少但足够启程"], ["白玫瑰","纯真与未经污染的直觉"], ["小狗","本能与提醒，也可能是旁人的劝阻"], ["太阳","白日启程，事情在明处进行"], ["数字0","未定形，无限潜能"]],
+  "1": [["无限符号","资源无穷，关键在于是否会使用"], ["桌上四元素","权杖杯剑星齐备，万事俱备"], ["一手指天一手向地","如其在上如其在下，意念落地"], ["红白袍","热情与纯净并存"], ["玫瑰与百合","欲望与纯洁的平衡"]],
+  "10": [["轮子","周期与循环，有起必有落"], ["四活物","四元素与四方，世界的运转"], ["顶部狮身人面","静观其变"], ["向下的蛇","下降与衰变"], ["八个辐条","节律与秩序"]],
+  "11": [["狮子","本能的力量"], ["抚摸的手","以柔克刚"], ["头顶无限符号","内在力量的无尽"], ["花环与腰带","欲望被引导而非消灭"], ["平和的神情","勇气不是没有恐惧"]],
+  "12": [["倒吊姿态","主动的暂停，换个视角"], ["绳结","束缚也是支撑"], ["光环","牺牲中有启示"], ["倒转的世界","视角被翻转"], ["红色裤","行动力被暂时悬置"]],
+  "13": [["镰刀","收割与切断"], ["骷髅","本质，剥离表象"], ["河流","逝去与流动"], ["旗","变化不可逆"], ["骨架","留下的结构"]],
+  "14": [["两个杯子","在两个容器间流动"], ["狮子与鹰","本能与心智的平衡"], ["水流","情绪与潜意识的调和"], ["花环","和谐与节制"], ["一脚在水一脚在地","游走于意识与潜意识之间"]],
+  "15": [["锁链","束缚，但是松的"], ["倒置五角星","欲望压过理性"], ["角与翅膀","沉沦的本能"], ["男与女","被欲望连结"], ["火把","欲望的燃烧"]],
+  "16": [["高塔","人为建造的结构"], ["闪电","突如其来的打破"], ["坠落的人","从高位掉落"], ["被击落的王冠","权威与自我被瓦解"], ["火焰","彻底的清除"]],
+  "17": [["星星","希望与指引"], ["两个杯子","同时浇灌内在与外在"], ["一大星八小星","主脉与分支"], ["鸟与树","灵性与自然"], ["裸身","毫无保留的真诚"]],
+  "18": [["满月与缺月","明暗两面同时存在"], ["两座塔","恐惧的边界"], ["狗与狼","驯服与野性"], ["水面与虾","潜意识浮出"], ["通向远山的小路","未知的前路"]],
+  "19": [["太阳","明朗与生命力"], ["孩子","纯真与无惧"], ["白马","纯粹的能量"], ["向日葵","追随光，朝向成长"], ["裸身骑马","无需防备"]],
+  "2": [["月亮","潜意识与尚未显明的事"], ["面纱","遮蔽的真相，需要直觉而非逻辑"], ["两座塔","二元对立，明暗各一边"], ["滴水入池","情绪向下流动，汇聚成潜意识"], ["女祭司的冠","阴性能量，静默的智慧"]],
+  "20": [["号角","召唤与觉醒"], ["天使","更高的讯息"], ["旗帜","宣告与公开"], ["升起的棺木","旧阶段结束，新阶段开始"], ["光芒","启示"]],
+  "21": [["花环","圆满与循环"], ["四角活物","四元素齐备"], ["舞动的人","在循环中保持中心"], ["魔杖","把经验转为智慧"], ["紫色","灵性的完成"]],
+  "3": [["麦穗","丰收与滋养，付出会有回报"], ["河流","情感的流动与滋养"], ["星空斗篷","宇宙的丰饶，自然的秩序"], ["孕妇","创造正在进行，需要时间孕育"], ["石榴","丰产与生命力的象征"]],
+  "4": [["王座","权威与位置，责任随之而来"], ["权杖与宝球","掌控与秩序"], ["公羊头","白羊座，果断与开创"], ["盔甲","保护，也意味着不能随时卸下"], ["红袍","行动力与意志"]],
+  "5": [["教皇手势","传承与正统的知识"], ["两根柱子","律法与自由的二元"], ["交叉的钥匙","通往知识的门，需经引导"], ["三重冠","物质、心智、灵性三层"], ["信徒","学习与传承的关系"]],
+  "6": [["天使","祝福与更高的引导"], ["亚当夏娃","两个人的连接与选择"], ["苹果树与蛇","诱惑与自由意志"], ["光芒","祝福正在发生"], ["裸身","毫无保留的真诚"]],
+  "7": [["战车","意志驱动的前进"], ["两只狮身人面","相反的力量被驾驭"], ["星空顶篷","来自上方的指引"], ["身后城池","已经出发，退路在后方"], ["铠甲与权杖","准备充分，有掌控力"]],
+  "8": [["狮子","本能与欲望"], ["抚摸狮子的女子","以柔克刚，不是压制"], ["头顶无限符号","内在力量的无尽"], ["花环","驯服后的和谐"], ["白袍","纯净的动机"]],
+  "9": [["灯笼","微弱但持续的光，内在指引"], ["隐士的杖","支撑与经验"], ["山巅","已有所成，但仍在独行"], ["斗篷","退隐与自我隔绝"], ["六芒星光","智慧的内化"]],
+  "C01": [["圣杯中的水流","情感开始涌动"], ["云端的手","情感的赐予"], ["鸽子","圣灵与和平"], ["水面与莲花","潜意识浮出"], ["溢出的水","感受满溢"]],
+  "C02": [["两人交换杯子","互相的给予"], ["双蛇杖","疗愈与结合"], ["狮子头","本能在其中"], ["对视","平等的看见"], ["上方的光","祝福"]],
+  "C03": [["举杯的三人","共同庆祝"], ["举起的手","欢庆"], ["丰收的果实","成果被分享"], ["舞蹈","轻松的连接"], ["围成圈","没有外人"]],
+  "C04": [["坐着的人","静止"], ["递来的杯子","机会在面前"], ["三杯在旁","已有的没被看见"], ["抱臂的姿态","封闭"], ["树下的阴凉","舒适但停滞"]],
+  "C05": [["倒下的三杯","已经失去的"], ["站立的两杯","还在的"], ["黑袍背影","沉浸在失落里"], ["河流","可以渡过去"], ["远处的桥","有路可走"]],
+  "C06": [["两个孩子","纯真的互动"], ["递出的杯子","给予"], ["旧宅","来自过去"], ["白玫瑰","纯洁的记忆"], ["柔和的光","温暖"]],
+  "C07": [["七个杯子","众多选项"], ["云中的幻象","想要的未必是真的"], ["人影","选择的主体"], ["各种象征","不同的欲望"], ["雾","看不清"]],
+  "C08": [["离去的背影","主动离开"], ["堆叠的杯子","曾经拥有的"], ["缺口","不完整"], ["涉水","正在离开的路上"], ["月亮","在夜里走"]],
+  "C09": [["满杯陈列","满足与丰盛"], ["坐姿安稳","享受"], ["紫色帷幕","丰足"], ["满意的神情","愿望被满足"], ["弧形的杯架","被展示的成果"]],
+  "C10": [["一家人在彩虹下","圆满"], ["孩子起舞","纯真的快乐"], ["相拥的成人","情感的归属"], ["远处的家","安稳的所在"], ["十杯成弧","完整"]],
+  "C11": [["杯中的鱼","灵感从潜意识来"], ["好奇的神情","开放"], ["海边","情感的边缘"], ["单薄的衣","脆弱"], ["凝视","专注"]],
+  "C12": [["缓行的马","不急"], ["递出的杯","主动示好"], ["羽翼盔甲","想象与保护"], ["河流","情感的流动"], ["温柔的神情","体贴"]],
+  "C13": [["精美的杯","情感被珍重"], ["王座","情感的 depth"], ["水与鱼","潜意识"], ["温柔的目光","共情"], ["波纹","情感的流动"]],
+  "C14": [["海上的王座","在情感中保持稳定"], ["手中的杯","情感被掌控"], ["船与鱼","在流动中保持平衡"], ["紫色袍","成熟的情感"], ["不积水","不沉溺"]],
+  "P01": [["云端持币的手","实际的机遇"], ["花园","可生长的环境"], ["小径","通往实际的路"], ["拱门","新的入口"], ["金色星币","物质与机会"]],
+  "P02": [["抛接两币的人","在忙乱中维持"], ["船在浪中","不稳定"], ["无限符号","持续"], ["有限的双手","精力有限"], ["城市背景","日常"]],
+  "P03": [["拱门中的三人","各司其职"], ["不同身份的人","分工合作"], ["设计图","有规划"], ["工匠","专业"], ["教堂","共同目标"]],
+  "P04": [["抱币的人","紧握"], ["头顶脚下的币","全身都在守护"], ["城池","领地"], ["不肯放下","安全感的需要"], ["僵硬的坐姿","紧绷"]],
+  "P05": [["雪中的两人","困顿"], ["亮着的窗","温暖在近处"], ["拄杖的人","艰难前行"], ["无门的墙面","被拒"], ["赤足","受冻"]],
+  "P06": [["天平","权衡"], ["施与受的手","双向流动"], [" merchant 的袍","丰足"], ["两枚币","公平"], ["均衡","流动"]],
+  "P07": [["凝视作物的人","等待与评估"], ["生长中的星币","已在投入"], ["靠在锄上","暂停"], ["土壤","长期"], ["绿色","生长的迹象"]],
+  "P08": [["专注雕刻的人","打磨技艺"], ["八枚币","成品在积累"], ["工作台","日复一日"], ["远处城池","生活"], ["专注","心流"]],
+  "P09": [["园中的人","独享丰盛"], ["葡萄与果实","积累的回报"], ["手上的鸟","被驯服的欲望"], ["围墙","自己的领地"], ["从容","不缺"]],
+  "P10": [["家族与世代","长久的结构"], ["老人与小孩","传承"], ["狗","忠诚"], ["拱门上的纹章","根基"], ["城池","稳固"]],
+  "P11": [["凝视星币","专注机会"], ["田间","实际的环境"], ["年轻的姿态","初学"], ["树","成长的潜力"], ["认真","踏实"]],
+  "P12": [["稳行的马","不急"], ["手中的币","珍重"], ["精心耕作的田","投入过"], ["缓慢","可靠"], ["专注","踏实"]],
+  "P13": [["手中的币","珍重的资源"], ["丰饶的座椅","舒适"], ["兔子","丰产"], ["绿意","滋养"], ["踏实","实在"]],
+  "P14": [["葡萄藤椅","丰足与享受"], ["手中的币","掌控资源"], ["牛头纹样","稳健的力量"], ["城堡","稳固的基业"], ["厚重","可靠"]],
+  "S01": [["云端持剑的手","清明到来"], ["穿透云层","突破迷雾"], ["桂冠","胜利与成果"], ["山","可攀的目标"], ["风","思维"]],
+  "S02": [["蒙眼的人","看不清"], ["交叉的双剑","僵持"], ["海洋与月亮","情绪在背后"], ["平衡","暂时的平衡"], ["夜晚","时候未到"]],
+  "S03": [["穿心的三剑","深刻的伤痛"], ["乌云与雨","悲伤正在发生"], ["红心","被刺中的是情感"], ["灰暗天空","情绪的低点"], ["没有血","精神层面的伤"]],
+  "S04": [["躺卧的人","休息"], ["悬于头顶的三剑","压力仍在"], ["身下的剑","准备着"], ["彩窗","平静的氛围"], ["静止","暂停"]],
+  "S05": [["拾剑的胜者","赢的一方"], ["离去的背影","输的一方"], ["悬着的剑","争夺中的"], ["云","不安"], ["海","情绪"]],
+  "S06": [["船上的人","正在离开"], ["插着的六剑","伤痛被带着走"], ["撑船者","有人送你一程"], ["平静的水面","正在好转"], ["远岸","新的地方"]],
+  "S07": [["取剑的人","独自行动"], ["留下的剑","留下的痕迹"], ["帐篷","需要守护的"], ["蹑足","小心"], ["远处的营","他人"]],
+  "S08": [["被绑的人","自我限制"], ["八把剑","环绕的束缚"], ["城堡在高处","求助是可能的"], ["脚下的水","可以走"], ["蒙眼","看不见出路"]],
+  "S09": [["坐起的人","被惊醒"], ["九把剑","悬着的忧惧"], ["被褥上的雕刻","过去的经验"], ["黑暗","夜里最难受"], ["抱头","焦虑"]],
+  "S10": [["俯卧的人","到底了"], ["插背的十剑","彻底的结束"], ["黎明的天光","之后会亮"], ["红布","残存的生命力"], ["海","情绪"]],
+  "S11": [["举剑的人","警觉"], ["风中的发","思绪活跃"], ["山丘","站在高处看"], ["鸟","消息"], ["试剑","试探"]],
+  "S12": [["冲锋的马","急速"], ["举起的剑","直冲"], ["飞扬的斗篷","速度"], ["乌云","急切"], ["不顾一切","单向"]],
+  "S13": [["手中的剑","清晰的判断"], ["云端的王座","在情绪之上"], ["严肃的神情","不粉饰"], ["举起的另一手","表达"], ["鸟","洞察"]],
+  "S14": [["举剑的王","裁决"], ["蝴蝶纹样","心智的转化"], ["云","清晰的思维"], ["侧身","客观"], ["王座","权威"]],
+  "W01": [["云端伸出的手","机会从外部递来"], ["发芽的权杖","生命力的起点"], ["城堡","可见的目标"], ["绿叶","成长的迹象"], ["河流","资源在流动"]],
+  "W02": [["手持地球仪","胸怀全局，尚未出发"], ["两根权杖","已拥有，但还在权衡"], ["城垛","站在高处规划"], ["远方的海","想去的地方"], ["十字与玫瑰","目标与热情的结合"]],
+  "W03": [["背对镜头的旅人","面向未来"], ["三根立起的权杖","已经立住的基础"], ["远航的船","成果正在回来"], ["高处","视野开阔"], ["黄色天空","心智清明"]],
+  "W04": [["花环与拱门","庆祝与阶段性完成"], ["四根权杖","稳固的结构"], ["起舞的人","喜悦"], ["城堡在后方","安稳的归属"], ["丰收的花","成果被分享"]],
+  "W05": [["五人混战","竞争与混乱"], ["交错的权杖","各执己见"], ["没有真正的战斗","更像演练而非生死战"], ["年轻人","精力充沛但不成熟"], ["未分胜负","结果未定"]],
+  "W06": [["骑马归来","带着成果回来"], ["桂冠","被认可"], ["欢呼的人群","公开的肯定"], ["举起的权杖","荣耀"], ["红色披风","热情与胜利"]],
+  "W07": [["高处应战","守住自己的位置"], ["六根来犯的权杖","多方压力"], ["一根在手","有立足点"], ["悬空的脚","位置不甚稳固"], ["坚定的神情","不退让"]],
+  "W08": [["八根飞行的权杖","快速推进"], ["掠过的风景","变化很快"], ["河流","流动的路径"], ["在空中","尚未落地"], ["一致的方向","目标明确"]],
+  "W09": [["拄杖的人","受伤但仍在"], ["头上的绷带","受过伤"], ["身后八根权杖","已建立防线"], ["警惕的神情","随时准备"], ["城堡","自己的领地"]],
+  "W10": [["扛着十根权杖","责任全揽在身上"], ["弯下的背","负担很重"], ["前方城池","快到了"], ["看不见前方","被压得视野受限"], ["红色袍","仍在用力"]],
+  "W11": [["凝视权杖","好奇与探索"], ["荒漠","尚未开垦"], ["单薄的衣衫","热情但准备不足"], ["金字塔","远大的目标"], ["幼苗","刚刚萌芽"]],
+  "W12": [["奔驰的马","行动力"], ["全副盔甲","准备充分"], ["扬起的鬃毛","速度"], ["荒漠","去往未知"], ["火一般的红","热情"]],
+  "W13": [["黑猫","直觉与守护"], ["向日葵","温暖与吸引"], ["王座上的狮子","热情中的掌控"], ["金色的光","感染力"], ["手中的幼苗","培育中的事"]],
+  "W14": [["火一般的王座","掌控与意志"], ["权杖","行动的力量"], ["狮子","勇气"], [" salamander 纹样","火的转化"], ["成熟的面容","经验带来的笃定"]]
+};
+
+var TAROT_DOMAINS = {
+  "0": { study: "适合开启新领域、跨专业尝试，但别同时铺太多方向", studyR: "兴趣太多而难以专注，或迟迟不敢开始；先锁定一个最小目标", social: "以轻松开放的心态认识新朋友，别预设标签", socialR: "显得不够靠谱，或社交中过于随性让人没安全感", health: "整体活力不错，适合开始新的运动或作息；注意别因大意受伤", healthR: "作息散乱、缺乏规划，或因莽撞导致小伤；建议建立基本规律" },
+  "1": { study: "专注力与理解力都在，适合理清方法、开始执行", studyR: "方法对了但没落实，或把聪明用在走捷径上；回到基础练习", social: "表达清楚、有感染力，适合主动沟通", socialR: "话太多而缺少真诚，或用话术影响他人；少说多听", health: "身体能动起来，适合开始训练或调整习惯", healthR: "知道该怎么做却不执行，或精力分散；从一件小事坚持" },
+  "10": { study: "运势有起落，接受阶段性的变化", studyR: "抗拒变化或错过时机；顺势而为", social: "关系有周期，聚散有时", socialR: "圈子变动带来不安；接受关系的自然流动", health: "状态随周期波动，留意规律", healthR: "作息紊乱打乱节律；先稳定基本节奏" },
+  "11": { study: "靠内在勇气坚持，不靠外在压力", studyR: "自我怀疑，或被恐惧牵制；承认害怕仍继续", social: "真诚与温柔能建立信任", socialR: "压抑真实感受换取和谐；说出你的需要", health: "内在力量是恢复的关键，心态影响身体", healthR: "焦虑削弱恢复力；先安顿情绪" },
+  "12": { study: "卡住时换个角度，暂停也是一种推进", studyR: "无意义的消耗，或逃避做决定；设定暂停的期限", social: "暂时退后观察，别急着推进", socialR: "单方面付出却没有回报；重新评估", health: "需要真正的休息，身体在发出信号", healthR: "硬撑导致透支；允许自己停下来" },
+  "13": { study: "该结束的旧方法要放下，才能学新的", studyR: "拖着不放，抗拒必要的结束；完成告别", social: "一段关系或相处模式要结束", socialR: "明知该结束却拖着；结束也是温柔", health: "旧习惯要戒除，身体在代谢", healthR: "抗拒必要的改变；从小处开始调整" },
+  "14": { study: "平衡不同科目与节奏，别偏科", studyR: "节奏失衡，或极端化；回到中间地带", social: "调和差异，做中间的桥梁", socialR: "摇摆不定或压抑冲突；坦诚面对差异", health: "讲求平衡与适度，过与不及都伤身", healthR: "极端饮食或作息；回到规律" },
+  "15": { study: "被诱惑分心，或沉迷于某件事", studyR: "开始挣脱，或羞耻阻碍前进；接纳后前行", social: "关系里有强烈的吸引，也可能是消耗", socialR: "正在脱离不健康的关系；允许自己离开", health: "留意成瘾性行为与过度消耗", healthR: "正在戒除或调整，会有反复；给自己时间" },
+  "16": { study: "原有方法崩塌，需要重建", studyR: "强撑着不倒的结构；早点主动调整", social: "冲突爆发，掩盖的问题被揭开", socialR: "勉强维持，随时会再爆；不如坦诚", health: "突发状况，或旧问题急性发作", healthR: "拖延的小问题在积累；及时处理" },
+  "17": { study: "保持希望，方向会渐渐清晰", studyR: "信心动摇，或不敢期待；允许自己有盼望", social: "真诚带来连接，关系有疗愈感", socialR: "不敢敞开，或过度悲观；试着信任", health: "恢复的希望很大，状态在向好", healthR: "失去信心影响恢复；保持希望本身就是疗愈" },
+  "18": { study: "事情不像表面那样，需要看清", studyR: "迷雾正在散去，真相逐渐浮现", social: "关系里有不明朗的部分，别只看表面", socialR: "误会正在澄清，可以谈开了", health: "症状可能有隐情，建议进一步检查", healthR: "诊断逐渐明确，按方案走" },
+  "19": { study: "状态好、进展顺，是收获的季节", studyR: "过度乐观而准备不足；保持信心也保持清醒", social: "关系明朗愉快，相处轻松", socialR: "表面开心却缺真诚；回到真实", health: "活力充沛，是状态最好的时候", healthR: "过度消耗阳光般的精力；适度收敛" },
+  "2": { study: "适合深入钻研、阅读与独立思考，比讨论更有效", studyR: "想太多而迟迟不行动，或忽略直觉偏要找标准答案", social: "倾听比表达重要，有些话不必说破", socialR: "过于疏离让人猜不透，或压抑真实想法", health: "留意内在信号，睡眠与情绪状态值得关注", healthR: "忽视身体发出的信号，或情绪压抑；给自己安静的时间" },
+  "20": { study: "一个阶段的总结与评定，结果会揭晓", studyR: "结果延迟，或未准备好接受评定；再给点时间", social: "关系进入新的阶段，或需要一次坦诚的对话", socialR: "回避该有的结论；面对它", health: "检查结果会有结论，或状态迎来转折", healthR: "需要第二次确认；别怕再查一次" },
+  "21": { study: "学的东西串起来了，可以综合应用", studyR: "差最后一步没完成；别在终点前松懈", social: "关系整合，各方都找到位置", socialR: "整合尚未完成，还有未安顿的部分", health: "整体趋于圆满，身心整合得不错", healthR: "还有一处没照顾到；检视遗漏" },
+  "3": { study: "投入会有收获，适合持续积累而非突击", studyR: "付出与回报不成正比，或过度付出导致疲惫；调整节奏", social: "关系温暖有滋养感，你在这段关系里是被照顾的一方", socialR: "付出失衡，或过度照顾他人而忽略自己", health: "整体状态滋养向好，适合调养与食补", healthR: "过度消耗或营养失衡；关注长期作息而非短期补救" },
+  "4": { study: "需要结构与纪律，给自己定规则反而更有效", studyR: "过度控制导致僵化，或用权威压制自己的需求；允许弹性", social: "你是主导者，但别把关系变成指挥", socialR: "控制欲让人有压力，或过于固执不肯听劝", health: "适合建立规律训练，纪律会带来改善", healthR: "过度紧绷导致压力型不适；安排真正的休息" },
+  "5": { study: "适合跟随老师、系统学习，按体系打基础", studyR: "墨守成规，或把权威的话当唯一答案；保留自己的判断", social: "在群体中有归属感，遵守共同的默契", socialR: "过于在意规矩而显得拘谨，或被群体期待绑住", health: "适合循证的方式：听专业建议、按方案执行", healthR: "盲信偏方或抗拒专业建议；以正规医疗为准" },
+  "6": { study: "在两个方向间做选择，跟随真正想要的", studyR: "选择摇摆，或为了迎合他人而选；回到自己的心意", social: "关系和谐，有连接与吸引；也可能是需要做出选择", socialR: "关系失衡，或价值观不合；坦诚沟通", health: "身心平衡会带来自愈力，情绪影响身体", healthR: "内在冲突消耗精力；先处理情绪" },
+  "7": { study: "只要方向明确就能推进，靠意志力突破", studyR: "方向不明却硬冲，或力量内耗；先确定目标再发力", social: "主动推进关系，但需要掌控节奏", socialR: "过于强势或急躁，让对方有压迫感", health: "体能与意志力都不错，适合挑战性训练", healthR: "过度消耗或冲动受伤；注意节制" },
+  "8": { study: "靠耐心与持续力攻克难关，不是靠爆发", studyR: "自我怀疑消耗力量，或用蛮力硬撑；调整心态", social: "温柔但有力量，能化解冲突", socialR: "压抑怒气或过度隐忍；把感受说出来", health: "恢复力强，适合温和持续的调养", healthR: "过度忍耐不适或忽视需求；允许自己示弱" },
+  "9": { study: "适合独处钻研、深度阅读，减少社交干扰", studyR: "过度孤立，或闭门造车；适当与人讨论", social: "需要独处空间，暂时不想应酬", socialR: "把自己封闭太久，或逃避必要的沟通", health: "适合静养与内观，留意身心的疲惫信号", healthR: "孤立导致情绪低落；主动与人连接" },
+  "C01": { study: "带着感觉去学，会比硬记更有效", studyR: "情感阻塞影响投入，或对学习失去感觉；找回兴趣", social: "新的情感连接开始，敞开心", socialR: "封闭自己，或不敢开始；允许靠近", health: "身心感受力提升，适合静养", healthR: "情绪低落影响身体；先照顾心情" },
+  "C02": { study: "合作学习效果好，找个人一起", studyR: "合作失衡，或彼此期待不一致；说清楚", social: "关系对等、互相在意", socialR: "一方付出更多；把期待说出来", health: "心情好会带动身体，适合结伴", healthR: "关系压力影响身心；处理情绪" },
+  "C03": { study: "和同学一起学更有动力", studyR: "小团体带来分心，或被排挤；找到合得来的人", social: "朋友圈带来快乐，被支持", socialR: "圈子里的摩擦，或感到被冷落", health: "心情愉悦有助恢复，适合聚会", healthR: "过度应酬消耗精力；留时间给自己" },
+  "C04": { study: "对正在学的东西提不起劲", studyR: "倦怠期，或错失眼前机会；换个角度看看", social: "有人靠近但你没回应", socialR: "把自己关起来，错过连接；试着回应一次", health: "情绪低落导致身体懒散", healthR: "倦怠影响作息；从小改变开始" },
+  "C05": { study: "一次失败让你看不见其余", studyR: "沉溺于挫败，忽略了仍有的资源", social: "为失去的关系难过", socialR: "久久走不出来，或拒绝新的连接", health: "悲伤影响身体，允许难过", healthR: "长期低落需要被重视；找人说说" },
+  "C06": { study: "回到基础，温故会带来新理解", studyR: "沉溺过去的方法，不肯更新", social: "旧识重逢，或被过去的温暖触动", socialR: "总拿现在和过去比；珍惜眼前", health: "怀旧的情绪有助于疗愈", healthR: "停留在过去的状态；关注当下身体" },
+  "C07": { study: "选择太多，需要分辨真实需求", studyR: "幻想替代行动，或迟迟不决定", social: "暧昧不明，或有很多可能性", socialR: "看不清对方心意，或自己在想象", health: "留意情绪带来的身体信号", healthR: "焦虑源于想太多；回到身体感受" },
+  "C08": { study: "决定放弃不合适的方向", studyR: "该离开却舍不得，或离开后又回头", social: "选择退出一段关系", socialR: "反复分合，或走得不彻底", health: "远离消耗你的习惯", healthR: "戒断期的不适；坚持一下" },
+  "C09": { study: "学有所成，享受收获", studyR: "不满足，或把标准定得太高", social: "关系让人满足，心情愉快", socialR: "表面满足内心空虚；说出真实感受", health: "状态舒适，适合维持", healthR: "过度放纵影响身体；适度" },
+  "C10": { study: "学习带来长久的满足感", studyR: "家庭或情绪影响学业；先安顿后方", social: "关系圆满，有归属感", socialR: "家庭责任影响关系；找到平衡", health: "身心安顿，适合家庭疗养", healthR: "家事烦心影响身体；先处理情绪" },
+  "C11": { study: "凭兴趣探索，灵感会带来突破", studyR: "只停留在幻想，不落地", social: "单纯真诚的靠近", socialR: "不够成熟，或表达过于孩子气", health: "凭感觉照顾身体，但别忽视信号", healthR: "凭情绪作息，容易不稳" },
+  "C12": { study: "跟着兴趣走，但要有进度", studyR: "只有热情没有进度；加入时间表", social: "温柔的追求者，浪漫", socialR: "承诺跟不上浪漫；看行动", health: "以舒适的方式调养", healthR: "凭心情作息；建立规律" },
+  "C13": { study: "感性学习，理解力强", studyR: "情绪卷入过深影响判断", social: "你很会照顾人，共情力强", socialR: "过度共情让自己疲惫；设立边界", health: "情绪与身体相连，留意身心", healthR: "吸收他人情绪导致不适；做区分" },
+  "C14": { study: "情绪稳定，能持续投入", studyR: "情感压抑，或用理性隔绝感受", social: "成熟、可靠、有包容力", socialR: "过于克制显得疏离；适当表达", health: "心态稳定有助身体", healthR: "压抑情绪影响身体；允许流动" },
+  "P01": { study: "新的学习机会很实在，抓住它", studyR: "机会来了没行动，或只看不做", social: "关系有实际基础，可以慢慢来", socialR: "只看条件不看感觉；加入真心", health: "务实开始：饮食、作息、运动", healthR: "知道该做却不开始；从一件小事起" },
+  "P02": { study: "多线并行但精力有限，需取舍", studyR: "顾此失彼，什么都做不好", social: "在关系和其他事之间疲于奔命", socialR: "分配给关系的时间太少；调整", health: "忙碌打乱作息", healthR: "过度劳碌影响身体；减负" },
+  "P03": { study: "请教对的人，比自己摸索快", studyR: "合作不顺，或各做各的", social: "各尽本分，关系有协作感", socialR: "分工不清产生摩擦；说清楚", health: "听取专业建议，按方案走", healthR: "多方建议反而混乱；选定一个" },
+  "P04": { study: "稳扎稳打，但要避免过度保守", studyR: "过度守旧，不肯尝试新方法", social: "占有欲或过度保护", socialR: "把人抓太紧；给彼此空间", health: "稳定但缺乏活动，注意循环", healthR: "久坐、缺乏运动；动起来" },
+  "P05": { study: "资源不足，需要寻求帮助", studyR: "困在自己里，不肯求助", social: "感到被冷落或被排除", socialR: "向外的求助被拒；换个方式", health: "身体虚弱，注意保暖与营养", healthR: "忽视基本需求；先照顾好底子" },
+  "P06": { study: "付出与回报在平衡", studyR: "付出得不到回馈；调整投入", social: "关系有来有往", socialR: "单方面付出；把不平衡说出来", health: "营养与消耗要平衡", healthR: "过度补充或过度消耗；回到均衡" },
+  "P07": { study: "投入需要时间，别急着要结果", studyR: "急于求成，或怀疑投入是否值得", social: "关系在培育期，需要耐心", socialR: "等不及，或过早下结论", health: "调养是长期的，会有平台期", healthR: "平台期想放弃；坚持" },
+  "P08": { study: "专注练习，技能在积累", studyR: "重复却没进步，或敷衍了事", social: "用行动而非言语表达在意", socialR: "只说不做，或忽略细节", health: "规律的作息与训练带来改善", healthR: "练习方式不对；调整方法" },
+  "P09": { study: "独立学习，收获属于自己", studyR: "独自学习感到孤立；偶尔交流", social: "享受独处，或独自满足", socialR: "自我满足但缺少分享；打开一点", health: "状态从容，适合自我调养", healthR: "独享舒适但缺乏运动；加点活动" },
+  "P10": { study: "长期积累会有稳定回报", studyR: "只为眼前，忽略长远", social: "关系进入长期结构，涉及家庭", socialR: "家庭责任带来压力；共同承担", health: "家族体质与长期习惯值得关注", healthR: "长期问题需要长期方案" },
+  "P11": { study: "踏实入门，打好基础", studyR: "眼高手低，或只幻想不练习", social: "真诚但不够成熟，慢慢来", socialR: "显得稚嫩或不够可靠；用行动证明", health: "建立基础作息与饮食", healthR: "基础习惯没打牢；从最简单的开始" },
+  "P12": { study: "按部就班，进度慢但扎实", studyR: "拖沓，或过于保守不敢前进", social: "可靠、稳定，但可能不够浪漫", socialR: "过于实际显得无趣；加入心意", health: "规律作息，身体在稳步改善", healthR: "进展慢让人不耐；坚持" },
+  "P13": { study: "务实学习，重视可用与否", studyR: "过于功利，忽视兴趣与成长", social: "会照顾人，让人安心", socialR: "过度物质化的关怀；加入情感", health: "注重营养与舒适，身体受益", healthR: "过度关注舒适导致懈怠" },
+  "P14": { study: "资源丰富、基础扎实，适合长期规划", studyR: "过度看重结果，忽略过程", social: "可靠有担当，给人安全感", socialR: "用物质替代情感；多些陪伴", health: "身体底子不错，适合长期维护", healthR: "过度安逸缺乏活动" },
+  "S01": { study: "思路突然清晰，适合解决卡住的问题", studyR: "想太多而混乱，或不敢下判断；先写下来", social: "一次坦白的对话能打开局面", socialR: "话没说清楚，或不敢开口；把话说出来", health: "头脑清醒，适合做健康决策", healthR: "焦虑影响判断；先安抚情绪再决定" },
+  "S02": { study: "在两难中卡住，需要更多信息", studyR: "逃避决定，或信息不足就硬选", social: "关系僵持，谁也不先开口", socialR: "冷战持续；主动打破僵局", health: "因犹豫延误处理", healthR: "头痛、失眠与压力相关；先停下来" },
+  "S03": { study: "一次打击影响学习状态", studyR: "久久走不出挫败；允许自己难过", social: "关系里的伤害，或说错的话", socialR: "旧伤未愈，或反复提起", health: "悲伤影响身体，心因性不适", healthR: "长期低落需要被重视；寻求支持" },
+  "S04": { study: "需要暂停，脑子用太多了", studyR: "休息不足导致效率下降；真的休息", social: "暂时退出社交，需要独处", socialR: "孤立自己太久；慢慢回到连接", health: "身体需要真正的休息", healthR: "休息质量差；改善睡眠" },
+  "S05": { study: "赢了争论但可能失去关系", studyR: "赢得争执却代价很大；想清楚值不值", social: "争执中有胜负，但关系受损", socialR: "为了赢而伤害对方；及时收手", health: "压力引发的头痛、紧张", healthR: "紧绷未缓解；安排放松" },
+  "S06": { study: "换环境或换方法，会有改善", studyR: "迟迟不离开消耗你的方式", social: "关系在过渡，或准备离开", socialR: "过渡期的不安；允许慢慢来", health: "身体在恢复，但仍在过程里", healthR: "恢复期反复；给自己时间" },
+  "S07": { study: "需要独立完成，别什么都问人", studyR: "独自硬扛，不愿求助；开口问", social: "有所保留，或独自行动", socialR: "不够坦诚，让人难以信任", health: "自己处理身体问题，但要客观", healthR: "讳疾忌医；该看就看" },
+  "S08": { study: "被\"我不行\"困住", studyR: "自我设限；把恐惧写下来看看", social: "感到被困，但束缚部分是自己给的", socialR: "受害者心态；看看能做什么", health: "限制性信念影响身体", healthR: "焦虑被放大；区分事实和想象" },
+  "S09": { study: "焦虑影响专注，深夜更明显", studyR: "反复担忧消耗精力；设定担心的时间", social: "担忧某段关系，夜里想太多", socialR: "脑补最坏情况；核实一下", health: "焦虑、失眠、噩梦", healthR: "长期睡眠不足；寻求专业帮助" },
+  "S10": { study: "最坏的时刻过去了", studyR: "触底反弹，但恢复需要时间", social: "一段关系的彻底结束", socialR: "结束后的重建期；慢慢来", health: "身体透支到底，必须休养", healthR: "恢复期；别急着回到从前" },
+  "S11": { study: "好奇心强，适合提问与探索", studyR: "只问不做，或话太多；沉下来", social: "观察型，话不多但在意", socialR: "过度打听，或言语带刺；注意分寸", health: "留意身体信号，及时察觉", healthR: "过度关注症状造成焦虑；客观看待" },
+  "S12": { study: "推进很快，但容易粗心", studyR: "急躁导致错误；慢下来检查", social: "直来直去，但可能伤人", socialR: "说话太冲；先想一秒", health: "急性损伤风险，注意热身", healthR: "过度训练或冲动受伤" },
+  "S13": { study: "思路清晰，能看清问题", studyR: "过于挑剔，或用理性隔绝感受", social: "坦诚直接，但有分寸", socialR: "过于犀利让人受伤；软化表达", health: "能理性看待身体状况", healthR: "过度分析症状；相信专业判断" },
+  "S14": { study: "逻辑与判断力强，适合分析", studyR: "独断，或为辩论而辩论", social: "理性、公正、有原则", socialR: "过于讲理显得冷漠；加入温度", health: "理性面对健康，按证据行动", healthR: "忽视身体感受；平衡理性与体感" },
+  "W01": { study: "新领域的起点，趁热情还在就先动起来", studyR: "热情消退，或迟迟不开始；重新点燃那股劲", social: "主动靠近，第一印象很重要", socialR: "被动等待，或开场太急；放慢一点", health: "体能正在回升，适合开始活动", healthR: "精力不足，或刚起步就中断；从小量开始" },
+  "W02": { study: "规划阶段，把大目标拆成步骤", studyR: "有想法没计划，或规划后不执行；设一个截止日", social: "关系有想象空间，但还没落地", socialR: "只在想象里相处；真实接触一次", health: "状态稳定但缺乏活动量", healthR: "计划中的运动一直没开始；安排具体时间" },
+  "W03": { study: "前期投入开始见效，继续等收获", studyR: "回报延迟，或方向需要调整；再评估一次", social: "关系进入稳定期，可以看得更远", socialR: "期待落空，或视野太窄；放宽标准", health: "恢复进展顺利，保持下去", healthR: "进展停滞，可能方法需要调整" },
+  "W04": { study: "一个阶段完成，值得肯定自己", studyR: "完成感缺失，或庆祝来得太早；先确认真的完成了", social: "关系进入安稳期，可以公开或庆祝", socialR: "庆祝背后的不安，或关系未真正稳定", health: "状态稳定，适合维持现有节奏", healthR: "稳定被打破，或放松后反弹；保持规律" },
+  "W05": { study: "有竞争压力，但也是激发", studyR: "内耗大于进步，或逃避良性竞争；把比较转为动力", social: "意见不合，小摩擦不断", socialR: "回避冲突让问题积累；找个方式谈开", health: "压力带来的紧绷，注意肩颈与头痛", healthR: "压力未释放，转为身体不适；安排放松" },
+  "W06": { study: "努力有了回报，被看见", studyR: "认可延迟，或自我怀疑功劳；确认自己的付出", social: "你是被欢迎、被认可的一方", socialR: "寻求认可而不得，或过度在意评价", health: "恢复良好，状态被自己看见", healthR: "忽视进步，只盯着不足；肯定已有的改善" },
+  "W07": { study: "顶住压力，坚持立场是对的", studyR: "防守过度消耗，或立场需要重新审视", social: "需要为关系设定边界", socialR: "过度防御让人难以靠近；说明你的底线", health: "身体在对抗消耗，注意别硬撑", healthR: "过度消耗导致免疫力下降；安排休息" },
+  "W08": { study: "进展飞快，趁势推进", studyR: "进展受阻，或消息延迟；检查卡在哪里", social: "沟通频繁，节奏很快", socialR: "沟通断档，或节奏不一致；主动同步", health: "状态回升很快，但仍需稳固", healthR: "恢复中断，或过快活动导致反复" },
+  "W09": { study: "带着疲惫坚持，快到终点了", studyR: "过度防备消耗，或想放弃；看看已走了多远", social: "受过伤所以有所保留", socialR: "过去的伤影响现在的信任；试着说明", health: "旧伤或慢性疲劳，需要休养", healthR: "忽视旧伤导致复发；先养好再冲" },
+  "W10": { study: "课业或任务过重，需要取舍", studyR: "承担过多导致崩塌；学会分出去", social: "你在关系里扛太多", socialR: "单方面付出过多；把责任说清楚", health: "长期负重，注意腰背与疲劳", healthR: "透支已到临界；必须减负" },
+  "W11": { study: "对新领域充满好奇，适合探索", studyR: "三分钟热度，或只说不练；坚持一个", social: "热情主动，但可能不够成熟", socialR: "热情来得快去得快；让对方看到稳定性", health: "活力好，但容易透支", healthR: "作息不稳；别仗着年轻硬撑" },
+  "W12": { study: "行动力强，适合冲刺阶段", studyR: "急躁冒进，或热情难以持续；设定节奏", social: "追求热烈，进展快", socialR: "来去匆匆让人不安；给出稳定的信号", health: "体能充沛，适合高强度", healthR: "过度运动或冲动受伤；注意热身与节制" },
+  "W13": { study: "既有热情又有耐心，能持续", studyR: "热情转为控制，或因在意他人而分心", social: "你很有吸引力，也懂得照顾人", socialR: "过度热情让人有压力，或占有欲；给空间", health: "状态温暖有活力，适合持续调养", healthR: "情绪起伏影响身体；安顿心情" },
+  "W14": { study: "有决断力与领导力，适合主导", studyR: "独断专行，或急于求成；听听不同意见", social: "你是关系的带领者，但请别独断", socialR: "强势让人难以平等相处；留出商量空间", health: "意志力是恢复的关键", healthR: "过度逞强忽视信号；允许自己休息" },
+};
+
+var TAROT_ACTIONS = {
+  "0": "今天可以做一件你一直想但没敢开始的小事",
+  "1": "把你手头已有的资源列出来，今天就用其中一样",
+  "10": "接受正在发生的变化，别逆着来",
+  "11": "承认你害怕，然后继续做",
+  "12": "停下来，换一个角度看这件事",
+  "13": "放下那个你明知该放下的",
+  "14": "找到那个刚刚好的度",
+  "15": "看清那个让你上瘾的东西，然后决定",
+  "16": "那个摇摇欲坠的东西，不如主动推倒重建",
+  "17": "说出你的愿望，别怕它听起来太天真",
+  "18": "别急着下结论，事情还有另一面",
+  "19": "去做那件让你开心的事，别犹豫",
+  "2": "今天先别急着决定，给自己一段安静的时间",
+  "20": "那个悬而未决的事，今天给它一个结论",
+  "21": "把你学到的串起来，用一次",
+  "3": "去做一件能滋养自己的事，而不是只照顾别人",
+  "4": "给自己定一条清晰的规则，然后照着做",
+  "5": "找一位你信任的人请教，而不是自己硬扛",
+  "6": "想清楚你真正想要的是什么，然后选它",
+  "7": "确认方向，然后一鼓作气推进",
+  "8": "用耐心而不是力气，去处理那件难事",
+  "9": "给自己留一段独处时间，想想真正重要的",
+  "C01": "允许自己感受，别急着分析",
+  "C02": "和你所在意的人，认真地交换一次想法",
+  "C03": "和朋友聚一次，别总是一个人",
+  "C04": "看看你已经拥有的，而不只是缺的",
+  "C05": "允许自己难过，但记得身后还有两杯",
+  "C06": "联系一个很久没见的人",
+  "C07": "分清你想要的和你真的需要的",
+  "C08": "如果已经想清楚，就别回头看",
+  "C09": "好好享受你已经得到的",
+  "C10": "花时间和真正在乎你的人在一起",
+  "C11": "留意那个突然冒出来的念头，它可能有用",
+  "C12": "把你的心意说出来，而不只是暗示",
+  "C13": "照顾别人的同时，也照顾自己",
+  "C14": "在情绪里保持清醒，而不是被它带走",
+  "P01": "那个实在的机会，今天就去落实一步",
+  "P02": "你手上的事太多，挑一件先放下",
+  "P03": "找专业的人请教，别自己硬试",
+  "P04": "适度的安全感是好的，但别把自己锁死",
+  "P05": "别硬撑，找个能帮你的人",
+  "P06": "检查一下：你给的和拿的，配得上吗",
+  "P07": "再给一点时间，它正在长",
+  "P08": "今天专注打磨一件事，别分心",
+  "P09": "享受你的成果，也留一点给别人",
+  "P10": "为长远做一件事，而不只为今天",
+  "P11": "选定一件事，踏踏实实开始",
+  "P12": "慢一点没关系，别停就好",
+  "P13": "用实在的方式照顾好一个人",
+  "P14": "用你的资源，为长远做一次投入",
+  "S01": "把你想清楚的结论说出来",
+  "S02": "别再拖了，做一个决定，哪怕不完美",
+  "S03": "承认你受伤了，这并不丢人",
+  "S04": "今天就休息，别硬撑",
+  "S05": "想清楚：你是要赢，还是要这段关系",
+  "S06": "离开那个让你难受的环境，哪怕只是一小步",
+  "S07": "有些事只能自己完成，那就今天做",
+  "S08": "那些困住你的，有多少是真的？",
+  "S09": "把担心的事写下来，看看哪些真的会发生",
+  "S10": "已经到底了，接下来只会往上",
+  "S11": "把你观察到的问题问出来",
+  "S12": "想清楚了再冲，别让速度替你思考",
+  "S13": "说出你的判断，但用对方听得进的方式",
+  "S14": "做一个客观的判断，但别忘了人情",
+  "W01": "趁现在这股热情，先迈出第一步",
+  "W02": "把你的大目标拆成今天能做的一小步",
+  "W03": "看看已经走多远，别只盯着还没到的",
+  "W04": "为已经完成的部分，好好庆祝一次",
+  "W05": "把争论转化为比拼，而不是互相消耗",
+  "W06": "承认自己的成果，别急着谦虚",
+  "W07": "守住你的底线，但别把所有人当敌人",
+  "W08": "趁这股势头，把悬着的事推进到底",
+  "W09": "你已经撑了很久，最后一段别松劲",
+  "W10": "放下其中一根，你不必全部自己扛",
+  "W11": "把你的好奇心落实成一个具体行动",
+  "W12": "想到就去做，别让热情凉下来",
+  "W13": "用你的热情去支持一个人，而不是控制",
+  "W14": "做决定，并为它负责"
+};
+
+/* ===== 塔罗牌对组合（P1，首批） ===== */
+var TAROT_PAIRS = {
+  "0-16": { m: "天真的开始撞上崩塌——冲动会付出代价", d: "general" },
+  "0-21": { m: "一段旅程走向圆满", d: "general" },
+  "0-W02": { m: "有想法就开始规划", d: "general" },
+  "1-7": { m: "有资源也有意志，能做成事", d: "general" },
+  "1-P01": { m: "有能力也有机会，能变现", d: "money" },
+  "1-W08": { m: "有资源也有速度，能快速推进", d: "work" },
+  "10-12": { m: "周期中需要暂停", d: "general" },
+  "10-21": { m: "周期走向圆满，事情会落地", d: "general" },
+  "10-P10": { m: "周期走向长期稳定", d: "money" },
+  "10-W03": { m: "时机到了，投入会见效", d: "work" },
+  "11-12": { m: "有勇气但需要暂停，别硬冲", d: "general" },
+  "11-W07": { m: "有勇气守住底线", d: "work" },
+  "12-13": { m: "该放下的终于放下", d: "general" },
+  "12-C08": { m: "该放手了，虽然不舍", d: "love" },
+  "12-S02": { m: "暂停是为了看清，别无限拖", d: "general" },
+  "12-W03": { m: "换角度看，会发现进展已在", d: "general" },
+  "13-20": { m: "彻底的结束带来重生", d: "general" },
+  "13-C05": { m: "结束带来悲伤，但结束是必要的", d: "love" },
+  "13-S06": { m: "戒除旧习惯，正在好转", d: "health" },
+  "13-W08": { m: "结束旧的，快速转向新的", d: "general" },
+  "14-15": { m: "节制与放纵的拉扯", d: "general" },
+  "14-C02": { m: "慢慢调和，关系在找平衡", d: "love" },
+  "14-P07": { m: "平衡与耐心，恢复的关键", d: "health" },
+  "15-6": { m: "欲望与真爱的混淆", d: "love" },
+  "15-P04": { m: "被欲望牵着紧握不放", d: "money" },
+  "15-S08": { m: "成瘾性行为需要觉察", d: "health" },
+  "16-17": { m: "崩塌之后仍有希望，塔倒后星星出现", d: "general" },
+  "16-S03": { m: "关系突然破裂，伤得很深", d: "love" },
+  "16-S10": { m: "突发状况后需要休养", d: "health" },
+  "16-W02": { m: "崩塌后需要重新规划", d: "general" },
+  "16-W07": { m: "突发变故需要守住立场", d: "work" },
+  "17-18": { m: "希望中仍有不明，保持信心但要核实", d: "general" },
+  "17-19": { m: "希望加明朗，状态在向好", d: "health" },
+  "17-6": { m: "有希望的爱，值得期待", d: "love" },
+  "18-19": { m: "迷雾散去、真相大白", d: "general" },
+  "18-C07": { m: "看不清对方心意，别急着投入", d: "love" },
+  "18-P03": { m: "症状不明时请教专业人士", d: "health" },
+  "18-S07": { m: "真相不明，先自己观察", d: "general" },
+  "18-S09": { m: "不明原因的焦虑，建议检查", d: "health" },
+  "19-21": { m: "成功之后是整合，收获会沉淀", d: "general" },
+  "19-6": { m: "明朗幸福的爱", d: "love" },
+  "19-P09": { m: "成功带来丰盛", d: "money" },
+  "19-P10": { m: "成功带来长期稳定", d: "work" },
+  "2-9": { m: "静默的智慧与独处，都在向内走", d: "general" },
+  "2-C07": { m: "直觉告诉你有不明，先观察", d: "love" },
+  "20-21": { m: "评判之后是整合，结论带来完整", d: "general" },
+  "20-C02": { m: "一个结论让关系确定", d: "love" },
+  "20-P03": { m: "检查会有结论，配合专业判断", d: "health" },
+  "20-W08": { m: "结论之后快速行动", d: "general" },
+  "21-0": { m: "圆满之后是新旅程的开始", d: "general" },
+  "21-C10": { m: "关系走到圆满整合", d: "love" },
+  "21-W06": { m: "圆满的成就被认可", d: "work" },
+  "3-19": { m: "滋养与明朗并存，是被祝福的状态", d: "general" },
+  "3-4": { m: "滋养与掌控：照顾的同时别控制", d: "general" },
+  "3-C10": { m: "被滋养的爱，像家人", d: "love" },
+  "3-P07": { m: "滋养加耐心，适合长期调养", d: "health" },
+  "3-P10": { m: "滋养带来长久的成果", d: "work" },
+  "4-5": { m: "规则与传承的碰撞：守旧还是遵循体系", d: "general" },
+  "4-C02": { m: "关系里有主导与配合", d: "love" },
+  "4-P08": { m: "纪律加练习，适合规律训练", d: "health" },
+  "4-W08": { m: "有掌控力也有速度", d: "work" },
+  "5-6": { m: "外在规则与内心选择的冲突", d: "general" },
+  "5-9": { m: "向外求学 vs 向内探索，两者都要", d: "general" },
+  "5-P08": { m: "系统学习加反复练习", d: "work" },
+  "6-15": { m: "在爱与欲望间拉扯", d: "love" },
+  "6-C02": { m: "爱的选择与结合，关系会被确认", d: "love" },
+  "6-C10": { m: "圆满的爱，关系走向家庭", d: "love" },
+  "6-S03": { m: "爱里有伤害，需要疗愈", d: "love" },
+  "6-S08": { m: "想爱却自我设限", d: "love" },
+  "7-8": { m: "用意志推进 vs 用耐心化解，后者更有效", d: "general" },
+  "7-S07": { m: "明确方向后独自推进", d: "general" },
+  "7-W08": { m: "意志加行动，进展很快", d: "work" },
+  "8-11": { m: "温柔的力量与勇气同在，内在很稳", d: "general" },
+  "8-P07": { m: "温柔而持续，恢复力在", d: "health" },
+  "8-W07": { m: "以柔克刚地应对压力", d: "work" },
+  "9-18": { m: "独处中仍有不明，先别下结论", d: "general" },
+  "9-2": { m: "向内求答案，直觉会给提示", d: "general" },
+  "9-C04": { m: "想独处，暂时不想靠近", d: "love" },
+  "C02-C10": { m: "从结合到圆满，关系在推进", d: "love" },
+  "C02-S03": { m: "结合中有伤痛，甜蜜与痛苦并存", d: "love" },
+  "C04-S04": { m: "情绪低落加疲惫，先休息", d: "health" },
+  "C05-C06": { m: "失去之后回到过去的温暖", d: "love" },
+  "C05-C08": { m: "看清失去，然后离开", d: "love" },
+  "C07-C08": { m: "从幻想到清醒，决定放下", d: "love" },
+  "C08-C09": { m: "离开后反而得到满足", d: "love" },
+  "P01-P07": { m: "机会需要时间培育", d: "money" },
+  "P02-P04": { m: "忙乱中紧握资源", d: "money" },
+  "P02-W08": { m: "多线忙碌中仍需推进", d: "work" },
+  "P03-P06": { m: "专业协作换来公平回报", d: "money" },
+  "P03-P08": { m: "协作加专注，技能在长", d: "work" },
+  "P04-19": { m: "稳定的积累带来明朗", d: "money" },
+  "P04-P05": { m: "守财反而陷入困顿", d: "money" },
+  "P05-P06": { m: "困顿之后得到帮助", d: "money" },
+  "P05-P08": { m: "资源不足时更要打磨自己", d: "money" },
+  "P06-P10": { m: "收支平衡带向长期稳定", d: "money" },
+  "P07-19": { m: "耐心调养后状态转好", d: "health" },
+  "P07-P09": { m: "耐心等待后有独自的收获", d: "money" },
+  "P07-P10": { m: "长期投入带来稳定回报", d: "work" },
+  "P07-W03": { m: "等待后见到回报", d: "money" },
+  "P07-W04": { m: "调养需要时间，别急", d: "health" },
+  "P08-P03": { m: "打磨技艺并请教他人", d: "work" },
+  "P08-P06": { m: "付出与回报会平衡", d: "work" },
+  "P08-P10": { m: "持续打磨带来基业", d: "money" },
+  "P09-P10": { m: "独自的丰盛走向家族基业", d: "money" },
+  "P10-19": { m: "长期富足且明朗", d: "money" },
+  "S02-1": { m: "别再拖，用手头的资源做决定", d: "general" },
+  "S02-10": { m: "别等了，时机在转", d: "general" },
+  "S02-S07": { m: "犹豫时不如独立判断", d: "general" },
+  "S03-17": { m: "伤痛之后仍有康复希望", d: "health" },
+  "S03-S06": { m: "离开消耗源，身体会好转", d: "health" },
+  "S03-S10": { m: "从心碎到触底，最痛的时刻会过去", d: "love" },
+  "S04-S10": { m: "休息不足导致透支", d: "health" },
+  "S05-P06": { m: "赢了争执却失去平衡", d: "money" },
+  "S06-W03": { m: "过渡之后有好转", d: "work" },
+  "S06-W06": { m: "离开之后会有好结果", d: "general" },
+  "S07-S08": { m: "独立行动但要小心", d: "general" },
+  "S08-8": { m: "自我设限时，用温柔的力量解开", d: "general" },
+  "S08-S09": { m: "自我设限带来焦虑", d: "love" },
+  "S09-P03": { m: "焦虑时寻求专业帮助", d: "health" },
+  "S09-S04": { m: "焦虑影响睡眠，需要休息", d: "health" },
+  "S10-17": { m: "触底之后有恢复希望", d: "health" },
+  "W02-W03": { m: "规划之后开始见效", d: "work" },
+  "W02-W08": { m: "规划之后快速执行", d: "general" },
+  "W03-P06": { m: "投入会得到回馈", d: "money" },
+  "W03-W06": { m: "投入有了回报，被看见", d: "work" },
+  "W04-19": { m: "状态稳定且充满活力", d: "health" },
+  "W04-S04": { m: "庆祝之后需要真正休息", d: "health" },
+  "W05-W06": { m: "竞争中胜出", d: "work" },
+  "W07-W09": { m: "顶住压力，快到终点", d: "work" },
+  "W08-12": { m: "太快了，可能需要暂停看看", d: "general" },
+  "W08-P01": { m: "快速的机会要抓住", d: "money" },
+  "W08-W04": { m: "快速推进后进入稳定庆祝", d: "work" },
+  "W09-S04": { m: "旧伤未愈，需要休养", d: "health" },
+  "W09-W10": { m: "疲惫但仍在坚持，快到极限", d: "work" },
+  "W10-P05": { m: "过度劳累导致虚弱", d: "health" },
+  "W10-S04": { m: "长期负重，身体在报警", d: "health" },
+  "W10-W04": { m: "卸下过重负担才能庆祝", d: "work" }
+};
+
+/* ===== 镜像与重复模式规则（P1 通用规则） ===== */
+var TAROT_PATTERNS = [
+  { k: "多张大牌", d: "牌阵里出现 3 张以上大阿卡那", m: "事情涉及人生层面的课题，不是日常小事；外力与时机占主导，个人能控制的有限" },
+  { k: "全无大牌", d: "全是小阿卡那", m: "属于日常可处理的事，主动权在你手上；重点看花色与数字" },
+  { k: "多张宫廷牌", d: "出现 2 张以上侍从/骑士/王后/国王", m: "人物是这件事的关键，或你在意的是\"别人怎么想\"；也可能指人多口杂" },
+  { k: "同一花色聚集", d: "3 张以上同花色", m: "该元素主导这件事：权杖=行动与热情，圣杯=情感与关系，宝剑=思维与冲突，星币=现实与资源" },
+  { k: "同数字重复", d: "出现相同数字", m: "这个数字的课题被强调。参考灵数含义：1开始、2选择、3创造、4稳定、5变化、6责任、7内省、8力量、9完成" },
+  { k: "全部正位", d: "没有逆位", m: "能量流动顺畅，事情按表面所示发展；不表示一定顺利，只是没有明显阻滞" },
+  { k: "多数逆位", d: "逆位占一半以上", m: "能量受阻或内转，多半是内在课题而非外部障碍；先处理自己这部分" },
+  { k: "缺某一花色", d: "四个花色中缺一个", m: "缺失的元素正是这件事的短板：缺火=没动力，缺水=缺情感连接，缺风=没想清楚，缺土=缺实际支撑" },
+  { k: "Ace 出现", d: "牌阵里有 Ace", m: "有新的开始或新的机会被给出，重点在\"要不要接住\"" },
+  { k: "多张 Ace", d: "2 张以上 Ace", m: "多个新起点同时出现，需要选择，别全部开始" },
+  { k: "10 出现", d: "牌阵里有 10", m: "一个循环走到终点，该收尾或该进入下一阶段" },
+  { k: "剑牌聚集", d: "3 张以上宝剑", m: "思维、沟通或冲突是核心；也可能是焦虑被放大，注意区分事实与想象" },
+  { k: "杯牌聚集", d: "3 张以上圣杯", m: "情感、关系与内在感受是核心；事情主要靠感受而非逻辑推进" },
+  { k: "杖牌聚集", d: "3 张以上权杖", m: "行动、热情与推进是核心；注意别只顾冲而忽略细节" },
+  { k: "币牌聚集", d: "3 张以上星币", m: "现实、资源、身体是核心；事情需要具体的时间、金钱或体力投入" },
+  { k: "3 张同数字不同花色", d: "如三张 5", m: "该数字的课题在多方面同时出现，是这件事的主旋律" },
+  { k: "两张相反牌", d: "如太阳+月亮、战车+倒吊人", m: "两种力量在拉扯，答案往往在中间，不是二选一" },
+  { k: "首张与末张呼应", d: "第一张和最后一张同花色或同数字", m: "事情会回到起点，形成一个闭环；重点看过程而非结果" },
+  { k: "中心是宫廷牌", d: "牌阵中心位置是人物牌", m: "关键在人或某种特质，而不在事件本身" },
+  { k: "中心是大牌", d: "牌阵中心是大阿卡那", m: "这件事有超出日常的意义，值得认真对待" },
+  { k: "连续数字", d: "如 3、4、5 连号", m: "事情在按阶段推进，是有序的过程" },
+  { k: "跳号", d: "数字断档，如 2、8", m: "过程有跳跃或省略，中间某一步被跳过了" },
+  { k: "同一人物牌重复", d: "两张相同的宫廷牌", m: "这个人的特质被强调，或你需要在这种特质上多用力" },
+  { k: "愚者或世界在末位", d: "最后一张是 0 或 21", m: "一个循环结束、新的开始；事情会转到下一阶段" }
+];
+
+/* ---- 塔罗牌对查询（顺序不敏感，与雷诺曼不同） ---- */
+function tarotPair(a, b) {
+    if (typeof TAROT_PAIRS === 'undefined') return null;
+    return TAROT_PAIRS[a + '-' + b] || TAROT_PAIRS[b + '-' + a] || null;
+}
+function tarotPairText(a, b) {
+    var r = tarotPair(a, b);
+    return r ? r.m : '';
+}
+/* ---- 识别牌阵中的重复模式 ---- */
+function tarotPatterns(cards) {
+    if (!cards || !cards.length) return [];
+    var out = [];
+    var majors = 0, courts = 0, rev = 0;
+    var suits = { wands: 0, cups: 0, swords: 0, pents: 0 };
+    var nums = {}, aces = 0, tens = 0;
+    cards.forEach(function (c) {
+        if (c.suit === 'major') majors++;
+        else if (c.suit) suits[c.suit]++;
+        var rank = String(c.rank || '');
+        if (['Page','Knight','Queen','King'].indexOf(rank) >= 0) courts++;
+        if (c.reversed) rev++;
+        if (rank === 'Ace') aces++;
+        if (rank === '10') tens++;
+        var n = TAROT_RANK_NUM ? TAROT_RANK_NUM[rank] : null;
+        if (n) nums[n] = (nums[n] || 0) + 1;
+    });
+    if (typeof TAROT_PATTERNS === 'undefined') return out;
+    TAROT_PATTERNS.forEach(function (r) {
+        var hit = false;
+        if (r.k === '多张大牌' && majors >= 3) hit = true;
+        if (r.k === '全无大牌' && majors === 0) hit = true;
+        if (r.k === '多张宫廷牌' && courts >= 2) hit = true;
+        if (r.k === '同一花色聚集' && Math.max(suits.wands,suits.cups,suits.swords,suits.pents) >= 3) hit = true;
+        if (r.k === '同数字重复' && Object.keys(nums).some(function(n){return nums[n]>=2;})) hit = true;
+        if (r.k === '全部正位' && rev === 0) hit = true;
+        if (r.k === '多数逆位' && rev >= Math.ceil(cards.length/2)) hit = true;
+        if (r.k === '缺某一花色' && majors === 0 && Object.keys(suits).some(function(s){return suits[s]===0;})) hit = true;
+        if (r.k === 'Ace 出现' && aces >= 1) hit = true;
+        if (r.k === '多张 Ace' && aces >= 2) hit = true;
+        if (r.k === '10 出现' && tens >= 1) hit = true;
+        if (r.k === '剑牌聚集' && suits.swords >= 3) hit = true;
+        if (r.k === '杯牌聚集' && suits.cups >= 3) hit = true;
+        if (r.k === '杖牌聚集' && suits.wands >= 3) hit = true;
+        if (r.k === '币牌聚集' && suits.pents >= 3) hit = true;
+        if (hit) out.push(r);
+    });
+    return out;
+}
+/* ---- 取牌的扩充领域/物件/行动 ---- */
+function tarotObjects(id) {
+    return (typeof TAROT_OBJECTS !== 'undefined') ? (TAROT_OBJECTS[String(id)] || []) : [];
+}
+function tarotDomain(id, field) {
+    var d = (typeof TAROT_DOMAINS !== 'undefined') ? TAROT_DOMAINS[String(id)] : null;
+    return d ? (d[field] || '') : '';
+}
+function tarotAction(id) {
+    return (typeof TAROT_ACTIONS !== 'undefined') ? (TAROT_ACTIONS[String(id)] || '') : '';
+}
+window.tarotPair = tarotPair;
+window.tarotPairText = tarotPairText;
+window.tarotPatterns = tarotPatterns;
+window.tarotObjects = tarotObjects;
+window.tarotDomain = tarotDomain;
+window.tarotAction = tarotAction;
+
+
 const TAROT_READINGS = {
     '0': { detail: '愚者代表一段尚未被经验束缚的新旅程。它提醒你保留开放与好奇，但仍应先确认脚下那一步是否安全。建议从最小可行行动开始，允许探索；真正的勇气不是不看风险，而是在认清风险后仍愿意尝试', reversed: '愚者逆位可能是不敢启程，也可能是冲得太快。先区分“我害怕”还是“我没准备”；若是前者，逐步试错；若是后者，补齐资源、时间和边界，再决定是否出发', love: '适合放下旧标签重新认识一个人，但不要在尚不了解对方时仓促承诺', career: '新项目或转行有空间，先把想法落成一个小实验，再谈扩大', money: '有新的财务尝试机会，但高风险投入前应核对预算和承受力', symbol: '悬崖与行囊象征未知旅程；白玫瑰与小狗代表天真、直觉与提醒；数字 0 表示未定形与无限潜能' },
     '1': { detail: '魔术师把想法转为行动，说明你已具备可用的能力、人脉和工具。重点不是“拥有全部”，而是整合已有资源并清楚表达意图。现在适合主动推进、沟通、提案或学习一门技术', reversed: '逆位不代表没有能力，而是能力没被妥善使用。检查是否把精力花在表演而非结果，或是否用话术影响别人；收回注意力，重新列资源与行动顺序', love: '可以把好感说清楚、把关系推进到下一阶段，但避免用技巧操纵对方', career: '提案、面试或启动项目的时机不错，关键是把准备转化为实际动作', money: '有把创意变现的潜力，但不要让想法停留在纸面或冲动消费', symbol: '无限符号代表意识与潜能；四元素工具象征已有资源；指向天地的手形成转化通道' },
@@ -33294,8 +35454,8 @@ function openCardDetail(kind, id, reversed) {
 
     /* ---------------- 雷诺曼 ---------------- */
     if (kind === 'lenormand') {
-        const card = LENORMAND_CARDS.find(c => c.id === String(id));
-        if (!card) return;
+        const card = LENORMAND_CARDS.find(c => String(c.id) === String(id));
+        if (!card) { try { showToast('未找到这张雷诺曼牌'); } catch (e) {} return; }
         const d  = LENORMAND_DETAILS[String(id)] || {};
         const rd = LENORMAND_READINGS[String(id)] || {};
         const dp = (typeof LENORMAND_DEEP  !== 'undefined' ? LENORMAND_DEEP[String(id)]  : null) || {};
@@ -33322,6 +35482,16 @@ function openCardDetail(kind, id, reversed) {
         if (dp.deep)    tabs.push({ label: '深度', text: dp.deep });
         if (vw.pos)     tabs.push({ label: '方位', text: vw.pos });
         html += `<div class="cd-tabbox">${cdTabs(tabs, 0)}</div>`;
+
+        /* 组合读法：这张牌与常见搭档的实际组合含义（雷诺曼的核心） */
+        var _lnHints = (typeof lnComboHints === 'function') ? lnComboHints(String(id), 'general', 8) : [];
+        if (_lnHints.length) {
+            html += `<div class="cd-sec"><div class="cd-sec-h">组合读法 · 与常见搭档</div><div class="cd-sec-tip">雷诺曼靠相邻成句，下面是「本牌 + 另一张」的稳定读法</div>`;
+            _lnHints.forEach(function (h) {
+                html += `<div class="cd-obj-row"><span class="cd-obj-k">${escapeHtml(card.name + ' + ' + h.with)}</span><span class="cd-obj-v">${escapeHtml(h.text)}</span></div>`;
+            });
+            html += `</div>`;
+        }
 
         if (dp.person || dp.health) {
             html += `<div class="card-detail-grid card-detail-grid-2" style="margin-top:12px;">
@@ -33365,8 +35535,8 @@ function openCardDetail(kind, id, reversed) {
 
     /* ---------------- 塔罗 ---------------- */
     } else if (kind === 'tarot') {
-        const card = TAROT_CARDS.find(c => c.id === String(id));
-        if (!card) return;
+        const card = TAROT_CARDS.find(c => String(c.id) === String(id));
+        if (!card) { try { showToast('未找到这张塔罗牌'); } catch (e) {} return; }
         const d   = tarotDetailOf(card) || {};
         const rdi = TAROT_READINGS[card.id] || {};
         const dp  = (typeof TAROT_DEEP  !== 'undefined' ? TAROT_DEEP[card.id]  : null) || {};
@@ -33401,6 +35571,34 @@ function openCardDetail(kind, id, reversed) {
         if (vw.soul) tabs.push({ label: '灵性层面', text: vw.soul });
         if (vw.story) tabs.push({ label: '牌面故事', text: vw.story });
         html += `<div class="cd-tabbox">${cdTabs(tabs, 0)}</div>`;
+
+        /* 领域补全：学业 / 人际 / 健康（正逆位） */
+        var _dm = (typeof TAROT_DOMAINS !== 'undefined') ? TAROT_DOMAINS[String(card.id)] : null;
+        if (_dm) {
+            var _dmTabs = [
+                { label: '学业', text: (rv ? _dm.studyR : _dm.study) || '—' },
+                { label: '人际', text: (rv ? _dm.socialR : _dm.social) || '—' },
+                { label: '健康', text: (rv ? _dm.healthR : _dm.health) || '—' }
+            ];
+            html += `<div class="card-detail-field" style="margin-top:10px;"><span class="card-detail-label">学业 · 人际 · 健康</span></div>`;
+            html += `<div class="cd-tabbox">${cdTabs(_dmTabs, 0)}</div>`;
+        }
+
+        /* 牌面物件释义（报告称为「形成产品差异」的核心） */
+        var _objs = (typeof tarotObjects === 'function') ? tarotObjects(String(card.id)) : [];
+        if (_objs.length) {
+            html += `<div class="cd-sec"><div class="cd-sec-h">牌面物件 · 逐条释义</div><div class="cd-sec-tip">牌义只有连着画面才容易理解，这里是图像证据</div>`;
+            _objs.forEach(function (o) {
+                html += `<div class="cd-obj-row"><span class="cd-obj-k">${escapeHtml(o[0])}</span><span class="cd-obj-v">${escapeHtml(o[1])}</span></div>`;
+            });
+            html += `</div>`;
+        }
+
+        /* 每日一牌的行动建议 */
+        var _act = (typeof tarotAction === 'function') ? tarotAction(String(card.id)) : '';
+        if (_act) {
+            html += `<div class="cd-sec"><div class="cd-sec-h">今日行动建议</div><div class="cd-sec-tip">非命令式，只是今天可以做的一件事</div><div class="cd-obj-row"><span class="cd-obj-k">可以做</span><span class="cd-obj-v">${escapeHtml(_act)}</span></div></div>`;
+        }
 
         if (dp.yesno || dp.time) {
             html += `<div class="card-detail-grid card-detail-grid-2" style="margin-top:12px;">
@@ -38308,8 +40506,10 @@ function openTodayCardMeaning() {
     const c = role && role.currentLoveState && role.currentLoveState.card;
     if (!c) { try { showToast('今天还没有抽牌'); } catch (e) {} return; }
     try {
-        if (typeof openCardDetail === 'function') openCardDetail('tarot', c.id, c.rev);
-        else showToast('牌义面板暂不可用');
+        if (typeof openCardDetail !== 'function') { try { showToast('牌义面板暂不可用'); } catch (e) {} return; }
+        /* 按牌的真实种类打开：雷诺曼走雷诺曼分支，塔罗走塔罗分支 */
+        const kind = (c.kind === 'lenormand') ? 'lenormand' : 'tarot';
+        openCardDetail(kind, String(c.id), !!c.rev);
     } catch (e) { try { showToast('打开牌义失败'); } catch (e2) {} }
 }
 window.openTodayCardMeaning = openTodayCardMeaning;
