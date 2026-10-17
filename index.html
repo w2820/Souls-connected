@@ -13065,6 +13065,11 @@ hr{height:0;color:inherit;border-top-width:1px}
                 <div class="act-txt"><span class="act-t">恢复备份</span><span class="act-s">从备份文件还原全部数据</span></div>
                 <i class="act-go"></i>
             </div>
+            <div class="act-item" onclick="restoreFromLegacyStorage()">
+                <span class="act-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.2 4.5v4.2h4.2"/><path d="M12 8v4l3 2"/></svg></span>
+                <div class="act-txt"><span class="act-t">找回旧版数据</span><span class="act-s">扫描并合并上一个版本留下的数据</span></div>
+                <i class="act-go"></i>
+            </div>
             <div class="act-item" onclick="exportChatHistory()">
                 <span class="act-ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8l-4.5-4.5Z"/><path d="M14 3.5V8h4.5"/><path d="M12 12.5v5"/><path d="m10 15.5 2 2 2-2"/></svg></span>
                 <div class="act-txt"><span class="act-t">导出聊天</span><span class="act-s">导出为可阅读的文本文件</span></div>
@@ -24775,10 +24780,186 @@ function stopAllRingtones() {
 const store = (function () {
     var IDB_DB = 'SCV3_IDB';
     var IDB_ST = 'kv';
-    var LS_P = 'SpiritualConnectionV2/';      // 主兜底前缀（与原 localforage 兜底一致，保证旧数据可读）
-    var LEGACY = ['sc_v2/', 'sc_v2_mirror_']; // 更老的键，迁移用
+    var LS_P = 'SpiritualConnectionV2/';      // 主兜底前缀
+    /* 旧键前缀，迁移用。lf/ 是 localforage 兜底脚本用的前缀（CDN 不可达时原文件走的这条路） */
+    var LEGACY = ['lf/', 'localforage/', 'sc_v2/', 'sc_v2_mirror_'];
     var db = null, readyP = null, idbOk = false, idbDone = false;
     var lastError = null;
+    var migratedP = null;   // 旧库迁移 Promise（只跑一次）
+    var migratedCount = 0;
+    var KEYS_ALL = ['appData', 'appBackgrounds', 'appUnread', 'customThemes', 'themeSchemes'];
+
+    /* 判断 appData 是否只是「空壳默认值」：只有内置资源、没有任何用户数据。
+       注意：musicLibrary / songLibrary / wordbanks 是启动时自动填充的内置库，
+       不能算作用户数据，否则新库永远不会被判定为空壳，旧数据就永远救不回来。 */
+    function _isEmptyShell(v) {
+        if (!v || typeof v !== 'object') return true;
+        function nz(x) { try { return x && ((Array.isArray(x) && x.length) || (!Array.isArray(x) && Object.keys(x).length)); } catch (e) { return false; } }
+        try {
+            if (nz(v.chats) || nz(v.groupChats)) return false;
+            if (nz(v.roles) || nz(v.groups)) return false;
+            if (nz(v.moments) || nz(v.momentPhotos)) return false;
+            if (nz(v.mails) || nz(v.favoriteMessages)) return false;
+            if (nz(v.importantDays) || nz(v.stickerLibrary)) return false;
+            if (nz(v.redPackets) || nz(v.transferRecords)) return false;
+            var up = v.userProfile;
+            if (up && typeof up === 'object') {
+                /* 默认昵称「我」和默认 svg 头像都是初始化生成的，不算用户数据 */
+                var av = String(up.avatar || '');
+                var defaultAvatar = !av || av.indexOf('data:image/svg+xml') === 0;
+                if (!defaultAvatar) return false;
+                if (up.nickname && String(up.nickname) !== '我') return false;
+            }
+        } catch (e) { return true; }
+        return true;
+    }
+
+    /* ============================================================
+       关键修复：从原存储（localforage / 任意旧 IndexedDB 库）迁移数据
+       原文件用 CDN 的 localforage，数据在 IndexedDB 的某个库里（库名可能是
+       localforage，也可能是 SpiritualConnectionV2 等自定义名）。本文件改用
+       SCV3_IDB 后若不迁移，旧数据一个都读不到 —— 表现为「部署新版后数据全丢」。
+       这里不猜库名：先枚举浏览器里所有库，再逐个扫描可能的 store。
+       ============================================================ */
+    var KV_STORES = ['keyvaluepairs', 'kv', 'store', 'data'];
+
+    function _openNoCreate(name) {
+        /* 打开一个库但不创建它：open 会新建库，这里若触发 upgradeneeded 就中止并删掉 */
+        return new Promise(function (resolve) {
+            var req, created = false, done = false;
+            function fin(v) { if (done) return; done = true; resolve(v); }
+            try { req = indexedDB.open(name); } catch (e) { return fin(null); }
+            req.onupgradeneeded = function () {
+                created = true;
+                try { req.transaction.abort(); } catch (e) {}
+            };
+            req.onsuccess = function () {
+                var d = req.result;
+                if (created) {
+                    try { d.close(); } catch (e) {}
+                    try { indexedDB.deleteDatabase(name); } catch (e) {}
+                    return fin(null);
+                }
+                fin(d);
+            };
+            req.onerror = function () { fin(null); };
+            req.onblocked = function () { fin(null); };
+            setTimeout(function () { fin(null); }, 4000);
+        });
+    }
+
+    function _readAllFromDb(db) {
+        return new Promise(function (resolve) {
+            var out = {};
+            try {
+                var names = db.objectStoreNames ? Array.prototype.slice.call(db.objectStoreNames) : [];
+                var usable = names.filter(function (n) { return KV_STORES.indexOf(n) >= 0; });
+                if (!usable.length) return resolve(null);
+                var tx = db.transaction(usable, 'readonly');
+                var remain = KEYS_ALL.length * usable.length;
+                var got = false;
+                usable.forEach(function (sn) {
+                    var st = tx.objectStore(sn);
+                    KEYS_ALL.forEach(function (k) {
+                        var rq;
+                        try { rq = st.get(k); } catch (e) { remain--; return; }
+                        rq.onsuccess = function () {
+                            if (rq.result !== undefined && rq.result !== null) {
+                                got = true;
+                                if (out[k] === undefined) out[k] = rq.result;
+                            }
+                            if (--remain <= 0) resolve(got ? out : null);
+                        };
+                        rq.onerror = function () { if (--remain <= 0) resolve(got ? out : null); };
+                    });
+                });
+                tx.oncomplete = function () { resolve(got ? out : null); };
+                tx.onerror = function () { resolve(got ? out : null); };
+                tx.onabort = function () { resolve(got ? out : null); };
+            } catch (e) { resolve(null); }
+        });
+    }
+
+    function _listDbNames() {
+        /* Chrome/Edge 支持 databases()；不支持时回退到候选名列表 */
+        var p;
+        try {
+            if (indexedDB.databases) {
+                p = Promise.resolve(indexedDB.databases()).then(function (r) {
+                    return (r || []).map(function (x) { return x && x.name; }).filter(Boolean);
+                }).catch(function () { return null; });
+            } else { p = Promise.resolve(null); }
+        } catch (e) { p = Promise.resolve(null); }
+        return p.then(function (names) {
+            if (!names || !names.length) {
+                names = ['localforage', 'SpiritualConnectionV2', 'SCV2_IDB', 'SCV3_IDB', 'lf',
+                         'SpiritualConnection', 'soulLink', 'SoulLink', 'appData', 'keyval-store'];
+            }
+            var seen = {}, out = [];
+            names.forEach(function (n) { if (!seen[n]) { seen[n] = 1; out.push(n); } });
+            return out.filter(function (n) { return n !== IDB_DB; });
+        });
+    }
+
+    async function _scanLegacyStores() {
+        var found = {};
+        var names = await _listDbNames();
+        for (var i = 0; i < names.length; i++) {
+            var dbx = await _openNoCreate(names[i]);
+            if (!dbx) continue;
+            var got = await _readAllFromDb(dbx);
+            try { dbx.close(); } catch (e) {}
+            if (got) {
+                for (var k in got) { if (found[k] === undefined) found[k] = got[k]; }
+            }
+        }
+        return found;
+    }
+
+    /* 把旧位置的数据搬进新库（不删旧数据，迁移失败也不影响原数据） */
+    async function ensureMigrated() {
+        if (migratedP) return migratedP;
+        migratedP = (async function () {
+            try {
+                if (typeof indexedDB === 'undefined' || !indexedDB) return 0;
+                await openIDB();
+                var need = [];
+                if (db) {
+                    for (var i = 0; i < KEYS_ALL.length; i++) {
+                        var kk = KEYS_ALL[i];
+                        try {
+                            var v = await idbTx('readonly', function (st) { return st.get(kk); });
+                            if (v === undefined || v === null) need.push(kk);
+                            /* 新库里只有空壳默认值（页面抢先写入的）也要迁移，否则旧数据永远救不回来 */
+                            else if (kk === 'appData' && _isEmptyShell(v)) need.push(kk);
+                        } catch (e) { need.push(kk); }
+                    }
+                } else { need = KEYS_ALL.slice(); }
+                if (!need.length) return 0;
+
+                var lfAll = await _scanLegacyStores();
+                var n = 0;
+                for (var j = 0; j < need.length; j++) {
+                    var k = need[j], val = null;
+                    if (lfAll && lfAll[k] !== undefined && lfAll[k] !== null) val = lfAll[k];
+                    if (val === null || val === undefined) val = lsGet(k);
+                    /* 旧 localforage 走 localStorage 驱动时的键：lf/appData 等 */
+                    if (val === null || val === undefined) {
+                        try { val = localStorage.getItem('lf/' + k); if (val) val = JSON.parse(val); } catch (e) { val = null; }
+                    }
+                    if (val === null || val === undefined) continue;
+                    if (db) {
+                        try { await idbTx('readwrite', function (st) { return st.put(val, k); }); n++; } catch (e) {}
+                    } else {
+                        try { lsSet(k, val); n++; } catch (e) {}
+                    }
+                }
+                migratedCount = n;
+                return n;
+            } catch (e) { return 0; }
+        })();
+        return migratedP;
+    }
 
     function openIDB() {
         if (readyP) return readyP;
@@ -24837,6 +25018,7 @@ const store = (function () {
 
     async function getItem(k) {
         await openIDB();
+        try { await ensureMigrated(); } catch (e) {}
         if (db) {
             try {
                 var v = await idbTx('readonly', function (st) { return st.get(k); });
@@ -24867,6 +25049,7 @@ const store = (function () {
     }
     async function keys() {
         await openIDB();
+        try { await ensureMigrated(); } catch (e) {}
         if (db) {
             try { var r = await idbTx('readonly', function (st) { return st.getAllKeys(); }); if (r && r.length) return r; } catch (e) {}
         }
@@ -24891,16 +25074,22 @@ const store = (function () {
         ready: function () { return openIDB(); },
         isIDB: function () { return idbOk; },
         lastError: function () { return lastError; },
+        migrated: function () { return migratedCount; },
+        readyMigration: function () { return ensureMigrated(); },
+        scanLegacy: function () { return _scanLegacyStores(); },
         get _driver() { return idbOk ? 'asyncStorage' : 'localStorageWrapper'; }
     };
 })();
 window.store = store;
+/* 启动即开始迁移，不等首次 getItem —— 避免页面抢先把默认数据写进新库导致迁移被跳过 */
+try { if (store && store.readyMigration) store.readyMigration(); } catch (e) {}
 
 /* ===== 存储健康检查：让用户能自己看到数据存到哪、有没有存下 ===== */
 async function checkStorageHealth() {
     var info = { driver: 'unknown', idb: false, quotaMB: 0, usageMB: 0, lastError: null, appDataBytes: 0 };
     try {
-        info.idb = !!(typeof store !== 'undefined' && store.isIDB && store.isIDB());
+        info.migrated = (typeof store !== 'undefined' && store.migrated) ? store.migrated() : 0;
+    info.idb = !!(typeof store !== 'undefined' && store.isIDB && store.isIDB());
         info.driver = info.idb ? 'IndexedDB（容量充足，推荐）' : 'localStorage（仅约 5MB，容量告急）';
     } catch (e) {}
     try { info.lastError = (typeof store !== 'undefined' && store.lastError) ? store.lastError() : null; } catch (e) {}
@@ -24940,6 +25129,56 @@ async function showStorageHealth() {
     } catch (e) { try { alert(lines.join('\n')); } catch (e2) {} }
 }
 window.showStorageHealth = showStorageHealth;
+
+/* ===== 找回旧版数据：扫描旧存储位置（localforage / 其他 IndexedDB 库 / localStorage），
+   与当前数据合并（只补空缺，不覆盖已有），用于自动迁移被跳过时手动补救 ===== */
+async function restoreFromLegacyStorage() {
+    var lines = [];
+    try {
+        var found = await store.scanLegacy();
+        if (!found || !found.appData) {
+            try { showAlert('没有找到旧版本留下的数据。\n\n如果数据是空白的，可能是部署网址变了（浏览器按网址隔离存储），需要在旧网址上「下载备份」，再到新网址「恢复备份」。', '未找到旧数据'); }
+            catch (e) { alert('未找到旧版本数据'); }
+            return;
+        }
+        var old = found.appData;
+        var added = [];
+        function mergeArr(key) {
+            var cur = appData[key], o = old[key];
+            if (!o) return;
+            if (Array.isArray(o)) {
+                if (!Array.isArray(cur) || !cur.length) { appData[key] = o.slice(); if (o.length) added.push(key + ' ' + o.length + ' 条'); return; }
+                var seen = {}, out = cur.slice(), n = 0;
+                cur.forEach(function (x) { try { seen[JSON.stringify(x)] = 1; } catch (e) {} });
+                o.forEach(function (x) { var k; try { k = JSON.stringify(x); } catch (e) { k = Math.random(); } if (!seen[k]) { seen[k] = 1; out.push(x); n++; } });
+                if (n) { appData[key] = out; added.push(key + ' 新增 ' + n + ' 条'); }
+            } else if (cur === undefined || cur === null || (typeof cur === 'object' && !Object.keys(cur).length)) {
+                appData[key] = o; added.push(key);
+            }
+        }
+        function mergeObj(key) {
+            var cur = appData[key], o = old[key];
+            if (!o || typeof o !== 'object') return;
+            if (!cur || typeof cur !== 'object') { appData[key] = o; added.push(key); return; }
+            var n = 0;
+            Object.keys(o).forEach(function (k) { if (cur[k] === undefined || cur[k] === null || (Array.isArray(cur[k]) && !cur[k].length)) { cur[k] = o[k]; n++; } });
+            if (n) added.push(key + ' 新增 ' + n + ' 项');
+        }
+        ['roles', 'groups', 'moments', 'momentPhotos', 'mails', 'favoriteMessages',
+         'importantDays', 'redPackets', 'transferRecords', 'wordCards'].forEach(mergeArr);
+        ['chats', 'groupChats', 'stickerLibrary', 'stickerPacks'].forEach(mergeObj);
+        if (!added.length) {
+            try { showAlert('旧版本数据已扫描到，但当前数据里都已存在，无需合并。', '无需恢复'); } catch (e) { alert('无需恢复'); }
+            return;
+        }
+        await saveDataImmediately();
+        var msg = '已找回：\n' + added.join('\n') + '\n\n共 ' + added.length + ' 类数据。建议立刻「下载备份」保存一份。';
+        try { showAlert(msg, '找回成功'); } catch (e) { alert(msg); }
+    } catch (e) {
+        try { showAlert('找回失败：' + (e && e.message ? e.message : e), '出错'); } catch (e2) { alert('找回失败'); }
+    }
+}
+window.restoreFromLegacyStorage = restoreFromLegacyStorage;
 
 // --- 图片压缩 ---
 async function compressImage(file, maxWidth = 150, quality = 0.5) {
@@ -26156,6 +26395,8 @@ function pickRandomWordCards(min, max) {
 
 async function loadData() {
     try {
+        /* 先把旧库（localforage）的数据搬过来，再读 —— 否则会读到空数据并被默认值覆盖 */
+        try { if (store && store.readyMigration) await store.readyMigration(); } catch (e) {}
         let stored = await store.getItem('appData');
         /* 背景图单独存储，加载时合并回来（避免主数据每次序列化大图） */
         try {
@@ -26183,6 +26424,11 @@ async function loadData() {
                 console.log('数据结构已从 v' + (_prevSchema || 1) + ' 迁移到 v' + APP_SCHEMA_VERSION);
                 try { await store.setItem('appData', appData); } catch (e) {}
             }
+            /* 旧库迁移来的数据可能缺整块结构，先兜底补齐，避免后续硬取值报错 */
+            appData.settings = appData.settings || {};
+            appData.appearance = appData.appearance || {};
+            if (!appData.settings.call) appData.settings.call = { maxDuration: 2, minDuration: 0.5 };
+            if (!appData.settings.call.ringtone) appData.settings.call.ringtone = '';
             if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] };
             if (!appData.pokeSymbols.customSymbols) appData.pokeSymbols.customSymbols = [];
             if (!appData.settings.pokeAutoReplyEnabled) appData.settings.pokeAutoReplyEnabled = true;
@@ -26523,7 +26769,7 @@ async function loadData() {
     }
     const ringtoneAudio = document.getElementById('call-ringtone');
     if (ringtoneAudio) {
-        ringtoneAudio.src = appData.settings.call.ringtone;
+        ringtoneAudio.src = (appData.settings && appData.settings.call && appData.settings.call.ringtone) || '';
         ringtoneAudio.load();
     }
     if (currentRoleId) {
@@ -34094,7 +34340,7 @@ async function saveSettings() {
 
     const ringtoneAudio = document.getElementById('call-ringtone');
     if (ringtoneAudio) {
-        ringtoneAudio.src = appData.settings.call.ringtone;
+        ringtoneAudio.src = (appData.settings && appData.settings.call && appData.settings.call.ringtone) || '';
         ringtoneAudio.load();
     }
 
