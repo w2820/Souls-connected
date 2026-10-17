@@ -34869,7 +34869,156 @@ function sendNotificationIfNeeded(title, body, targetRoleId) {
 
 
 function exportData() { const jsonStr = JSON.stringify(appData, null, 2); const blob = new Blob([jsonStr], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `spiritual_connection_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('导出成功'); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
-function importData() { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.onchange = e => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = async ev => { try { const d = JSON.parse(ev.target.result); if (d.roles && d.chats) { showConfirm('导入将覆盖现有数据，确定？', async () => { appData = migrateAppData(d); if (!appData.wordbanks.wordGroups) appData.wordbanks.wordGroups = [{ name: '默认', words: [...(appData.wordbanks.replies || [])] }]; appData.wordbanks.wordGroups.forEach(g => { g.words = g.words.map(w => typeof w === 'string' ? { text: w, blocked: false } : w); }); if (d.appearance?.backgrounds) await saveBackgrounds(d.appearance.backgrounds); if (!appData.favoriteMessages) appData.favoriteMessages = []; if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 }; if (!appData.transferRecords) appData.transferRecords = []; if (!appData.redPackets) appData.redPackets = []; if (!appData.userProfile) appData.userProfile = { nickname: '我', avatar: DEFAULT_AVATAR }; if (!appData.balance) appData.balance = 1000000; if (!appData.moments || appData.moments.length === 0) appData.moments = JSON.parse(JSON.stringify(DEFAULT_DATA.moments)); if (!appData.momentPhotos) appData.momentPhotos = []; if (!appData.songLibrary || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.songLibrary)); if (!appData.bookLibrary || appData.bookLibrary.length === 0) appData.bookLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.bookLibrary)); if (!appData.musicLibrary) appData.musicLibrary = JSON.parse(JSON.stringify(DEFAULT_DATA.musicLibrary)); if (!appData.addressLibrary) appData.addressLibrary = [...DEFAULT_DATA.addressLibrary]; if (appData.settings.momentCover === undefined) appData.settings.momentCover = ''; if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] }; if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true; if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 95; if (appData.settings.mindCardsEnabled === undefined) appData.settings.mindCardsEnabled = false; if (appData.settings.mindCardMoodProb === undefined) appData.settings.mindCardMoodProb = 55; if (appData.settings.mindCardHeartProb === undefined) appData.settings.mindCardHeartProb = 35; if (appData.settings.mindCardIntentProb === undefined) appData.settings.mindCardIntentProb = 25; appData.roles.forEach(r => { if (r.chatBackground === undefined) r.chatBackground = null; }); await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('导入成功'); updateMusicPlayerCardVisibility(); }); } else showToast('无效文件'); } catch { showToast('解析失败'); } }; r.readAsText(f); }; i.click(); }
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.txt,application/json,text/plain';
+    input.onchange = e => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const sizeMB = (f.size / 1048576).toFixed(2);
+        const reader = new FileReader();
+        reader.onerror = () => { _impFail('文件读取失败', '可能是文件被占用或浏览器权限限制。'); };
+        reader.onload = async ev => {
+            let raw = String(ev.target.result || '');
+            try { raw = raw.replace(/^\uFEFF/, '').trim(); } catch (e) {}
+            let d = null;
+            try { d = JSON.parse(raw); }
+            catch (err) {
+                // 不是 JSON：判断是否误传了「导出聊天」的文本文件
+                if (/聊天记录|【|\u2014|\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(raw.slice(0, 400))) {
+                    return _impFail('这是聊天记录文本', '这个文件是「导出聊天」生成的 .txt，请改用「导入聊天」功能。');
+                }
+                return _impFail('文件不是有效的 JSON', '错误：' + (err && err.message ? err.message : err) +
+                    '\n\n文件开头：' + raw.slice(0, 80));
+            }
+            // 自动识别包装格式
+            d = _unwrapBackup(d);
+            if (!d || typeof d !== 'object') return _impFail('数据格式无法识别', '解析后不是对象。');
+            const ok = (Array.isArray(d.roles) || d.chats || d.moments || Array.isArray(d.wordCards) ||
+                        d.settings || d.userProfile || d.schemaVersion || d.groupChats || d.wordbanks);
+            if (!ok) {
+                /* 未识别到已知字段：仍提供强制导入，兼容字段命名不同的老版本备份 */
+                const keys = Object.keys(d).slice(0, 12).join('、');
+                showConfirm('未识别到已知字段，可能是老版本备份。\n\n文件大小 ' + sizeMB +
+                    ' MB\n顶层字段：' + keys + '\n\n仍要强制导入并覆盖现有数据吗？', async () => {
+                    try {
+                        appData = migrateAppData(d);
+                        _ensureDataShape();
+                        await saveData();
+                        try { await initAppearance(); } catch (e) {}
+                        try { renderRoleList(); } catch (e) {}
+                        try { renderGroupList(); } catch (e) {}
+                        showToast('已强制导入，请立即检查数据是否正确');
+                    } catch (err) { _impFail('强制导入失败', (err && err.message ? err.message : String(err))); }
+                });
+                return;
+            }
+            // 摘要确认
+            let chatCount = 0, msgCount = 0;
+            try { const c = d.chats || {}; chatCount = Object.keys(c).length;
+                  Object.keys(c).forEach(k => { msgCount += (c[k] || []).length; }); } catch (e) {}
+            const summary = [
+                '备份大小：' + sizeMB + ' MB',
+                '联系人：' + ((d.roles || []).length) + ' 个',
+                '聊天会话：' + chatCount + ' 个（共 ' + msgCount + ' 条消息）',
+                '朋友圈：' + ((d.moments || []).length) + ' 条',
+                '专属字卡库：' + (d.roles ? d.roles.filter(r => r && r.exclusiveCards && Object.keys(r.exclusiveCards).length).length : 0) + ' 个角色'
+            ].join('\n');
+            showConfirm('导入将覆盖现有数据，确定？\n\n' + summary, async () => {
+                try {
+                    appData = migrateAppData(d);
+                    _ensureDataShape();
+                    if (d.appearance && d.appearance.backgrounds) {
+                        try { await saveBackgrounds(d.appearance.backgrounds); } catch (e) {}
+                    }
+                    await saveData();
+                    try { await initAppearance(); } catch (e) {}
+                    try { renderRoleList(); } catch (e) {}
+                    try { renderGroupList(); } catch (e) {}
+                    try { updateMusicPlayerCardVisibility(); } catch (e) {}
+                    try { updateStorageDisplay(); } catch (e) {}
+                    showToast('导入成功：' + msgCount + ' 条消息已恢复');
+                } catch (err) {
+                    _impFail('导入过程出错', (err && err.message ? err.message : String(err)));
+                }
+            });
+        };
+        reader.readAsText(f);
+    };
+    input.click();
+}
+/* 识别多种备份包装格式：顶层数组 / {data:...} / {appData:...} / 直接是数据 */
+function _unwrapBackup(d) {
+    try {
+        if (Array.isArray(d)) {
+            for (let i = 0; i < d.length; i++) {
+                if (d[i] && typeof d[i] === 'object' && (d[i].roles || d[i].chats)) return d[i];
+            }
+            return null;
+        }
+        if (d && typeof d === 'object') {
+            for (const k of ['appData', 'data', 'payload', 'backup', 'state']) {
+                if (d[k] && typeof d[k] === 'object' && (d[k].roles || d[k].chats)) return d[k];
+            }
+        }
+    } catch (e) {}
+    return d;
+}
+/* 导入后补齐所有必要结构，缺哪块补哪块，避免后续硬取值报错 */
+function _ensureDataShape() {
+    const D = (typeof DEFAULT_DATA !== 'undefined') ? DEFAULT_DATA : {};
+    appData = appData || {};
+    appData.settings = appData.settings || {};
+    appData.appearance = appData.appearance || {};
+    if (!appData.settings.call) appData.settings.call = { maxDuration: 2, minDuration: 0.5 };
+    if (!appData.settings.call.ringtone) appData.settings.call.ringtone = '';
+    if (!Array.isArray(appData.roles)) appData.roles = [];
+    if (!Array.isArray(appData.groups)) appData.groups = [];
+    if (!appData.chats || typeof appData.chats !== 'object') appData.chats = {};
+    if (!appData.groupChats || typeof appData.groupChats !== 'object') appData.groupChats = {};
+    if (!appData.wordbanks) appData.wordbanks = { replies: [], wordGroups: [] };
+    if (!Array.isArray(appData.wordbanks.replies)) appData.wordbanks.replies = [];
+    if (!Array.isArray(appData.wordbanks.wordGroups)) appData.wordbanks.wordGroups = [{ name: '默认', words: appData.wordbanks.replies.slice() }];
+    appData.wordbanks.wordGroups.forEach(g => {
+        if (!g) return;
+        if (!Array.isArray(g.words)) g.words = [];
+        g.words = g.words.map(w => typeof w === 'string' ? { text: w, blocked: false } : w);
+    });
+    if (!Array.isArray(appData.favoriteMessages)) appData.favoriteMessages = [];
+    if (!appData.transferSettings) appData.transferSettings = { enabled: true, minAmount: 5.20, maxAmount: 200, probability: 15, checkInterval: 30 };
+    if (!Array.isArray(appData.transferRecords)) appData.transferRecords = [];
+    if (!Array.isArray(appData.redPackets)) appData.redPackets = [];
+    if (!appData.userProfile) appData.userProfile = { nickname: '我', avatar: (typeof DEFAULT_AVATAR !== 'undefined' ? DEFAULT_AVATAR : '') };
+    if (appData.balance === undefined || appData.balance === null) appData.balance = 1000000;
+    if (!Array.isArray(appData.moments)) appData.moments = [];
+    if (!Array.isArray(appData.momentPhotos)) appData.momentPhotos = [];
+    if (!Array.isArray(appData.mails)) appData.mails = [];
+    if (!Array.isArray(appData.importantDays)) appData.importantDays = [];
+    if (!Array.isArray(appData.stickerPacks)) appData.stickerPacks = [];
+    if (!appData.stickerLibrary || typeof appData.stickerLibrary !== 'object') appData.stickerLibrary = {};
+    if (!Array.isArray(appData.songLibrary) || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(D.songLibrary || []));
+    if (!Array.isArray(appData.bookLibrary) || !appData.bookLibrary.length) appData.bookLibrary = JSON.parse(JSON.stringify(D.bookLibrary || []));
+    if (!Array.isArray(appData.musicLibrary)) appData.musicLibrary = JSON.parse(JSON.stringify(D.musicLibrary || []));
+    if (!Array.isArray(appData.addressLibrary)) appData.addressLibrary = JSON.parse(JSON.stringify(D.addressLibrary || []));
+    if (!appData.pokeSymbols) appData.pokeSymbols = { my: { preset: 'heart', custom: '♡' }, partner: { preset: 'flower', custom: '✿' }, customSymbols: [] };
+    if (!Array.isArray(appData.pokeSymbols.customSymbols)) appData.pokeSymbols.customSymbols = [];
+    if (appData.settings.pokeAutoReplyEnabled === undefined) appData.settings.pokeAutoReplyEnabled = true;
+    if (appData.settings.pokeAutoReplyProb === undefined) appData.settings.pokeAutoReplyProb = 95;
+    if (appData.settings.rolePokeMeProb === undefined) appData.settings.rolePokeMeProb = 3;
+    if (appData.settings.mindCardsEnabled === undefined) appData.settings.mindCardsEnabled = false;
+    if (appData.settings.mindCardMoodProb === undefined) appData.settings.mindCardMoodProb = 55;
+    if (appData.settings.mindCardHeartProb === undefined) appData.settings.mindCardHeartProb = 35;
+    if (appData.settings.mindCardIntentProb === undefined) appData.settings.mindCardIntentProb = 25;
+    if (appData.settings.momentCover === undefined) appData.settings.momentCover = '';
+    appData.roles.forEach(r => { if (r && r.chatBackground === undefined) r.chatBackground = null; });
+    try { if (typeof kssEnsureFortuneData === 'function') kssEnsureFortuneData(); } catch (e) {}
+}
+function _impFail(title, detail) {
+    try { if (typeof showAlert === 'function') showAlert(String(detail || ''), String(title || '导入失败')); else alert(title + '\n' + detail); }
+    catch (e) { try { alert(title + '\n' + detail); } catch (e2) {} }
+}
+window.importData = importData;
 async function clearChatRecords() { showConfirm('清空所有聊天记录？', async () => { appData.chats = {}; appData.groupChats = {}; unreadCounts = {}; await saveUnreadCounts(); appData.roles.forEach(r => r.lastActive = Date.now()); await saveData(); renderRoleList(); if (currentChatType === 'role') renderChatMessages(); updateStorageDisplay(); showToast('已清空'); }); }
 async function resetAllData() { showConfirm('重置所有数据？不可恢复！', async () => { appData = JSON.parse(JSON.stringify(DEFAULT_DATA)); appData.schemaVersion = APP_SCHEMA_VERSION; await saveBackgrounds({ home: '', chat: '', group: '' }); await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('已重置'); }); }
 
