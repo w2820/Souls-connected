@@ -13031,6 +13031,14 @@ hr{height:0;color:inherit;border-top-width:1px}
                     <span class="su-cap">存储方式</span>
                     <span class="su-total" id="storage-driver-text" style="font-size:12px;">检测中...</span>
                 </div>
+                <div class="su-top" style="margin-top:6px;">
+                    <span class="su-cap">防清理保护</span>
+                    <span class="su-total" id="storage-persist-text" style="font-size:12px;">检测中...</span>
+                </div>
+                <div class="su-top" style="margin-top:6px;">
+                    <span class="su-cap">上次备份</span>
+                    <span class="su-total" id="storage-backup-text" style="font-size:12px;">未知</span>
+                </div>
                 <div class="storage-progress-bar"><div class="storage-progress-fill" id="storage-progress-fill" style="width:0%"></div></div>
                 <div class="su-cats">
                     <div class="su-cat">
@@ -13063,6 +13071,11 @@ hr{height:0;color:inherit;border-top-width:1px}
             <div class="act-item" onclick="importData()">
                 <span class="act-ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m8 13.5 4-4 4 4"/><path d="M5 5h14"/></svg></span>
                 <div class="act-txt"><span class="act-t">恢复备份</span><span class="act-s">从备份文件还原全部数据</span></div>
+                <i class="act-go"></i>
+            </div>
+            <div class="act-item" onclick="requestPersistentStorage(true)">
+                <span class="act-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 4.8 6.3v5.4c0 4.6 3 8.7 7.2 9.9 4.2-1.2 7.2-5.3 7.2-9.9V6.3Z"/><path d="m9.2 12.2 2 2 3.6-3.8"/></svg></span>
+                <div class="act-txt"><span class="act-t">开启防清理保护</span><span class="act-s">请求浏览器不要自动清除本站数据</span></div>
                 <i class="act-go"></i>
             </div>
             <div class="act-item" onclick="restoreFromLegacyStorage()">
@@ -24937,6 +24950,28 @@ const store = (function () {
                 } else { need = KEYS_ALL.slice(); }
                 if (!need.length) return 0;
 
+                /* 优先级保护：如果本版本已经留下 localStorage 关键备份（说明用户近期在用本版本），
+                   就不要再让旧库的「老数据」盖回来 —— 否则会出现「IDB 被驱逐后，刚存的新数据
+                   反被几个月前的旧库数据覆盖」的情况。关键备份的恢复在 loadData 里进行。 */
+                var hasCrit = false;
+                try {
+                    var _craw = localStorage.getItem('SC_CRIT_core');
+                    if (_craw) {
+                        var _c = JSON.parse(_craw);
+                        hasCrit = !!(_c && ((_c.chats && Object.keys(_c.chats).length) ||
+                                            (Array.isArray(_c.roles) && _c.roles.length) ||
+                                            (Array.isArray(_c.moments) && _c.moments.length)));
+                    }
+                } catch (e) { hasCrit = false; }
+                if (hasCrit) {
+                    /* 关键备份存在：跳过旧库迁移，但仍把关键备份写进新库，让主流程读到 */
+                    try {
+                        var _cc = JSON.parse(localStorage.getItem('SC_CRIT_core'));
+                        if (_cc && db) { await idbTx('readwrite', function (st) { return st.put(_cc, 'appData'); }); }
+                    } catch (e) {}
+                    return 0;
+                }
+
                 var lfAll = await _scanLegacyStores();
                 var n = 0;
                 for (var j = 0; j < need.length; j++) {
@@ -25084,6 +25119,52 @@ window.store = store;
 /* 启动即开始迁移，不等首次 getItem —— 避免页面抢先把默认数据写进新库导致迁移被跳过 */
 try { if (store && store.readyMigration) store.readyMigration(); } catch (e) {}
 
+/* ===== 持久化存储权限：请求浏览器不要驱逐本站数据 =====
+   这是「几天不上线数据就消失」的主因：Chrome / Edge 在存储压力或站点长期未访问时
+   会自动清理 IndexedDB。persist() 获批后本站数据进入「持久化」桶，不会被自动清理。
+   注意：iOS Safari 不支持此 API，需靠「添加到主屏幕」+ 定期导出备份。 */
+var SC_PERSIST = { supported: false, granted: false, asked: false };
+async function requestPersistentStorage(showResult) {
+    try {
+        if (!navigator.storage || !navigator.storage.persist) {
+            SC_PERSIST.supported = false;
+            if (showResult) {
+                var msg = '当前浏览器不支持「持久化存储」权限（iOS Safari 常见）。\n\n' +
+                    '建议：\n1. 把本页「添加到主屏幕」\n2. 定期到「数据管理 → 下载备份」保存一份';
+                try { showAlert(msg, '无法申请持久化'); } catch (e) { alert(msg); }
+            }
+            return false;
+        }
+        SC_PERSIST.supported = true;
+        var granted = await navigator.storage.persisted();
+        if (!granted) granted = await navigator.storage.persist();
+        SC_PERSIST.granted = !!granted;
+        SC_PERSIST.asked = true;
+        try { localStorage.setItem('sc_persist_state', granted ? '1' : '0'); } catch (e) {}
+        if (showResult) {
+            var m2 = granted
+                ? '✅ 已开启持久化存储。\n浏览器不会再自动清理本站数据（除非用户手动清除）。'
+                : '⚠️ 浏览器未授予持久化存储。\n\n可能原因：站点访问频率较低。\n建议把本页添加到主屏幕并常访问，同时定期「下载备份」。';
+            try { showAlert(m2, granted ? '已开启' : '未授予'); } catch (e) { alert(m2); }
+        }
+        return !!granted;
+    } catch (e) {
+        if (showResult) { try { showAlert('申请失败：' + (e && e.message ? e.message : e), '出错'); } catch (e2) {} }
+        return false;
+    }
+}
+window.requestPersistentStorage = requestPersistentStorage;
+/* 启动时静默申请一次（不打断用户） */
+try { requestPersistentStorage(false); } catch (e) {}
+/* 关闭/刷新前同步落一份关键备份到 localStorage（同步写，不受异步 IndexedDB 来不及的影响） */
+try {
+    window.addEventListener('beforeunload', function () { try { _backupCriticalData(); } catch (e) {} });
+    window.addEventListener('pagehide', function () { try { _backupCriticalData(); } catch (e) {} });
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') { try { _backupCriticalData(); } catch (e) {} }
+    });
+} catch (e) {}
+
 /* ===== 存储健康检查：让用户能自己看到数据存到哪、有没有存下 ===== */
 async function checkStorageHealth() {
     var info = { driver: 'unknown', idb: false, quotaMB: 0, usageMB: 0, lastError: null, appDataBytes: 0 };
@@ -25179,6 +25260,71 @@ async function restoreFromLegacyStorage() {
     }
 }
 window.restoreFromLegacyStorage = restoreFromLegacyStorage;
+
+/* ===== 关键备份：把「用户数据核心」同步写一份到 localStorage =====
+   借鉴原版 9.30 文件的思路 —— 它之所以长期不丢数据，就是靠这层 localStorage 兜底。
+   本文件此前 appData 里塞了 4861 首内置音乐（占 95%），根本写不进 5MB 的 localStorage，
+   所以只剩 IndexedDB 单条防线；现在已瘦身，这层能真正生效。 */
+
+var SC_CRIT_PREFIX = 'SC_CRIT_';
+var SC_CRIT_TIME = 'SC_CRIT_TIME';
+
+function _criticalSnapshot(d) {
+    try {
+        var core = {
+            _v: 2,
+            roles: d.roles, groups: d.groups, chats: d.chats, groupChats: d.groupChats,
+            moments: d.moments, mails: d.mails, favoriteMessages: d.favoriteMessages,
+            importantDays: d.importantDays, stickerLibrary: d.stickerLibrary,
+            redPackets: d.redPackets, transferRecords: d.transferRecords,
+            userProfile: d.userProfile, settings: d.settings,
+            appearance: d.appearance, pokeSymbols: d.pokeSymbols,
+            _deletedMusic: d._deletedMusic, wordCards: d.wordCards
+        };
+        return JSON.stringify(core);
+    } catch (e) { return null; }
+}
+
+function _backupCriticalData(d) {
+    try {
+        var json = _criticalSnapshot(d || appData);
+        if (!json) return false;
+        /* localStorage 上限约 5MB，超了就逐级降级：先砍聊天条数，保证至少能写进去 */
+        if (json.length > 4.5 * 1024 * 1024) {
+            var core = JSON.parse(json);
+            Object.keys(core.chats || {}).forEach(function (k) { core.chats[k] = (core.chats[k] || []).slice(-200); });
+            Object.keys(core.groupChats || {}).forEach(function (k) { core.groupChats[k] = (core.groupChats[k] || []).slice(-200); });
+            core._truncated = true;
+            json = JSON.stringify(core);
+        }
+        if (json.length > 4.5 * 1024 * 1024) {
+            var c2 = JSON.parse(json);
+            Object.keys(c2.chats || {}).forEach(function (k) { c2.chats[k] = (c2.chats[k] || []).slice(-50); });
+            c2._truncated = true;
+            json = JSON.stringify(c2);
+        }
+        localStorage.setItem(SC_CRIT_PREFIX + 'core', json);
+        localStorage.setItem(SC_CRIT_TIME, String(Date.now()));
+        return true;
+    } catch (e) {
+        console.warn('[关键备份] 写入失败（可能已满）:', e && e.message);
+        return false;
+    }
+}
+window._backupCriticalData = _backupCriticalData;
+
+/* 从 localStorage 关键备份恢复，返回核心数据对象或 null */
+function _restoreCriticalData() {
+    try {
+        var raw = localStorage.getItem(SC_CRIT_PREFIX + 'core');
+        if (!raw) return null;
+        var core = JSON.parse(raw);
+        if (!core || typeof core !== 'object') return null;
+        if (!core.roles && !core.chats && !core.moments) return null;
+        return core;
+    } catch (e) { return null; }
+}
+window._restoreCriticalData = _restoreCriticalData;
 
 // --- 图片压缩 ---
 async function compressImage(file, maxWidth = 150, quality = 0.5) {
@@ -25713,6 +25859,35 @@ async function updateStorageDisplay() {
             if (le) { drvEl.textContent += ' · 最近写入失败'; drvEl.style.color = '#E64340'; }
         }
     } catch (e) {}
+
+    /* 防清理保护状态 + 上次备份时间 */
+    try {
+        const pEl = document.getElementById('storage-persist-text');
+        if (pEl) {
+            let pTxt = '未开启', pColor = '#e64340';
+            if (!navigator.storage || !navigator.storage.persist) { pTxt = '浏览器不支持'; pColor = '#999'; }
+            else {
+                const g = await navigator.storage.persisted();
+                if (g) { pTxt = '已开启 ✅'; pColor = '#07c160'; }
+            }
+            pEl.textContent = pTxt; pEl.style.color = pColor;
+        }
+        const bEl = document.getElementById('storage-backup-text');
+        if (bEl) {
+            const t = parseInt(localStorage.getItem('sc_last_backup') || '0', 10);
+            if (!t) { bEl.textContent = '从未备份'; bEl.style.color = '#e64340'; }
+            else {
+                const days = Math.floor((Date.now() - t) / 86400000);
+                bEl.textContent = days === 0 ? '今天' : (days + ' 天前' + (days >= 7 ? '（建议备份）' : ''));
+                bEl.style.color = days >= 7 ? '#e64340' : (days >= 3 ? '#ff9f43' : '#07c160');
+                /* 长期未备份：给一次明确提醒，避免再次出现「几天不上线数据就没了」 */
+                if (days >= 7 && !window.__backupWarned) {
+                    window.__backupWarned = true;
+                    try { if (typeof showToast === 'function') showToast('已 ' + days + ' 天未备份，建议现在下载一份'); } catch (e) {}
+                }
+            }
+        }
+    } catch (e) {}
     const mediaEl = document.getElementById('media-storage-size');
     if (mediaEl) mediaEl.textContent = formatBytes(usage.media);
     const barEl = document.getElementById('storage-progress-fill');
@@ -25973,6 +26148,16 @@ async function saveDataImmediately() {
         Object.keys(appData.chats).forEach(k => { if (appData.chats[k] && appData.chats[k].length > 20000) appData.chats[k] = appData.chats[k].slice(-20000); });
         Object.keys(appData.groupChats).forEach(k => { if (appData.groupChats[k] && appData.groupChats[k].length > 20000) appData.groupChats[k] = appData.groupChats[k].slice(-20000); });
         syncAllReplies();
+        /* ===== 瘦身：剥离内置静态库，不写进存储 =====
+           musicLibrary/bookLibrary/songLibrary/addressLibrary 是代码内置的只读数据
+           （实测占 appData 的 95%+），每次保存都重写它们既慢又撑大存储，
+           还会挤掉 localStorage 备份的可用空间。这里不存，加载时按 DEFAULT_DATA 重建。 */
+        const BUILTIN_LIBS = ['musicLibrary', 'bookLibrary', 'songLibrary', 'addressLibrary'];
+        let strippedLibs = null;
+        try {
+            strippedLibs = {};
+            BUILTIN_LIBS.forEach(k => { if (appData[k] !== undefined) { strippedLibs[k] = appData[k]; delete appData[k]; } });
+        } catch (e) { strippedLibs = null; }
         const bgObj = appData.appearance?.backgrounds;
         const hasBackgrounds = bgObj && Object.values(bgObj).some(v => v);
         let dataToSave;
@@ -25986,6 +26171,12 @@ async function saveDataImmediately() {
         }
         try { _saveMirror(dataToSave); } catch (e) {}
         await store.setItem('appData', dataToSave);
+        /* 双写一份副本：主数据被浏览器驱逐/损坏时可自动回补 */
+        try { await store.setItem('appDataBak', dataToSave); } catch (e) {}
+        try { localStorage.setItem('sc_last_save', String(Date.now())); } catch (e) {}
+        /* 关键备份：现在数据已瘦身（实测 ~30KB），可稳定写进 localStorage。
+           IndexedDB 被浏览器驱逐时，这份同步备份是最后防线。 */
+        try { _backupCriticalData(dataToSave); } catch (e) {}
         await store.setItem('customThemes', customThemes);
         await store.setItem('themeSchemes', themeSchemes);
         /* 性能优化：主题备份放到空闲时段写，避免与主线程抢时间 */
@@ -26004,6 +26195,9 @@ async function saveDataImmediately() {
                 else setTimeout(_writeBackup, 0);
             }
         } catch (e) {}
+        /* 还原内存中的内置库（它们只是没写盘，运行时仍要能用） */
+        try { if (strippedLibs) Object.keys(strippedLibs).forEach(kk => { appData[kk] = strippedLibs[kk]; }); } catch (e) {}
+        return true;
         if (document.getElementById('modal-settings-data') && !document.getElementById('modal-settings-data').classList.contains('hidden')) updateStorageDisplay();
     } catch (e) { 
         console.warn('立即保存失败:', e);
@@ -26393,6 +26587,61 @@ function pickRandomWordCards(min, max) {
     return picked;
 }
 
+/* 判断一份数据是否「实质为空」：没有任何用户产生的内容 */
+function _isEmptyAppData(v) {
+    if (!v || typeof v !== 'object') return true;
+    function nz(x) { try { return x && ((Array.isArray(x) && x.length) || (!Array.isArray(x) && Object.keys(x).length)); } catch (e) { return false; } }
+    try {
+        if (nz(v.chats) || nz(v.groupChats)) return false;
+        if (nz(v.roles) || nz(v.groups)) return false;
+        if (nz(v.moments) || nz(v.momentPhotos)) return false;
+        if (nz(v.mails) || nz(v.favoriteMessages)) return false;
+        if (nz(v.importantDays) || nz(v.stickerLibrary)) return false;
+        if (nz(v.redPackets) || nz(v.transferRecords)) return false;
+        var up = v.userProfile;
+        if (up && typeof up === 'object') {
+            var av = String(up.avatar || '');
+            if (av && av.indexOf('data:image/svg+xml') !== 0) return false;
+            if (up.nickname && String(up.nickname) !== '我') return false;
+        }
+    } catch (e) { return true; }
+    return true;
+}
+
+/* 内置静态库（音乐/书单/歌单/地址）不写盘，加载时按需重建。
+   注意：用户删过/清理过的曲目要尊重，用 _deletedMusic 过滤。 */
+function _ensureBuiltinLibs() {
+    try {
+        var D = (typeof DEFAULT_DATA !== 'undefined') ? DEFAULT_DATA : null;
+        if (!D) return;
+        if (!Array.isArray(appData.musicLibrary) || !appData.musicLibrary.length) {
+            appData.musicLibrary = JSON.parse(JSON.stringify(D.musicLibrary || []));
+        } else if (Array.isArray(D.musicLibrary) && D.musicLibrary.length) {
+            /* 补进本次新增的内置曲目，但跳过用户删过的 */
+            var del = appData._deletedMusic || {};
+            var urls = {}, names = {};
+            appData.musicLibrary.forEach(function (m) {
+                if (m.url) urls[m.url] = 1;
+                else names[String(m.title || '').trim() + '\u0001' + String(m.artist || '').trim()] = 1;
+            });
+            var nextId = Math.max(0, ...appData.musicLibrary.map(function (m) { return parseInt(String(m.id).replace(/\D/g, '')) || 0; })) + 1;
+            D.musicLibrary.forEach(function (m) {
+                var key = String(m.title || '').trim() + '\u0001' + String(m.artist || '').trim();
+                if (m.url && urls[m.url]) return;
+                if (!m.url && names[key]) return;
+                if (m.url && del['u:' + m.url]) return;
+                if (!m.url && del['n:' + key]) return;
+                appData.musicLibrary.push(Object.assign({}, m, { id: 'm' + (nextId++) }));
+                if (m.url) urls[m.url] = 1; else names[key] = 1;
+            });
+        }
+        if (!Array.isArray(appData.songLibrary) || appData.songLibrary.length < 50) appData.songLibrary = JSON.parse(JSON.stringify(D.songLibrary || []));
+        if (!Array.isArray(appData.bookLibrary) || !appData.bookLibrary.length) appData.bookLibrary = JSON.parse(JSON.stringify(D.bookLibrary || []));
+        if (!Array.isArray(appData.addressLibrary)) appData.addressLibrary = JSON.parse(JSON.stringify(D.addressLibrary || []));
+    } catch (e) { console.warn('[内置库重建]', e && e.message); }
+}
+window._ensureBuiltinLibs = _ensureBuiltinLibs;
+
 async function loadData() {
     try {
         /* 先把旧库（localforage）的数据搬过来，再读 —— 否则会读到空数据并被默认值覆盖 */
@@ -26408,18 +26657,42 @@ async function loadData() {
                 appData.appearance.backgrounds = Object.assign({}, appData.appearance.backgrounds || {}, bg);
             }
         } catch (e) {}
-        /* 主存储缺失（首次 / IndexedDB 未落盘）时用同步镜像兜底，避免刷新后数据丢失 */
-        if (!stored) {
+        /* ===== 多重兜底：主数据缺失/空壳时，依次尝试 备份副本 → 同步镜像 → localStorage 旧键 =====
+           浏览器可能在长期未访问后驱逐 IndexedDB，这层能自动把数据补回来。 */
+        var _rescued = null;
+        if (!stored || _isEmptyAppData(stored)) {
+            try {
+                var bak = await store.getItem('appDataBak');
+                if (bak && !_isEmptyAppData(bak)) { _rescued = bak; console.log('[恢复] 已从备份副本 appDataBak 回补'); }
+            } catch (e) {}
+        }
+        if (!_rescued && (!stored || _isEmptyAppData(stored))) {
             const m = _readMirror();
-            if (m) {
-                stored = m;
-                try { await store.setItem('appData', m); } catch (e) {}
-            }
+            if (m && !_isEmptyAppData(m)) { _rescued = m; console.log('[恢复] 已从同步镜像回补'); }
+        }
+        if (!_rescued && (!stored || _isEmptyAppData(stored))) {
+            try {
+                var crit = _restoreCriticalData();
+                if (crit && !_isEmptyAppData(crit)) { _rescued = crit; console.log('[恢复] 已从 localStorage 关键备份回补'); }
+            } catch (e) {}
+        }
+        if (!_rescued && (!stored || _isEmptyAppData(stored))) {
+            try {
+                var raw = localStorage.getItem('SpiritualConnectionV2/appData') || localStorage.getItem('lf/appData');
+                if (raw) { var p = JSON.parse(raw); if (p && !_isEmptyAppData(p)) { _rescued = p; console.log('[恢复] 已从 localStorage 旧键回补'); } }
+            } catch (e) {}
+        }
+        if (_rescued) {
+            stored = _rescued;
+            try { await store.setItem('appData', _rescued); } catch (e) {}
+            try { await store.setItem('appDataBak', _rescued); } catch (e) {}
+            try { if (typeof showToast === 'function') showToast('已从备份恢复数据'); } catch (e) {}
         }
         if (stored) {
             /* 先按 schemaVersion 逐级迁移，再走后续的字段补全 */
             const _prevSchema = stored.schemaVersion;
             appData = migrateAppData(stored);
+            _ensureBuiltinLibs();
             if (_prevSchema !== APP_SCHEMA_VERSION) {
                 console.log('数据结构已从 v' + (_prevSchema || 1) + ' 迁移到 v' + APP_SCHEMA_VERSION);
                 try { await store.setItem('appData', appData); } catch (e) {}
@@ -26499,6 +26772,7 @@ async function loadData() {
             
         } else {
             appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            _ensureBuiltinLibs();
         }
         /* 全新数据直接标记为当前版本；已迁移数据在此已是当前版本 */
         if (typeof appData.schemaVersion !== 'number') appData.schemaVersion = APP_SCHEMA_VERSION;
@@ -34868,7 +35142,7 @@ function sendNotificationIfNeeded(title, body, targetRoleId) {
 
 
 
-function exportData() { const jsonStr = JSON.stringify(appData, null, 2); const blob = new Blob([jsonStr], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `spiritual_connection_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('导出成功'); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+function exportData() { const jsonStr = JSON.stringify(appData, null, 2); try { localStorage.setItem('sc_last_backup', String(Date.now())); } catch (e) {} const blob = new Blob([jsonStr], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `spiritual_connection_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('导出成功'); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
 function importData() {
     const input = document.createElement('input');
     input.type = 'file';
