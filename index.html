@@ -35169,6 +35169,28 @@ function importData() {
             // 自动识别包装格式
             d = _unwrapBackup(d);
             if (!d || typeof d !== 'object') return _impFail('数据格式无法识别', '解析后不是对象。');
+            /* 「导出聊天」格式：走合并导入，不做整库覆盖（它只含聊天+设置，覆盖会丢其他数据） */
+            if (_isChatExport(d) && !Array.isArray(d.roles)) {
+                let _s = 0, _m = 0;
+                Object.keys(d.chats || {}).forEach(function (k) {
+                    var en = d.chats[k];
+                    var mm = Array.isArray(en) ? en : (en && Array.isArray(en.messages) ? en.messages : null);
+                    if (mm && mm.length) { _s++; _m += mm.length; }
+                });
+                showConfirm('这是「导出聊天」文件（非完整备份），将按聊天记录合并导入。\n\n' +
+                    _s + ' 个对话、共 ' + _m + ' 条消息\n\n缺失的联系人会自动创建，现有数据不会被删除。\n\n确定导入吗？',
+                    async () => {
+                        try {
+                            const st = _mergeChatExport(d);
+                            _ensureDataShape();
+                            await saveData();
+                            try { renderRoleList(); } catch (e) {}
+                            try { renderGroupList(); } catch (e) {}
+                            showToast(`导入完成：新建 ${st.createdRoles} 个联系人、${st.createdGroups} 个群，新增 ${st.addedMsgs} 条消息`);
+                        } catch (e2) { _impFail('导入失败', (e2 && e2.message ? e2.message : String(e2))); }
+                    });
+                return;
+            }
             const ok = (Array.isArray(d.roles) || d.chats || d.moments || Array.isArray(d.wordCards) ||
                         d.settings || d.userProfile || d.schemaVersion || d.groupChats || d.wordbanks);
             if (!ok) {
@@ -41343,77 +41365,156 @@ function exportChatHistory() {
     openExportSelect();
 }
 
+/* ===== 「导出聊天」格式（version/modules/chats）识别与合并 =====
+   这种格式由「导出聊天」生成，结构是 chats:{会话ID:{name,type,messages}}，
+   与 appData 的 roles[] + chats{roleId:[msg]} 不同。此前导入时若 roles 里
+   找不到对应 id 就直接 skip，数据全丢的情况下会一条都导不进来。 */
+function _isChatExport(d) {
+    return !!(d && typeof d === 'object' && d.chats && typeof d.chats === 'object' &&
+              (d.version || Array.isArray(d.modules)));
+}
+window._isChatExport = _isChatExport;
+
+/* 造一个字段完整的角色，缺字段会导致渲染/自动回复报错 */
+function _makeRoleFromExport(id, name) {
+    var r = {
+        id: String(id), name: String(name || id),
+        avatar: (typeof DEFAULT_AVATAR !== 'undefined' ? DEFAULT_AVATAR : ''),
+        groupProb: 50, autoMailProbability: 15,
+        lastActive: Date.now(), lastAutoSendTime: Date.now(),
+        lastLoveRefresh: 0, currentLoveState: null,
+        pokeMyTexts: [], pokeTheirTexts: [],
+        onlineStatus: { enabled: true, statusList: ['在忙', '工作中', '在吃饭', '睡觉中', '勿扰'], currentStatus: '在线', lastUpdate: 0 },
+        todayMomentCount: 0, lastDoodleDate: null,
+        customPokes: [], pokeActions: [], chatBackground: null, blockedRoles: [],
+        lastMomentCommentTime: 0,
+        emotions: { happy: 0, angry: 0, worried: 0, sad: 0, shy: 0, jealous: 0, depressed: 0, confused: 0 },
+        lastEmotionUpdate: 0
+    };
+    try { if (typeof PRESET_POKE_ACTIONS !== 'undefined' && Array.isArray(PRESET_POKE_ACTIONS)) r.pokeActions = PRESET_POKE_ACTIONS.slice(); } catch (e) {}
+    try { r.emotions.happy = 60; } catch (e) {}
+    return r;
+}
+window._makeRoleFromExport = _makeRoleFromExport;
+
+/* 把「导出聊天」合并进当前 appData：只补不删，缺失的角色/群自动创建 */
+function _mergeChatExport(d) {
+    var chats = (d && d.chats) || {};
+    var st = { createdRoles: 0, createdGroups: 0, addedMsgs: 0, sessions: 0, skipped: 0 };
+    if (!Array.isArray(appData.roles)) appData.roles = [];
+    if (!Array.isArray(appData.groups)) appData.groups = [];
+    if (!appData.chats || typeof appData.chats !== 'object') appData.chats = {};
+    if (!appData.groupChats || typeof appData.groupChats !== 'object') appData.groupChats = {};
+
+    Object.keys(chats).forEach(function (key) {
+        var e = chats[key];
+        if (!e) { st.skipped++; return; }
+        var msgs = Array.isArray(e) ? e : (e && Array.isArray(e.messages) ? e.messages : null);
+        if (!msgs || !msgs.length) { st.skipped++; return; }
+        var name = (e && e.name) ? String(e.name) : String(key);
+        var isGroup = String(key).indexOf('group_') === 0 || (e && e.type === 'group');
+        st.sessions++;
+
+        function mergeInto(arr, incoming) {
+            var exist = {};
+            arr.forEach(function (m) { if (m && m.id != null) exist[String(m.id)] = 1; });
+            var add = [];
+            incoming.forEach(function (m) {
+                if (!m || m.id == null) return;
+                if (exist[String(m.id)]) return;
+                exist[String(m.id)] = 1;
+                add.push(m);
+            });
+            for (var i = 0; i < add.length; i++) arr.push(add[i]);
+            arr.sort(function (a, b) { return (a.time || 0) - (b.time || 0); });
+            return add.length;
+        }
+
+        if (isGroup) {
+            var gid = String(key).replace(/^group_/, '');
+            var g = null;
+            appData.groups.forEach(function (x) { if (String(x.id) === gid) g = x; });
+            if (!g) {
+                g = { id: gid, name: name, members: (e && Array.isArray(e.members)) ? e.members.slice() : [] };
+                appData.groups.push(g); st.createdGroups++;
+            }
+            if (!Array.isArray(appData.groupChats[gid])) appData.groupChats[gid] = [];
+            st.addedMsgs += mergeInto(appData.groupChats[gid], msgs);
+        } else {
+            var targetId = String(key);
+            var role = null;
+            appData.roles.forEach(function (x) { if (String(x.id) === targetId) role = x; });
+            if (!role) {
+                var byName = null;
+                appData.roles.forEach(function (x) { if (String(x.name) === name) byName = x; });
+                if (byName) {
+                    role = byName; targetId = String(byName.id);
+                    /* sender 重映射：导出里的会话ID -> 现有角色id，否则消息会显示为对方发的 */
+                    msgs.forEach(function (m) { if (m && String(m.sender) === String(key)) m.sender = targetId; });
+                } else {
+                    role = _makeRoleFromExport(key, name);
+                    appData.roles.push(role); st.createdRoles++;
+                }
+            }
+            if (!Array.isArray(appData.chats[targetId])) appData.chats[targetId] = [];
+            st.addedMsgs += mergeInto(appData.chats[targetId], msgs);
+        }
+    });
+
+    if (d && d.settings && typeof d.settings === 'object') {
+        try { appData.settings = Object.assign({}, appData.settings || {}, d.settings); } catch (e) {}
+    }
+    return st;
+}
+window._mergeChatExport = _mergeChatExport;
+
 function importChatHistory() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.json,.txt';
     input.onchange = async (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
             try {
                 const data = JSON.parse(ev.target.result);
+                if (!data || typeof data !== 'object') { showToast('文件无法解析'); return; }
                 if (!data.chats || typeof data.chats !== 'object') {
-                    showToast('无效的聊天记录文件');
+                    showToast('无效的聊天记录文件（缺少 chats 字段）');
                     return;
                 }
-
-                const confirmMsg = `即将导入 ${Object.keys(data.chats).length} 个对话的消息，是否覆盖现有同名对话？`;
+                /* 统计会话与消息数 */
+                let _sess = 0, _msgs = 0;
+                Object.keys(data.chats).forEach(function (k) {
+                    var en = data.chats[k];
+                    var m = Array.isArray(en) ? en : (en && Array.isArray(en.messages) ? en.messages : null);
+                    if (m && m.length) { _sess++; _msgs += m.length; }
+                });
+                if (_sess === 0) { showToast('文件里没有可导入的消息'); return; }
+                const confirmMsg = `即将导入 ${_sess} 个对话、共 ${_msgs} 条消息。\n\n` +
+                    `· 缺失的联系人/群会自动创建\n· 已有消息不会重复导入\n\n确定导入吗？`;
                 showConfirm(confirmMsg, async () => {
-                    let count = 0;
-                    let skipped = 0;
-                    for (const [key, entry] of Object.entries(data.chats)) {
-                        const msgs = Array.isArray(entry) ? entry : (entry && Array.isArray(entry.messages) ? entry.messages : null);
-                        if (!msgs || msgs.length === 0) continue;
-                        if (key.startsWith('group_')) {
-                            const groupId = key.replace('group_', '');
-                            const group = appData.groups.find(g => g.id === groupId);
-                            if (!group) {
-                                skipped++;
-                                continue;
-                            }
-                            if (!appData.groupChats[groupId]) appData.groupChats[groupId] = [];
-                            const existingIds = new Set(appData.groupChats[groupId].map(m => m.id));
-                            const newMsgs = msgs.filter(m => !existingIds.has(m.id));
-                            if (newMsgs.length === 0) continue;
-                            appData.groupChats[groupId].push(...newMsgs);
-                            appData.groupChats[groupId].sort((a, b) => a.time - b.time);
-                            count += newMsgs.length;
-                        } else {
-                            const role = appData.roles.find(r => r.id === key);
-                            if (!role) {
-                                skipped++;
-                                continue;
-                            }
-                            if (!appData.chats[key]) appData.chats[key] = [];
-                            const existingIds = new Set(appData.chats[key].map(m => m.id));
-                            const newMsgs = msgs.filter(m => !existingIds.has(m.id));
-                            if (newMsgs.length === 0) continue;
-                            appData.chats[key].push(...newMsgs);
-                            appData.chats[key].sort((a, b) => a.time - b.time);
-                            count += newMsgs.length;
-                        }
-                    }
-
+                    let st;
+                    try { st = _mergeChatExport(data); }
+                    catch (err2) { showToast('导入失败：' + (err2 && err2.message ? err2.message : err2)); return; }
+                    try { _ensureDataShape(); } catch (e) {}
                     await saveData();
-                    if (currentChatType === 'role' && currentRoleId) {
-                        renderChatMessages();
-                    } else if (currentChatType === 'group' && currentGroupId) {
-                        renderChatMessages();
-                    }
-                    const skipMsg = skipped > 0 ? `，跳过 ${skipped} 个不存在对话` : '';
-                    showToast(`导入完成，共新增 ${count} 条消息${skipMsg}`);
+                    try { renderRoleList(); } catch (e) {}
+                    try { renderGroupList(); } catch (e) {}
+                    try { if (currentChatType === 'role' && currentRoleId) renderChatMessages(); } catch (e) {}
+                    try { if (currentChatType === 'group' && currentGroupId) renderChatMessages(); } catch (e) {}
+                    showToast(`导入完成：新建 ${st.createdRoles} 个联系人、${st.createdGroups} 个群，新增 ${st.addedMsgs} 条消息`);
                 });
             } catch (err) {
-                showToast('导入失败：' + err.message);
-                console.error(err);
+                showToast('解析失败：' + (err && err.message ? err.message : err));
             }
         };
         reader.readAsText(file);
     };
     input.click();
 }
+window.importChatHistory = importChatHistory;
 
 window.exportChatHistory = exportChatHistory;
 window.importChatHistory = importChatHistory;
