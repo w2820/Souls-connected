@@ -362,15 +362,18 @@ var LINE_ICONS = {
 
 <script>
 (function () {
+  /* 注册 PWA：安装到桌面后，iOS 不再按 7 天无访问清理数据，
+     Chrome 也更容易授予持久化存储权限。这里不再清理缓存，
+     由 sw.js 使用「网络优先」策略，保证部署新版本能立即生效。 */
+  window.__scInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    try { e.preventDefault(); } catch (err) {}
+    window.__scInstallPrompt = e;
+  });
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      regs.forEach(function (r) { r.unregister(); });
-    }).catch(function () {});
-  }
-  if (window.caches && window.caches.keys) {
-    window.caches.keys().then(function (names) {
-      names.forEach(function (n) { window.caches.delete(n); });
-    }).catch(function () {});
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
   }
 })();
 </script>
@@ -387,6 +390,7 @@ var LINE_ICONS = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Spiritual connection</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0i5pif55CD5Zu+5qCHIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icGwtYmciIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjRkNGOEZGIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41NSIgc3RvcC1jb2xvcj0iI0VCRjNGRCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNFMUVERkIiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InBsLWdsb3ciIGN4PSI1MCUiIGN5PSI0MiUiIHI9IjYyJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0ZGRkRGNCIgc3RvcC1vcGFjaXR5PSIwLjk1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41NSIgc3RvcC1jb2xvcj0iI0ZDRTdGMSIgc3RvcC1vcGFjaXR5PSIwLjQ1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZDRTdGMSIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJwbC1wbGFuZXQiIGN4PSIzNiUiIGN5PSIzMCUiIHI9IjgwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0ZGRkZGRiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuMzgiIHN0b3AtY29sb3I9IiNFQkY1RkYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjcyIiBzdG9wLWNvbG9yPSIjQzhEREY0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0E2QzRFNiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icGwtcmluZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGQURGRUMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjUiIHN0b3AtY29sb3I9IiNEOUU4RkEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjQzJEOEYyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGNsaXBQYXRoIGlkPSJwbC1jbGlwIj48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTgiIHI9IjEyNiIvPjwvY2xpcFBhdGg+CiAgICA8cGF0aCBpZD0icGwtc3BhcmsiIGQ9Ik0wIC0xNSBDMiAtNSA1IC0yIDE1IDAgQzUgMiAyIDUgMCAxNSBDLTIgNSAtNSAyIC0xNSAwIEMtNSAtMiAtMiAtNSAwIC0xNSBaIi8+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTE4IiBmaWxsPSJ1cmwoI3BsLWJnKSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI0NCIgcj0iMTk4IiBmaWxsPSJ1cmwoI3BsLWdsb3cpIi8+CiAgPGcgZmlsbD0iI0ZCRTNCOCI+CiAgICA8dXNlIHhsaW5rOmhyZWY9IiNwbC1zcGFyayIgaHJlZj0iI3BsLXNwYXJrIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMDggMTE2KSBzY2FsZSgxLjAyKSIvPgogIDwvZz4KICA8ZyBmaWxsPSIjRjhEMkUzIj4KICAgIDx1c2UgeGxpbms6aHJlZj0iI3BsLXNwYXJrIiBocmVmPSIjcGwtc3BhcmsiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQwNiAxMzgpIHNjYWxlKDAuNzQpIi8+CiAgICA8Y2lyY2xlIGN4PSI0MzIiIGN5PSIyNzAiIHI9IjMuNCIvPgogIDwvZz4KICA8ZyBmaWxsPSIjQ0ZFMEZBIj4KICAgIDx1c2UgeGxpbms6aHJlZj0iI3BsLXNwYXJrIiBocmVmPSIjcGwtc3BhcmsiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDM3MiAzNTYpIHNjYWxlKDAuNikiLz4KICAgIDxjaXJjbGUgY3g9Ijg2IiBjeT0iMjM0IiByPSIzLjYiLz4KICAgIDxjaXJjbGUgY3g9IjE1MiIgY3k9IjQzNCIgcj0iMyIvPgogIDwvZz4KICA8ZyBmaWxsPSIjRTNEQUZCIj4KICAgIDx1c2UgeGxpbms6aHJlZj0iI3BsLXNwYXJrIiBocmVmPSIjcGwtc3BhcmsiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyNiAzNTgpIHNjYWxlKDAuNTUpIi8+CiAgPC9nPgogIDxnIGZpbGw9IiNGQkU3QzgiPgogICAgPGNpcmNsZSBjeD0iMzMwIiBjeT0iOTYiIHI9IjQiLz4KICAgIDxjaXJjbGUgY3g9IjE5NiIgY3k9IjkyIiByPSIzIi8+CiAgICA8Y2lyY2xlIGN4PSIzNjgiIGN5PSI0MzAiIHI9IjQiLz4KICA8L2c+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjI1NiIgcng9IjIxMiIgcnk9IjY0IiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjcGwtcmluZykiIHN0cm9rZS13aWR0aD0iMjQiIG9wYWNpdHk9IjAuODIiIHRyYW5zZm9ybT0icm90YXRlKC0yMCAyNTYgMjU2KSIvPgogIDxlbGxpcHNlIGN4PSIyNTYiIGN5PSIyNTYiIHJ4PSIyMTIiIHJ5PSI2NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjUiIG9wYWNpdHk9IjAuNTUiIHRyYW5zZm9ybT0icm90YXRlKC0yMCAyNTYgMjU2KSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1OCIgcj0iMTI2IiBmaWxsPSJ1cmwoI3BsLXBsYW5ldCkiLz4KICA8ZyBjbGlwLXBhdGg9InVybCgjcGwtY2xpcCkiPgogICAgPGVsbGlwc2UgY3g9IjE5NiIgY3k9IjIwOCIgcng9IjkyIiByeT0iNDIiIGZpbGw9IiNGOERDRTkiIG9wYWNpdHk9IjAuNSIvPgogICAgPGVsbGlwc2UgY3g9IjMxOCIgY3k9IjMwMCIgcng9IjEwMCIgcnk9IjQ2IiBmaWxsPSIjQ0ZFM0Y4IiBvcGFjaXR5PSIwLjcyIi8+CiAgICA8ZWxsaXBzZSBjeD0iMjEwIiBjeT0iMzI2IiByeD0iNzIiIHJ5PSIzMCIgZmlsbD0iI0U2RTBGQiIgb3BhY2l0eT0iMC41NSIvPgogICAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjE2MCIgcng9IjExOCIgcnk9IjM0IiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjUiLz4KICA8L2c+CiAgPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU4IiByPSIxMjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSI0IiBvcGFjaXR5PSIwLjUiLz4KICA8cGF0aCBkPSJNIDQ1NS4yIDE4My41IEwgNDU0LjEgMjAxLjUgTCA0MzkuNSAyMjMuMyBMIDQxMi4zIDI0Ny4zIEwgMzc0LjYgMjcxLjggTCAzMjguNyAyOTUuMyBMIDI3Ny45IDMxNi4xIEwgMjI1LjYgMzMyLjkgTCAxNzUuMyAzNDQuMyBMIDEzMC42IDM0OS44IEwgOTQuNCAzNDguOSBMIDY5LjIgMzQxLjYgTCA1Ni44IDMyOC41IiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjcGwtcmluZykiIHN0cm9rZS13aWR0aD0iMjQiIG9wYWNpdHk9IjAuOTUiLz4KICA8cGF0aCBkPSJNIDQ1NS4yIDE4My41IEwgNDU0LjEgMjAxLjUgTCA0MzkuNSAyMjMuMyBMIDQxMi4zIDI0Ny4zIEwgMzc0LjYgMjcxLjggTCAzMjguNyAyOTUuMyBMIDI3Ny45IDMxNi4xIEwgMjI1LjYgMzMyLjkgTCAxNzUuMyAzNDQuMyBMIDEzMC42IDM0OS44IEwgOTQuNCAzNDguOSBMIDY5LjIgMzQxLjYgTCA1Ni44IDMyOC41IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iNSIgb3BhY2l0eT0iMC41Ii8+CiAgPGNpcmNsZSBjeD0iMjE0IiBjeT0iMTk2IiByPSIyNiIgZmlsbD0iI0ZGRkZGRiIgb3BhY2l0eT0iMC41NSIvPgo8L3N2Zz4=">
     <link rel="icon" type="image/png" sizes="192x192" href="星球图标-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="星球图标-180.png">
@@ -13073,6 +13077,16 @@ hr{height:0;color:inherit;border-top-width:1px}
                 <div class="act-txt"><span class="act-t">恢复备份</span><span class="act-s">从备份文件还原全部数据</span></div>
                 <i class="act-go"></i>
             </div>
+            <div class="act-item" onclick="installPwa()">
+                <span class="act-ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.8" width="12" height="18.4" rx="2.4"/><path d="M12 6.5v7"/><path d="m9.5 11 2.5 2.5 2.5-2.5"/><path d="M10.5 18.2h3"/></svg></span>
+                <div class="act-txt"><span class="act-t">安装到桌面</span><span class="act-s">降低浏览器自动清理数据的概率</span></div>
+                <i class="act-go"></i>
+            </div>
+            <div class="act-item" onclick="manageAutoFileBackup()">
+                <span class="act-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20.5h11a3 3 0 0 0 3-3V8l-5-5H5a2 2 0 0 0-2 2v13.5a2 2 0 0 0 2 2Z"/><path d="M13.5 3v4.5H18"/><path d="M8 13.5h7M8 16.5h5"/></svg></span>
+                <div class="act-txt"><span class="act-t">自动备份到文件</span><span class="act-s" id="auto-backup-status">每次保存另存一份本地文件</span></div>
+                <i class="act-go"></i>
+            </div>
             <div class="act-item" onclick="requestPersistentStorage(true)">
                 <span class="act-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 4.8 6.3v5.4c0 4.6 3 8.7 7.2 9.9 4.2-1.2 7.2-5.3 7.2-9.9V6.3Z"/><path d="m9.2 12.2 2 2 3.6-3.8"/></svg></span>
                 <div class="act-txt"><span class="act-t">开启防清理保护</span><span class="act-s">请求浏览器不要自动清除本站数据</span></div>
@@ -24963,13 +24977,25 @@ const store = (function () {
                                             (Array.isArray(_c.moments) && _c.moments.length)));
                     }
                 } catch (e) { hasCrit = false; }
+                /* 关键备份只在「当前主数据确实缺失/为空壳」时才能写回新库。
+                   此前只要任意一个键（如 appBackgrounds）缺失就会走进这里，
+                   用「只有核心字段」的关键备份覆盖完好的 appData，
+                   表现为刷新/重新部署后字卡库、问卷、纪念日等数据被悄悄抹掉。 */
+                var needAppData = need.indexOf('appData') >= 0;
                 if (hasCrit) {
-                    /* 关键备份存在：跳过旧库迁移，但仍把关键备份写进新库，让主流程读到 */
-                    try {
-                        var _cc = JSON.parse(localStorage.getItem('SC_CRIT_core'));
-                        if (_cc && db) { await idbTx('readwrite', function (st) { return st.put(_cc, 'appData'); }); }
-                    } catch (e) {}
-                    return 0;
+                    if (needAppData) {
+                        try {
+                            var _cc = JSON.parse(localStorage.getItem('SC_CRIT_core'));
+                            if (_cc && db) {
+                                await idbTx('readwrite', function (st) { return st.put(_cc, 'appData'); });
+                                migratedCount = 1;
+                            }
+                        } catch (e) {}
+                    }
+                    /* appData 已由关键备份处理，剩余缺失键继续按旧库扫描迁移，
+                       不要再让旧库的 appData 覆盖它 */
+                    need = need.filter(function (k) { return k !== 'appData'; });
+                    if (!need.length) return needAppData ? 1 : 0;
                 }
 
                 var lfAll = await _scanLegacyStores();
@@ -25165,6 +25191,196 @@ try {
     });
 } catch (e) {}
 
+/* ===== 自动备份到本地文件（File System Access API） =====
+   浏览器自带的 IndexedDB / localStorage 在磁盘紧张、系统清理或长期不访问时
+   仍可能被回收。开启后每次保存都会把完整数据另写一份到用户选择的本地文件，
+   该文件不受浏览器清理影响，是聊天数据的最终保险。 */
+var AUTO_BACKUP_HANDLE_KEY = 'autoBackupFileHandle';
+var AUTO_BACKUP_FLAG = 'sc_auto_file_backup';
+var _autoBackupHandle = null;
+var _autoBackupTimer = null;
+var _autoBackupBusy = false;
+
+function autoFileBackupSupported() {
+    return !!(window.showSaveFilePicker && window.isSecureContext);
+}
+window.autoFileBackupSupported = autoFileBackupSupported;
+
+async function _loadAutoBackupHandle() {
+    if (_autoBackupHandle) return _autoBackupHandle;
+    try {
+        var h = await store.getItem(AUTO_BACKUP_HANDLE_KEY);
+        if (h && typeof h.createWritable === 'function') _autoBackupHandle = h;
+    } catch (e) {}
+    return _autoBackupHandle;
+}
+
+function _autoBackupEnabled() {
+    try { return localStorage.getItem(AUTO_BACKUP_FLAG) === '1'; } catch (e) { return false; }
+}
+
+async function _writeAutoFileBackup(force) {
+    if (!autoFileBackupSupported()) return false;
+    var h = await _loadAutoBackupHandle();
+    if (!h) return false;
+    try {
+        var perm = await h.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') {
+            if (!force) return false;
+            perm = await h.requestPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') return false;
+        }
+    } catch (e) { return false; }
+    if (_autoBackupBusy) return false;
+    _autoBackupBusy = true;
+    try {
+        /* 内置只读库（音乐/书单等）不写进备份，加载时会自动重建，避免每次备份都重写数 MB */
+        var _bkData;
+        try { _bkData = (typeof structuredClone === 'function') ? structuredClone(appData) : JSON.parse(JSON.stringify(appData)); }
+        catch (e) { _bkData = appData; }
+        try { ['musicLibrary', 'bookLibrary', 'songLibrary', 'addressLibrary'].forEach(function (k) { delete _bkData[k]; }); } catch (e) {}
+        var payload = JSON.stringify({
+            _type: 'spiritual_connection_full_backup',
+            _exportedAt: Date.now(),
+            data: _bkData
+        });
+        var w = await h.createWritable();
+        await w.write(payload);
+        await w.close();
+        try {
+            localStorage.setItem('sc_last_autobackup', String(Date.now()));
+            localStorage.setItem('sc_last_backup', String(Date.now()));
+        } catch (e) {}
+        return true;
+    } catch (e) {
+        console.warn('[自动备份] 写入失败:', e && e.message);
+        return false;
+    } finally {
+        _autoBackupBusy = false;
+    }
+}
+
+function _scheduleAutoFileBackup() {
+    try {
+        if (!_autoBackupEnabled() && !_autoBackupHandle) return;
+        if (_autoBackupTimer) return;
+        _autoBackupTimer = setTimeout(function () {
+            _autoBackupTimer = null;
+            _writeAutoFileBackup(false).catch(function () {});
+        }, 15000);
+    } catch (e) {}
+}
+window._scheduleAutoFileBackup = _scheduleAutoFileBackup;
+
+async function _readAutoFileBackup() {
+    try {
+        var h = await _loadAutoBackupHandle();
+        if (!h) return null;
+        var perm = await h.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') return null;
+        var f = await h.getFile();
+        var text = await f.text();
+        var obj = JSON.parse(text);
+        var d = (obj && obj.data && typeof obj.data === 'object') ? obj.data : obj;
+        return (d && typeof d === 'object') ? d : null;
+    } catch (e) { return null; }
+}
+
+async function enableAutoFileBackup() {
+    if (!autoFileBackupSupported()) {
+        var msg = '当前浏览器不支持「自动备份到文件」。\n\n建议：\n1. 点「安装到桌面」把本页添加到主屏幕\n2. 定期使用「下载备份」保存一份';
+        try { showAlert(msg, '暂不支持'); } catch (e) { alert(msg); }
+        return;
+    }
+    try {
+        var h = await window.showSaveFilePicker({
+            suggestedName: 'spiritual_connection_backup.json',
+            types: [{ description: 'JSON 备份文件', accept: { 'application/json': ['.json'] } }]
+        });
+        _autoBackupHandle = h;
+        try { await store.setItem(AUTO_BACKUP_HANDLE_KEY, h); } catch (e) {}
+        try { localStorage.setItem(AUTO_BACKUP_FLAG, '1'); } catch (e) {}
+        var ok = await _writeAutoFileBackup(true);
+        var text = ok
+            ? '已开启自动备份。\n\n之后每次保存都会同步写入：\n' + (h.name || '备份文件') +
+              '\n\n即使浏览器清理了本站数据，也能通过「恢复备份」从这个文件找回聊天记录。'
+            : '已选择文件，但写入失败。请重新点击「自动备份到文件」并允许写入权限。';
+        try { showAlert(text, ok ? '自动备份已开启' : '自动备份未完成'); } catch (e) { alert(text); }
+        try { updateStorageDisplay(); } catch (e) {}
+    } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        try { showAlert('开启失败：' + (e && e.message ? e.message : e), '出错'); } catch (e2) {}
+    }
+}
+window.enableAutoFileBackup = enableAutoFileBackup;
+
+async function disableAutoFileBackup() {
+    _autoBackupHandle = null;
+    try { await store.removeItem(AUTO_BACKUP_HANDLE_KEY); } catch (e) {}
+    try { localStorage.removeItem(AUTO_BACKUP_FLAG); } catch (e) {}
+    try { updateStorageDisplay(); } catch (e) {}
+    try { if (typeof showToast === 'function') showToast('已关闭自动备份'); } catch (e) {}
+}
+window.disableAutoFileBackup = disableAutoFileBackup;
+
+async function manageAutoFileBackup() {
+    var h = await _loadAutoBackupHandle();
+    if (h) {
+        try {
+            var perm = await h.queryPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') {
+                perm = await h.requestPermission({ mode: 'readwrite' });
+            }
+            if (perm === 'granted') {
+                var ok = await _writeAutoFileBackup(true);
+                try { showAlert(ok ? '自动备份已开启，已写入：' + (h.name || '备份文件') + '\n\n如需关闭，请再次点击本项。' : '写入失败，请检查文件权限。', '自动备份'); } catch (e) {}
+                return;
+            }
+        } catch (e) {}
+        try {
+            if (typeof showConfirm === 'function') showConfirm('自动备份已开启，但浏览器需要重新授权。\n\n要关闭自动备份吗？', disableAutoFileBackup);
+        } catch (e) {}
+        return;
+    }
+    await enableAutoFileBackup();
+}
+window.manageAutoFileBackup = manageAutoFileBackup;
+
+async function _maybeShowPersistenceTip() {
+    try {
+        var last = parseInt(localStorage.getItem('sc_persist_tip_at') || '0', 10);
+        if (Date.now() - last < 7 * 86400000) return;
+        var granted = false;
+        try { if (navigator.storage && navigator.storage.persisted) granted = await navigator.storage.persisted(); } catch (e) {}
+        if (granted) return;
+        try { localStorage.setItem('sc_persist_tip_at', String(Date.now())); } catch (e) {}
+        setTimeout(function () {
+            try {
+                if (typeof showToast === 'function') showToast('建议到「数据管理」开启防清理保护或自动备份，避免长期不上线被浏览器清理');
+            } catch (e) {}
+        }, 3000);
+    } catch (e) {}
+}
+window._maybeShowPersistenceTip = _maybeShowPersistenceTip;
+
+async function installPwa() {
+    var ev = window.__scInstallPrompt;
+    if (ev && typeof ev.prompt === 'function') {
+        try {
+            ev.prompt();
+            await ev.userChoice;
+            window.__scInstallPrompt = null;
+            return;
+        } catch (e) {}
+    }
+    var msg = '安装到桌面可以显著降低浏览器自动清理数据的概率。\n\n' +
+        'iPhone / iPad：点 Safari 底部分享按钮 → 「添加到主屏幕」\n' +
+        'Android Chrome：右上角菜单 → 「安装应用」或「添加到主屏幕」\n' +
+        '电脑 Chrome / Edge：地址栏右侧的安装图标';
+    try { showAlert(msg, '安装到桌面'); } catch (e) { alert(msg); }
+}
+window.installPwa = installPwa;
+
 /* ===== 存储健康检查：让用户能自己看到数据存到哪、有没有存下 ===== */
 async function checkStorageHealth() {
     var info = { driver: 'unknown', idb: false, quotaMB: 0, usageMB: 0, lastError: null, appDataBytes: 0 };
@@ -25273,13 +25489,19 @@ function _criticalSnapshot(d) {
     try {
         var core = {
             _v: 2,
+            schemaVersion: d.schemaVersion,
             roles: d.roles, groups: d.groups, chats: d.chats, groupChats: d.groupChats,
-            moments: d.moments, mails: d.mails, favoriteMessages: d.favoriteMessages,
+            moments: d.moments, momentPhotos: d.momentPhotos,
+            mails: d.mails, favoriteMessages: d.favoriteMessages,
             importantDays: d.importantDays, stickerLibrary: d.stickerLibrary,
             redPackets: d.redPackets, transferRecords: d.transferRecords,
             userProfile: d.userProfile, settings: d.settings,
             appearance: d.appearance, pokeSymbols: d.pokeSymbols,
-            _deletedMusic: d._deletedMusic, wordCards: d.wordCards
+            wordbanks: d.wordbanks, wordCards: d.wordCards,
+            questionnaires: d.questionnaires, stickies: d.stickies,
+            collectedStickies: d.collectedStickies, lifeTrajectory: d.lifeTrajectory,
+            sharedPlaylist: d.sharedPlaylist, shop: d.shop,
+            recallLog: d.recallLog, _deletedMusic: d._deletedMusic
         };
         return JSON.stringify(core);
     } catch (e) { return null; }
@@ -25302,6 +25524,18 @@ function _backupCriticalData(d) {
             Object.keys(c2.chats || {}).forEach(function (k) { c2.chats[k] = (c2.chats[k] || []).slice(-50); });
             c2._truncated = true;
             json = JSON.stringify(c2);
+        }
+        /* 最后兜底：去掉体积最大的图片类字段，保证「文字类用户数据」一定能备份成功。
+           图片本身仍完整保存在 IndexedDB 主数据里。 */
+        if (json.length > 4.5 * 1024 * 1024) {
+            var c3 = JSON.parse(json);
+            c3.momentPhotos = [];
+            delete c3.stickerLibrary;
+            if (c3.wordbanks) { c3.wordbanks.stickers = []; c3.wordbanks.myStickers = []; }
+            (c3.roles || []).forEach(function (r) { if (r) r.chatBackground = null; });
+            (c3.groups || []).forEach(function (g) { if (g) g.chatBackground = null; });
+            c3._truncated = true;
+            json = JSON.stringify(c3);
         }
         localStorage.setItem(SC_CRIT_PREFIX + 'core', json);
         localStorage.setItem(SC_CRIT_TIME, String(Date.now()));
@@ -25872,6 +26106,19 @@ async function updateStorageDisplay() {
             }
             pEl.textContent = pTxt; pEl.style.color = pColor;
         }
+        const abEl = document.getElementById('auto-backup-status');
+        if (abEl) {
+            try {
+                if (!autoFileBackupSupported()) { abEl.textContent = '当前浏览器不支持（建议安装到桌面）'; }
+                else {
+                    var ah = await _loadAutoBackupHandle();
+                    if (ah) {
+                        var ap = await ah.queryPermission({ mode: 'readwrite' });
+                        abEl.textContent = ap === 'granted' ? ('已开启：' + (ah.name || '本地文件')) : '已选择文件，需重新授权';
+                    } else { abEl.textContent = '未开启，浏览器清理后可能丢失'; }
+                }
+            } catch (e) { abEl.textContent = '未开启'; }
+        }
         const bEl = document.getElementById('storage-backup-text');
         if (bEl) {
             const t = parseInt(localStorage.getItem('sc_last_backup') || '0', 10);
@@ -26177,6 +26424,8 @@ async function saveDataImmediately() {
         /* 关键备份：现在数据已瘦身（实测 ~30KB），可稳定写进 localStorage。
            IndexedDB 被浏览器驱逐时，这份同步备份是最后防线。 */
         try { _backupCriticalData(dataToSave); } catch (e) {}
+        /* 用户开启「自动备份到文件」后，异步另写一份不受浏览器清理影响的本地文件 */
+        try { _scheduleAutoFileBackup(); } catch (e) {}
         await store.setItem('customThemes', customThemes);
         await store.setItem('themeSchemes', themeSchemes);
         /* 性能优化：主题备份放到空闲时段写，避免与主线程抢时间 */
@@ -26667,6 +26916,12 @@ async function loadData() {
             } catch (e) {}
         }
         if (!_rescued && (!stored || _isEmptyAppData(stored))) {
+            try {
+                var _autoFile = await _readAutoFileBackup();
+                if (_autoFile && !_isEmptyAppData(_autoFile)) { _rescued = _autoFile; console.log('[恢复] 已从自动备份文件回补'); }
+            } catch (e) {}
+        }
+        if (!_rescued && (!stored || _isEmptyAppData(stored))) {
             const m = _readMirror();
             if (m && !_isEmptyAppData(m)) { _rescued = m; console.log('[恢复] 已从同步镜像回补'); }
         }
@@ -26692,6 +26947,10 @@ async function loadData() {
             /* 先按 schemaVersion 逐级迁移，再走后续的字段补全 */
             const _prevSchema = stored.schemaVersion;
             appData = migrateAppData(stored);
+            /* 备份恢复时可能缺少整块结构：先补齐核心骨架，避免后续硬取值抛错导致跳过初始化 */
+            if (!appData.wordbanks || typeof appData.wordbanks !== 'object') {
+                appData.wordbanks = JSON.parse(JSON.stringify(DEFAULT_DATA.wordbanks));
+            }
             _ensureBuiltinLibs();
             if (_prevSchema !== APP_SCHEMA_VERSION) {
                 console.log('数据结构已从 v' + (_prevSchema || 1) + ' 迁移到 v' + APP_SCHEMA_VERSION);
@@ -27005,6 +27264,7 @@ async function loadData() {
     } catch (e) { console.warn(e); }
     
     startUnifiedTimers();
+    try { _maybeShowPersistenceTip(); } catch (e) {}
     
     initNotificationSwitch();
     startOnlineStatusTimer();
