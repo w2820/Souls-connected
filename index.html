@@ -375,6 +375,97 @@ var LINE_ICONS = {
       navigator.serviceWorker.register('./sw.js').catch(function () {});
     });
   }
+
+  /* ===== 预览环境存储守卫 =====
+     平台预览常把页面放进 sandbox iframe：此时 localStorage / IndexedDB 会被浏览器
+     完全禁用，任何前端持久化都无法生效。这里主动检测并引导用户在新窗口打开，
+     避免用户在一个「注定存不住数据」的窗口里继续使用。 */
+  function _scStorageBlocked() {
+    try {
+      var k = '__sc_probe__';
+      window.localStorage.setItem(k, '1');
+      window.localStorage.removeItem(k);
+      return false;
+    } catch (e) { return true; }
+  }
+
+  function _scOpenNewWindow() {
+    try {
+      var w = window.open(location.href, '_blank');
+      if (!w) throw new Error('blocked');
+    } catch (e) {
+      try {
+        var a = document.createElement('a');
+        a.href = location.href;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (e2) {}
+    }
+  }
+
+  function _scShowGuard() {
+    if (document.getElementById('sc-storage-guard')) return;
+    var embedded = false;
+    try { embedded = window.top !== window.self; } catch (e) { embedded = true; }
+    var blocked = _scStorageBlocked();
+    if (!embedded && !blocked) return;
+
+    /* 在正常窗口里只是被嵌入：给一条可关闭的提示条，鼓励用独立窗口打开 */
+    if (embedded && !blocked) {
+      try {
+        if (localStorage.getItem('sc_embed_tip_dismissed') === '1') return;
+      } catch (e) {}
+      var bar = document.createElement('div');
+      bar.id = 'sc-storage-guard';
+      bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#fff8e6;color:#5c4a1f;border-top:1px solid #f0d9a8;padding:10px 12px;font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.08)';
+      bar.innerHTML = '<span style="flex:1;min-width:200px;">当前在嵌入预览窗口中，关闭预览后数据可能丢失。建议在新窗口打开使用。</span>' +
+        '<button type="button" id="sc-open-new" style="border:0;background:#7FA6CD;color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;">在新窗口打开</button>' +
+        '<button type="button" id="sc-dismiss-tip" style="border:0;background:transparent;color:#8a7a55;padding:7px 6px;font-size:13px;cursor:pointer;">不再提示</button>';
+      document.body.appendChild(bar);
+      bar.querySelector('#sc-open-new').onclick = _scOpenNewWindow;
+      bar.querySelector('#sc-dismiss-tip').onclick = function () {
+        try { localStorage.setItem('sc_embed_tip_dismissed', '1'); } catch (e) {}
+        bar.remove();
+      };
+      return;
+    }
+
+    /* 存储被完全禁用：必须阻止用户继续录入数据，否则刷新必丢 */
+    var mask = document.createElement('div');
+    mask.id = 'sc-storage-guard';
+    mask.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(255,255,255,.97);display:flex;align-items:center;justify-content:center;padding:20px;font:14px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#333;';
+    var box = document.createElement('div');
+    box.style.cssText = 'max-width:440px;width:100%;background:#fff;border:1px solid #e6e8ec;border-radius:16px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.12);';
+    var title = embedded ? '当前预览窗口无法保存数据' : '浏览器已禁用本地存储';
+    var desc = embedded
+      ? '这个嵌入预览窗口被浏览器禁止访问本地存储，刷新或重新打开后聊天记录会全部丢失。请在新窗口打开后再使用。'
+      : '当前浏览器（常见于无痕模式、隐私设置或站点权限限制）禁用了本地存储，数据无法保存。请退出无痕模式或允许本站使用 Cookie / 站点数据后重试。';
+    box.innerHTML = '<div style="font-size:18px;font-weight:700;margin-bottom:10px;">' + title + '</div>' +
+      '<div style="color:#666;margin-bottom:16px;">' + desc + '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">' +
+        (embedded ? '<button type="button" id="sc-open-new" style="border:0;background:#7FA6CD;color:#fff;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;">在新窗口打开</button>' : '') +
+        '<button type="button" id="sc-continue" style="border:1px solid #d9dde3;background:#fff;color:#666;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;">仍然继续（数据不会保存）</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:#999;margin-bottom:6px;">如果按钮无法打开，请复制下面的地址到浏览器新标签页：</div>' +
+      '<input id="sc-url" readonly style="width:100%;box-sizing:border-box;border:1px solid #e1e4e8;border-radius:8px;padding:8px 10px;font-size:12px;color:#555;background:#fafbfc;" />';
+    mask.appendChild(box);
+    document.body.appendChild(mask);
+    var urlEl = box.querySelector('#sc-url');
+    try { urlEl.value = location.href; } catch (e) {}
+    try { urlEl.onclick = function () { urlEl.select(); }; } catch (e) {}
+    var openBtn = box.querySelector('#sc-open-new');
+    if (openBtn) openBtn.onclick = _scOpenNewWindow;
+    box.querySelector('#sc-continue').onclick = function () { mask.remove(); };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _scShowGuard);
+  } else {
+    _scShowGuard();
+  }
 })();
 </script>
 
@@ -1952,6 +2043,10 @@ var LINE_ICONS = {
         }
         #modal-confirm {
             z-index: 2000 !important;
+        }
+        #confirm-msg {
+            white-space: pre-wrap;
+            word-break: break-word;
         }
         #modal-add-song.modal-overlay,
         #modal-add-book.modal-overlay {
@@ -13036,6 +13131,14 @@ hr{height:0;color:inherit;border-top-width:1px}
                     <span class="su-total" id="storage-driver-text" style="font-size:12px;">检测中...</span>
                 </div>
                 <div class="su-top" style="margin-top:6px;">
+                    <span class="su-cap">运行方式</span>
+                    <span class="su-total" id="storage-mode-text" style="font-size:12px;">检测中...</span>
+                </div>
+                <div class="su-top" style="margin-top:6px;">
+                    <span class="su-cap">当前网址</span>
+                    <span class="su-total" id="storage-origin-text" style="font-size:12px;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">检测中...</span>
+                </div>
+                <div class="su-top" style="margin-top:6px;">
                     <span class="su-cap">防清理保护</span>
                     <span class="su-total" id="storage-persist-text" style="font-size:12px;">检测中...</span>
                 </div>
@@ -13072,6 +13175,11 @@ hr{height:0;color:inherit;border-top-width:1px}
                 <div class="act-txt"><span class="act-t">下载备份</span><span class="act-s">把全部数据打包保存到本地</span></div>
                 <i class="act-go"></i>
             </div>
+            <div class="act-item" onclick="saveBackupToFiles()">
+                <span class="act-ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h4l2 2.5h5A2.5 2.5 0 0 1 20 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"/><path d="M12 11v5"/><path d="m9.5 13.5 2.5 2.5 2.5-2.5"/></svg></span>
+                <div class="act-txt"><span class="act-t">保存备份到「文件」</span><span class="act-s">iPhone 可在分享面板选择 iCloud 云盘</span></div>
+                <i class="act-go"></i>
+            </div>
             <div class="act-item" onclick="importData()">
                 <span class="act-ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m8 13.5 4-4 4 4"/><path d="M5 5h14"/></svg></span>
                 <div class="act-txt"><span class="act-t">恢复备份</span><span class="act-s">从备份文件还原全部数据</span></div>
@@ -13105,6 +13213,31 @@ hr{height:0;color:inherit;border-top-width:1px}
             <div class="act-item" onclick="importChatHistory()">
                 <span class="act-ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8l-4.5-4.5Z"/><path d="M14 3.5V8h4.5"/><path d="M12 17.5v-5"/><path d="m10 10.5 2-2 2 2"/></svg></span>
                 <div class="act-txt"><span class="act-t">导入聊天</span><span class="act-s">从文件导入聊天记录</span></div>
+                <i class="act-go"></i>
+            </div>
+        </section>
+
+        <!-- ===== 服务器同步（可选） ===== -->
+        <div class="cs-label">服务器同步（可选）</div>
+        <section class="cs-tile">
+            <div class="act-item" onclick="manageCloudSync()">
+                <span class="act-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a3.5 3.5 0 0 0 .7-6.93A5.5 5.5 0 0 0 7.1 9.6 4.5 4.5 0 0 0 7 18.5Z"/><path d="M12 12.5v5"/><path d="m9.5 15 2.5-2.5 2.5 2.5"/></svg></span>
+                <div class="act-txt"><span class="act-t">服务器同步</span><span class="act-s" id="cloud-sync-status">未开启，可防止 iPhone 清理后丢失</span></div>
+                <i class="act-go"></i>
+            </div>
+            <div class="act-item" id="cloud-upload-item" onclick="pushCloudSync(true)" style="display:none">
+                <span class="act-ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8"/><path d="m8 11.5 4-4 4 4"/><path d="M5 4h14"/></svg></span>
+                <div class="act-txt"><span class="act-t">立即同步到云端</span><span class="act-s">把当前数据加密上传一份</span></div>
+                <i class="act-go"></i>
+            </div>
+            <div class="act-item" onclick="restoreCloudSyncPrompt()">
+                <span class="act-ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V8"/><path d="m8 12.5 4 4 4-4"/><path d="M5 4h14"/></svg></span>
+                <div class="act-txt"><span class="act-t">从云端恢复</span><span class="act-s">输入恢复码，找回服务器上的备份</span></div>
+                <i class="act-go"></i>
+            </div>
+            <div class="act-item" id="cloud-disable-item" onclick="disableCloudSync()" style="display:none">
+                <span class="act-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m6 18 12-12"/></svg></span>
+                <div class="act-txt"><span class="act-t">关闭服务器同步</span><span class="act-s">保留恢复码，本地数据不受影响</span></div>
                 <i class="act-go"></i>
             </div>
         </section>
@@ -24968,15 +25101,21 @@ const store = (function () {
                    就不要再让旧库的「老数据」盖回来 —— 否则会出现「IDB 被驱逐后，刚存的新数据
                    反被几个月前的旧库数据覆盖」的情况。关键备份的恢复在 loadData 里进行。 */
                 var hasCrit = false;
+                var _critFull = null;
                 try {
-                    var _craw = localStorage.getItem('SC_CRIT_core');
-                    if (_craw) {
-                        var _c = JSON.parse(_craw);
-                        hasCrit = !!(_c && ((_c.chats && Object.keys(_c.chats).length) ||
-                                            (Array.isArray(_c.roles) && _c.roles.length) ||
-                                            (Array.isArray(_c.moments) && _c.moments.length)));
+                    /* 用统一的恢复函数读取：v3 格式的 chats/groupChats 存在分片里，
+                       直接 JSON.parse(SC_CRIT_core) 会拿到一份「没有聊天记录」的残壳，
+                       put 回主库后表现为消息一夜之间全没了。 */
+                    if (typeof _restoreCriticalData === 'function') {
+                        _critFull = _restoreCriticalData();
+                    } else {
+                        var _craw0 = localStorage.getItem('SC_CRIT_core');
+                        if (_craw0) _critFull = JSON.parse(_craw0);
                     }
-                } catch (e) { hasCrit = false; }
+                    hasCrit = !!(_critFull && ((_critFull.chats && Object.keys(_critFull.chats).length) ||
+                                               (Array.isArray(_critFull.roles) && _critFull.roles.length) ||
+                                               (Array.isArray(_critFull.moments) && _critFull.moments.length)));
+                } catch (e) { hasCrit = false; _critFull = null; }
                 /* 关键备份只在「当前主数据确实缺失/为空壳」时才能写回新库。
                    此前只要任意一个键（如 appBackgrounds）缺失就会走进这里，
                    用「只有核心字段」的关键备份覆盖完好的 appData，
@@ -24985,9 +25124,8 @@ const store = (function () {
                 if (hasCrit) {
                     if (needAppData) {
                         try {
-                            var _cc = JSON.parse(localStorage.getItem('SC_CRIT_core'));
-                            if (_cc && db) {
-                                await idbTx('readwrite', function (st) { return st.put(_cc, 'appData'); });
+                            if (_critFull && db) {
+                                await idbTx('readwrite', function (st) { return st.put(_critFull, 'appData'); });
                                 migratedCount = 1;
                             }
                         } catch (e) {}
@@ -25095,11 +25233,14 @@ const store = (function () {
             try { await idbTx('readwrite', function (st) { return st.put(v, k); }); }
             catch (e) { idbErr = e; }
         }
-        // 大对象不写 localStorage（会撑爆 5MB）；小对象写一份作兜底
+        /* 大对象不写 localStorage（会撑爆 5MB）；小对象写一份作兜底。
+           注意：绝不删除已有的旧值 —— 旧值再旧也比没有强。此前超限就 removeItem，
+           等于把仅存的那份兜底亲手抹掉，IDB 被驱逐后彻底救不回来。
+           完整兜底现在由分片关键备份 SC_CRIT_* 承担，这里跳过不再算失败。 */
         var sizeOK = true;
         try { var sv = enc(v); sizeOK = !sv || sv.length < 400000; } catch (e) { sizeOK = false; }
         var lsOK = true;
-        if (sizeOK) lsOK = lsSet(k, v); else { try { localStorage.removeItem(LS_P + k); } catch (e) {} }
+        if (sizeOK) lsOK = lsSet(k, v);
         if (idbErr && !lsOK) { lastError = { key: k, err: 'IndexedDB 与 localStorage 均写入失败' }; throw idbErr; }
         return v;
     }
@@ -25155,8 +25296,9 @@ async function requestPersistentStorage(showResult) {
         if (!navigator.storage || !navigator.storage.persist) {
             SC_PERSIST.supported = false;
             if (showResult) {
-                var msg = '当前浏览器不支持「持久化存储」权限（iOS Safari 常见）。\n\n' +
-                    '建议：\n1. 把本页「添加到主屏幕」\n2. 定期到「数据管理 → 下载备份」保存一份';
+                var msg = _isIOSDevice()
+                    ? 'iPhone / iPad 浏览器不支持「持久化存储」权限。\n\n建议：\n1. 保持「添加到主屏幕」后使用\n2. 定期用「保存备份到文件」存到「文件」App / iCloud 云盘'
+                    : '当前浏览器不支持「持久化存储」权限。\n\n建议：\n1. 把本页「添加到主屏幕」\n2. 定期到「数据管理 → 下载备份」保存一份';
                 try { showAlert(msg, '无法申请持久化'); } catch (e) { alert(msg); }
             }
             return false;
@@ -25197,6 +25339,15 @@ try {
    该文件不受浏览器清理影响，是聊天数据的最终保险。 */
 var AUTO_BACKUP_HANDLE_KEY = 'autoBackupFileHandle';
 var AUTO_BACKUP_FLAG = 'sc_auto_file_backup';
+var CLOUD_CODE_KEY = 'sc_cloud_code';
+var CLOUD_ENABLED_KEY = 'sc_cloud_enabled';
+var CLOUD_LAST_SYNC_KEY = 'sc_cloud_last_sync';
+var CLOUD_LAST_HASH_KEY = 'sc_cloud_last_hash';
+var CLOUD_REMOTE_TIME_KEY = 'sc_cloud_remote_time';
+var _cloudSyncTimer = null;
+var _cloudSyncBusy = false;
+var _cloudStatusCache = null;
+var _cloudStatusAt = 0;
 var _autoBackupHandle = null;
 var _autoBackupTimer = null;
 var _autoBackupBusy = false;
@@ -25205,6 +25356,49 @@ function autoFileBackupSupported() {
     return !!(window.showSaveFilePicker && window.isSecureContext);
 }
 window.autoFileBackupSupported = autoFileBackupSupported;
+
+function _isIOSDevice() {
+    try {
+        if (/iP(hone|ad|od)/i.test(navigator.userAgent || '')) return true;
+        /* iPadOS 13+ 默认伪装成 Mac，用触控点数量区分 */
+        if (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1) return true;
+    } catch (e) {}
+    return false;
+}
+window._isIOSDevice = _isIOSDevice;
+
+function _isStandalone() {
+    try {
+        if (window.navigator.standalone === true) return true;
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true;
+    } catch (e) {}
+    return false;
+}
+window._isStandalone = _isStandalone;
+
+function _hasUserContent() {
+    try {
+        if (Array.isArray(appData.roles) && appData.roles.length > 1) return true;
+        if (Array.isArray(appData.moments) && appData.moments.length) return true;
+        if (appData.chats && typeof appData.chats === 'object') {
+            for (var k in appData.chats) {
+                if (Object.prototype.hasOwnProperty.call(appData.chats, k) &&
+                    Array.isArray(appData.chats[k]) && appData.chats[k].length) return true;
+            }
+        }
+        if (appData.groupChats && typeof appData.groupChats === 'object') {
+            for (var g in appData.groupChats) {
+                if (Object.prototype.hasOwnProperty.call(appData.groupChats, g)) {
+                    var gc = appData.groupChats[g];
+                    if (gc && Array.isArray(gc.messages) && gc.messages.length) return true;
+                }
+            }
+        }
+    } catch (e) {}
+    return false;
+}
+window._hasUserContent = _hasUserContent;
 
 async function _loadAutoBackupHandle() {
     if (_autoBackupHandle) return _autoBackupHandle;
@@ -25288,7 +25482,13 @@ async function _readAutoFileBackup() {
 
 async function enableAutoFileBackup() {
     if (!autoFileBackupSupported()) {
-        var msg = '当前浏览器不支持「自动备份到文件」。\n\n建议：\n1. 点「安装到桌面」把本页添加到主屏幕\n2. 定期使用「下载备份」保存一份';
+        if (_isIOSDevice()) {
+            var iosMsg = 'iPhone / iPad 不支持自动写入本地文件。\n\n可以现在把完整备份保存到「文件」App（可选择 iCloud 云盘），以后即使浏览器清理数据也能恢复。\n\n要现在保存吗？';
+            if (typeof showConfirm === 'function') { showConfirm(iosMsg, saveBackupToFiles); return; }
+            saveBackupToFiles();
+            return;
+        }
+        var msg = '当前浏览器不支持「自动备份到文件」。\n\n建议：\n1. 定期使用「下载备份」保存一份\n2. 到「数据管理」开启防清理保护';
         try { showAlert(msg, '暂不支持'); } catch (e) { alert(msg); }
         return;
     }
@@ -25323,6 +25523,363 @@ async function disableAutoFileBackup() {
 }
 window.disableAutoFileBackup = disableAutoFileBackup;
 
+/* ===== 服务器同步（可选，仅在当前网址提供 /api/sync 时可用） =====
+   浏览器存储仍可能被 iPhone 清理。开启后把加密后的完整数据同步到当前预览服务器，
+   恢复码只保存在本机。服务器只保存密文，无法读取聊天内容。 */
+function _cloudCode() {
+    try { return localStorage.getItem(CLOUD_CODE_KEY) || ''; } catch (e) { return ''; }
+}
+function _cloudEnabled() {
+    try { return localStorage.getItem(CLOUD_ENABLED_KEY) === '1'; } catch (e) { return false; }
+}
+async function _loadCloudMeta() {
+    try {
+        var meta = await store.getItem('sc_cloud_meta');
+        if (!meta || typeof meta !== 'object') return;
+        if (meta.code && !_cloudCode()) {
+            try { localStorage.setItem(CLOUD_CODE_KEY, String(meta.code)); } catch (e) {}
+        }
+        if (meta.enabled && !localStorage.getItem(CLOUD_ENABLED_KEY)) {
+            try { localStorage.setItem(CLOUD_ENABLED_KEY, '1'); } catch (e) {}
+        }
+        if (meta.lastSync && !localStorage.getItem(CLOUD_LAST_SYNC_KEY)) {
+            try { localStorage.setItem(CLOUD_LAST_SYNC_KEY, String(meta.lastSync)); } catch (e) {}
+        }
+    } catch (e) {}
+}
+async function _saveCloudMeta() {
+    try {
+        await store.setItem('sc_cloud_meta', {
+            code: _cloudCode(),
+            enabled: _cloudEnabled(),
+            lastSync: parseInt(localStorage.getItem(CLOUD_LAST_SYNC_KEY) || '0', 10) || 0
+        });
+    } catch (e) {}
+}
+function _cloudTimeAgo(t) {
+    try {
+        var d = Math.floor((Date.now() - t) / 60000);
+        if (d < 1) return '刚刚';
+        if (d < 60) return d + ' 分钟前';
+        var h = Math.floor(d / 60);
+        if (h < 24) return h + ' 小时前';
+        return Math.floor(h / 24) + ' 天前';
+    } catch (e) { return ''; }
+}
+function _bufToHex(buf) {
+    return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+function _b64uEncode(buf) {
+    var bytes = new Uint8Array(buf), s = '';
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function _b64uDecode(str) {
+    var s = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+function _genCloudCode() {
+    var bytes = crypto.getRandomValues(new Uint8Array(24));
+    return _b64uEncode(bytes);
+}
+async function _sha256Hex(str) {
+    return _bufToHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)));
+}
+async function _cloudKeys(code) {
+    var bucket = _bufToHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sc-bucket-v1:' + code)));
+    var raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sc-key-v1:' + code));
+    var key = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    return { bucket: bucket, key: key };
+}
+async function _cloudEncrypt(json, key) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(json));
+    return { v: 1, iv: _b64uEncode(iv), data: _b64uEncode(ct), updatedAt: Date.now() };
+}
+async function _cloudDecrypt(payload, key) {
+    var pt = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: _b64uDecode(payload.iv) },
+        key,
+        _b64uDecode(payload.data)
+    );
+    return new TextDecoder().decode(pt);
+}
+function _cloudDataCopy(stripBackgrounds) {
+    var d;
+    try { d = (typeof structuredClone === 'function') ? structuredClone(appData) : JSON.parse(JSON.stringify(appData)); }
+    catch (e) { d = JSON.parse(JSON.stringify(appData)); }
+    try { ['musicLibrary', 'bookLibrary', 'songLibrary', 'addressLibrary'].forEach(function (k) { delete d[k]; }); } catch (e) {}
+    if (stripBackgrounds) { try { if (d.appearance) delete d.appearance.backgrounds; } catch (e) {} }
+    return d;
+}
+async function _cloudAvailable(force) {
+    if (!force && _cloudStatusCache !== null && Date.now() - _cloudStatusAt < 60000) return _cloudStatusCache;
+    var ok = false;
+    try {
+        if (!window.crypto || !crypto.subtle || !window.fetch) ok = false;
+        else {
+            var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+            var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 5000) : null;
+            var res = await fetch('api/sync/status', { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+            if (timer) clearTimeout(timer);
+            var j = res.ok ? await res.json() : null;
+            ok = !!(j && j.ok && j.service === 'sc-sync');
+        }
+    } catch (e) { ok = false; }
+    _cloudStatusCache = ok;
+    _cloudStatusAt = Date.now();
+    return ok;
+}
+function _cloudSummary(d) {
+    var chatCount = 0, msgCount = 0;
+    try {
+        var c = d.chats || {};
+        chatCount = Object.keys(c).length;
+        Object.keys(c).forEach(function (k) { msgCount += (c[k] || []).length; });
+    } catch (e) {}
+    return '联系人：' + ((d.roles || []).length) + ' 个\n聊天会话：' + chatCount + ' 个（共 ' + msgCount + ' 条消息）\n朋友圈：' + ((d.moments || []).length) + ' 条';
+}
+async function _showCloudRecoveryCode(code, extra) {
+    var copied = false;
+    try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
+    var msg = (extra ? extra + '\n\n' : '') + '恢复码：\n' + code + '\n\n' +
+        (copied ? '已复制到剪贴板。' : '请长按复制并妥善保存。') +
+        '\n\n换手机或本机数据被清理后，用「从云端恢复」输入此恢复码。';
+    if (typeof showConfirm === 'function') showConfirm(msg, function () {});
+    else alert(msg);
+}
+async function pushCloudSync(manual) {
+    if (!_cloudEnabled() || !_cloudCode()) { if (manual) { try { showToast('请先开启服务器同步'); } catch (e) {} } return false; }
+    if (_cloudSyncBusy) return false;
+    if (!(await _cloudAvailable(manual))) {
+        if (manual) { try { showToast('当前网址不支持服务器同步'); } catch (e) {} }
+        return false;
+    }
+    _cloudSyncBusy = true;
+    try {
+        var keys = await _cloudKeys(_cloudCode());
+        var copy = _cloudDataCopy(false);
+        var json = JSON.stringify(copy);
+        var hash = await _sha256Hex(json);
+        var lastHash = '';
+        try { lastHash = localStorage.getItem(CLOUD_LAST_HASH_KEY) || ''; } catch (e) {}
+        if (!manual && hash === lastHash) return true;
+        var payload = await _cloudEncrypt(json, keys.key);
+        var res = await fetch('api/sync/' + keys.bucket, {
+            method: 'PUT',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok && (res.status === 413 || res.status === 400)) {
+            copy = _cloudDataCopy(true);
+            json = JSON.stringify(copy);
+            hash = await _sha256Hex(json);
+            payload = await _cloudEncrypt(json, keys.key);
+            res = await fetch('api/sync/' + keys.bucket, {
+                method: 'PUT',
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var out = null;
+        try { out = await res.json(); } catch (e) {}
+        var savedAt = (out && out.updatedAt) ? out.updatedAt : Date.now();
+        try {
+            localStorage.setItem(CLOUD_LAST_SYNC_KEY, String(savedAt));
+            localStorage.setItem(CLOUD_LAST_HASH_KEY, hash);
+            localStorage.setItem(CLOUD_REMOTE_TIME_KEY, String(savedAt));
+        } catch (e) {}
+        _saveCloudMeta();
+        updateCloudSyncUI();
+        if (manual) { try { showToast('已上传到云端'); } catch (e) {} }
+        return true;
+    } catch (e) {
+        if (manual) { try { showToast('上传失败：' + (e && e.message ? e.message : e)); } catch (e2) {} }
+        return false;
+    } finally {
+        _cloudSyncBusy = false;
+    }
+}
+window.pushCloudSync = pushCloudSync;
+function _scheduleCloudSync() {
+    try {
+        if (!_cloudEnabled() || !_cloudCode()) return;
+        if (_cloudSyncTimer) return;
+        _cloudSyncTimer = setTimeout(function () {
+            _cloudSyncTimer = null;
+            pushCloudSync(false).catch(function () {});
+        }, 8000);
+    } catch (e) {}
+}
+window._scheduleCloudSync = _scheduleCloudSync;
+async function _applyCloudData(d, remoteUpdatedAt, code) {
+    try {
+        appData = migrateAppData(d);
+        _ensureDataShape();
+        if (d && d.appearance && d.appearance.backgrounds) {
+            try { await saveBackgrounds(d.appearance.backgrounds); } catch (e) {}
+        }
+        try { localStorage.setItem('sc_has_local_data', '1'); } catch (e) {}
+        if (code) {
+            try { localStorage.setItem(CLOUD_CODE_KEY, code); localStorage.setItem(CLOUD_ENABLED_KEY, '1'); } catch (e) {}
+            _saveCloudMeta();
+        }
+        await saveDataImmediately();
+        try { await initAppearance(); } catch (e) {}
+        try { renderRoleList(); } catch (e) {}
+        try { renderGroupList(); } catch (e) {}
+        try { updateMusicPlayerCardVisibility(); } catch (e) {}
+        try { updateStorageDisplay(); } catch (e) {}
+        if (remoteUpdatedAt) {
+            try {
+                localStorage.setItem(CLOUD_LAST_SYNC_KEY, String(remoteUpdatedAt));
+                localStorage.setItem(CLOUD_REMOTE_TIME_KEY, String(remoteUpdatedAt));
+            } catch (e) {}
+            _saveCloudMeta();
+        }
+        updateCloudSyncUI();
+        try { showToast('云端备份已恢复'); } catch (e) {}
+    } catch (e) {
+        try { showToast('恢复失败：' + (e && e.message ? e.message : e)); } catch (e2) {}
+    }
+}
+async function _pullCloudWithCode(code, manual) {
+    if (!(await _cloudAvailable(manual))) {
+        if (manual) { try { showToast('当前网址不支持服务器同步'); } catch (e) {} }
+        return false;
+    }
+    try {
+        var keys = await _cloudKeys(code);
+        var res = await fetch('api/sync/' + keys.bucket, { cache: 'no-store' });
+        if (res.status === 404) {
+            if (manual) { try { showToast('云端没有找到这个恢复码对应的备份'); } catch (e) {} }
+            return false;
+        }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var payload = await res.json();
+        var text = await _cloudDecrypt(payload, keys.key);
+        var d = _unwrapBackup(JSON.parse(text));
+        if (!d || typeof d !== 'object') throw new Error('bad data');
+        if (manual) {
+            var when = new Date(payload.updatedAt || Date.now()).toLocaleString();
+            var msg = '云端备份时间：' + when + '\n\n' + _cloudSummary(d) +
+                '\n\n恢复将覆盖当前设备的数据，确定？';
+            if (typeof showConfirm === 'function') showConfirm(msg, function () { _applyCloudData(d, payload.updatedAt, code); });
+            else _applyCloudData(d, payload.updatedAt, code);
+            return true;
+        }
+        var localHasData = _hasUserContent();
+        if (!localHasData) {
+            await _applyCloudData(d, payload.updatedAt, code);
+            return true;
+        }
+        var prev = 0;
+        try { prev = parseInt(localStorage.getItem(CLOUD_REMOTE_TIME_KEY) || '0', 10); } catch (e) {}
+        if (payload.updatedAt > prev + 5000) {
+            try { localStorage.setItem(CLOUD_REMOTE_TIME_KEY, String(payload.updatedAt)); } catch (e) {}
+            try { showToast('云端有较新备份，可到「数据管理」恢复'); } catch (e) {}
+        }
+        return true;
+    } catch (e) {
+        if (manual) { try { showToast('恢复码不正确，或云端数据已损坏'); } catch (e2) {} }
+        return false;
+    }
+}
+async function enableCloudSync() {
+    if (!(await _cloudAvailable(true))) {
+        var msg = '当前网址不支持服务器同步。\n\n服务器同步只在提供 /api/sync 的预览网址可用；已发布的静态站点没有后端，无法使用。\n\n请改用「保存备份到文件」把数据存到 iCloud 云盘或「文件」App。';
+        if (typeof showConfirm === 'function') showConfirm(msg, function () {});
+        else alert(msg);
+        return;
+    }
+    var code = _cloudCode();
+    if (!code) {
+        code = _genCloudCode();
+        try { localStorage.setItem(CLOUD_CODE_KEY, code); } catch (e) {}
+        try { localStorage.setItem(CLOUD_LAST_HASH_KEY, ''); } catch (e) {}
+    }
+    try {
+        localStorage.setItem(CLOUD_ENABLED_KEY, '1');
+        localStorage.setItem('sc_has_local_data', '1');
+    } catch (e) {}
+    _saveCloudMeta();
+    updateCloudSyncUI();
+    await _showCloudRecoveryCode(code, '服务器同步已开启。');
+    await pushCloudSync(true);
+}
+window.enableCloudSync = enableCloudSync;
+function disableCloudSync() {
+    var msg = '关闭服务器同步？\n\n本地数据不会被删除，恢复码仍保留，可随时重新开启。';
+    var doDisable = function () {
+        try { localStorage.setItem(CLOUD_ENABLED_KEY, '0'); } catch (e) {}
+        _saveCloudMeta();
+        updateCloudSyncUI();
+        try { showToast('已关闭服务器同步'); } catch (e) {}
+    };
+    if (typeof showConfirm === 'function') showConfirm(msg, doDisable);
+    else { if (confirm(msg)) doDisable(); }
+}
+window.disableCloudSync = disableCloudSync;
+function manageCloudSync() {
+    if (_cloudEnabled() && _cloudCode()) {
+        _showCloudRecoveryCode(_cloudCode(), '服务器同步已开启。');
+        return;
+    }
+    enableCloudSync();
+}
+window.manageCloudSync = manageCloudSync;
+function restoreCloudSyncPrompt() {
+    var code = _cloudCode();
+    if (code) { _pullCloudWithCode(code, true); return; }
+    if (typeof showPrompt !== 'function') {
+        try { showToast('请先在「服务器同步」中获取恢复码'); } catch (e) {}
+        return;
+    }
+    showPrompt('输入云端恢复码', '', function (v) {
+        v = String(v || '').trim();
+        if (!v) return;
+        _pullCloudWithCode(v, true);
+    }, '恢复码');
+}
+window.restoreCloudSyncPrompt = restoreCloudSyncPrompt;
+function updateCloudSyncUI() {
+    try {
+        var enabled = _cloudEnabled();
+        var code = _cloudCode();
+        var st = document.getElementById('cloud-sync-status');
+        if (st) {
+            if (!code) st.textContent = '未开启，可防止 iPhone 清理后丢失';
+            else if (!enabled) st.textContent = '已关闭，恢复码仍保留';
+            else {
+                var t = parseInt(localStorage.getItem(CLOUD_LAST_SYNC_KEY) || '0', 10);
+                st.textContent = t ? ('已开启 · ' + _cloudTimeAgo(t)) : '已开启 · 等待首次同步';
+            }
+        }
+        var up = document.getElementById('cloud-upload-item');
+        if (up) up.style.display = (enabled && code) ? '' : 'none';
+        var dis = document.getElementById('cloud-disable-item');
+        if (dis) dis.style.display = (enabled && code) ? '' : 'none';
+    } catch (e) {}
+}
+window.updateCloudSyncUI = updateCloudSyncUI;
+async function _cloudInit() {
+    try {
+        await _loadCloudMeta();
+        updateCloudSyncUI();
+        if (!_cloudEnabled() || !_cloudCode()) return;
+        if (!(await _cloudAvailable(false))) return;
+        await _pullCloudWithCode(_cloudCode(), false);
+        updateCloudSyncUI();
+    } catch (e) {}
+}
+window._cloudInit = _cloudInit;
+
 async function manageAutoFileBackup() {
     var h = await _loadAutoBackupHandle();
     if (h) {
@@ -25348,20 +25905,55 @@ window.manageAutoFileBackup = manageAutoFileBackup;
 
 async function _maybeShowPersistenceTip() {
     try {
-        var last = parseInt(localStorage.getItem('sc_persist_tip_at') || '0', 10);
-        if (Date.now() - last < 7 * 86400000) return;
+        var isIOS = _isIOSDevice();
+        /* 未安装到主屏幕时，先走安装引导；安装后再提醒备份 */
+        if (isIOS && !_isStandalone()) return;
+        var interval = isIOS ? 3 * 86400000 : 7 * 86400000;
+        var now = Date.now();
+        var lastTip = parseInt(localStorage.getItem('sc_persist_tip_at') || '0', 10);
+        if (now - lastTip < interval) return;
+        var lastBackup = parseInt(localStorage.getItem('sc_last_backup') || '0', 10);
+        if (lastBackup && now - lastBackup < interval) return;
+        if (!_hasUserContent()) return;
         var granted = false;
         try { if (navigator.storage && navigator.storage.persisted) granted = await navigator.storage.persisted(); } catch (e) {}
         if (granted) return;
-        try { localStorage.setItem('sc_persist_tip_at', String(Date.now())); } catch (e) {}
+        try { localStorage.setItem('sc_persist_tip_at', String(now)); } catch (e) {}
         setTimeout(function () {
             try {
-                if (typeof showToast === 'function') showToast('建议到「数据管理」开启防清理保护或自动备份，避免长期不上线被浏览器清理');
+                var msg = isIOS
+                    ? 'iPhone / iPad 可能在长期不打开或存储紧张时清理本应用的数据。\n\n建议现在把完整备份保存到「文件」App（可选择 iCloud 云盘）。以后即使数据被清理，也能通过「恢复备份」找回。\n\n要现在保存吗？'
+                    : '浏览器可能在长期不打开时清理本站数据。\n\n建议现在保存一份备份，或到「数据管理」开启防清理保护。\n\n要现在保存吗？';
+                if (typeof showConfirm === 'function') showConfirm(msg, saveBackupToFiles);
+                else if (typeof showToast === 'function') showToast('建议到「数据管理」保存一份备份，避免长期不上线被浏览器清理');
             } catch (e) {}
-        }, 3000);
+        }, isIOS ? 8000 : 3000);
     } catch (e) {}
 }
 window._maybeShowPersistenceTip = _maybeShowPersistenceTip;
+
+async function _maybePromptIOSInstall() {
+    try {
+        if (!_isIOSDevice() || _isStandalone()) return;
+        var now = Date.now();
+        var last = parseInt(localStorage.getItem('sc_ios_install_tip_at') || '0', 10);
+        if (now - last < 3 * 86400000) return;
+        if (!_hasUserContent()) return;
+        try { localStorage.setItem('sc_ios_install_tip_at', String(now)); } catch (e) {}
+        setTimeout(function () {
+            try {
+                var msg = '检测到你正在 Safari 标签页中使用。\n\n' +
+                    'iPhone 的 Safari 会在约 7 天未访问时清理网页数据，聊天记录可能因此消失。\n\n' +
+                    '请点 Safari 底部的分享按钮 → 「添加到主屏幕」，以后从主屏幕图标打开。\n\n' +
+                    '如果暂时不安装，请先到「数据管理 → 保存备份到文件」备份一份。\n\n' +
+                    '要查看安装步骤吗？';
+                if (typeof showConfirm === 'function') showConfirm(msg, installPwa);
+                else installPwa();
+            } catch (e) {}
+        }, 5000);
+    } catch (e) {}
+}
+window._maybePromptIOSInstall = _maybePromptIOSInstall;
 
 async function installPwa() {
     var ev = window.__scInstallPrompt;
@@ -25479,18 +26071,27 @@ window.restoreFromLegacyStorage = restoreFromLegacyStorage;
 
 /* ===== 关键备份：把「用户数据核心」同步写一份到 localStorage =====
    借鉴原版 9.30 文件的思路 —— 它之所以长期不丢数据，就是靠这层 localStorage 兜底。
-   本文件此前 appData 里塞了 4861 首内置音乐（占 95%），根本写不进 5MB 的 localStorage，
-   所以只剩 IndexedDB 单条防线；现在已瘦身，这层能真正生效。 */
+
+   重要改造（分片）：此前把整个 appData 序列化成一坨 JSON 写进单个 localStorage 键，
+   一旦聊天记录变长（>400KB）就直接放弃写入并删掉旧备份，兜底长期形同虚设；
+   IDB 被浏览器驱逐后只能恢复一份被裁剪到 50 条的残血数据，还会反向覆盖主库。
+   现在改为「核心字段 + 聊天分片」：核心一块，chats / groupChats 按会话切分成多片，
+   每片控制在几百 KB 内，逐片写入 —— 与 9.30 文件「拆成二十多个小键」的效果一致。 */
 
 var SC_CRIT_PREFIX = 'SC_CRIT_';
 var SC_CRIT_TIME = 'SC_CRIT_TIME';
+var SC_CRIT_IDX = 'SC_CRIT_IDX';
+var SC_CRIT_SHARD_TARGET = 128 * 1024;   // 单片目标体积（小片更容易塞进紧张的配额）
+var SC_CRIT_SHARD_MAX = 512 * 1024;      // 单片硬上限，超过的会话单独成片并裁剪
 
+/* 核心字段：不含 chats / groupChats（它们走分片），保证这一块始终小巧可写 */
 function _criticalSnapshot(d) {
     try {
         var core = {
-            _v: 2,
+            _v: 3,
+            _sharded: true,
             schemaVersion: d.schemaVersion,
-            roles: d.roles, groups: d.groups, chats: d.chats, groupChats: d.groupChats,
+            roles: d.roles, groups: d.groups,
             moments: d.moments, momentPhotos: d.momentPhotos,
             mails: d.mails, favoriteMessages: d.favoriteMessages,
             importantDays: d.importantDays, stickerLibrary: d.stickerLibrary,
@@ -25507,37 +26108,366 @@ function _criticalSnapshot(d) {
     } catch (e) { return null; }
 }
 
+/* 把 {会话id: 消息数组} 打包成若干片，尽量让每片体积接近目标值 */
+function _packChatShards(obj) {
+    var shards = [];
+    var cur = {}, curSize = 2, curKeys = 0;
+    function flush() {
+        if (curKeys > 0) { shards.push({ m: cur, s: curSize }); }
+        cur = {}; curSize = 2; curKeys = 0;
+    }
+    try {
+        var keys = Object.keys(obj || {});
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i], arr = obj[k];
+            if (!Array.isArray(arr)) continue;
+            var json = JSON.stringify(arr);
+            var sz = json.length + k.length + 12;
+            if (sz > SC_CRIT_SHARD_MAX) {
+                /* 单个会话过大：裁剪后单独占一片，避免把整片撑爆 */
+                flush();
+                var trimmed = arr.slice(-200);
+                var tj = JSON.stringify(trimmed);
+                if (tj.length > SC_CRIT_SHARD_MAX) {
+                    trimmed = arr.slice(-50);
+                    tj = JSON.stringify(trimmed);
+                }
+                var one = {}; one[k] = trimmed;
+                shards.push({ m: one, s: tj.length, truncated: true });
+                continue;
+            }
+            if (curSize + sz > SC_CRIT_SHARD_TARGET && curKeys > 0) flush();
+            cur[k] = arr;
+            curSize += sz;
+            curKeys++;
+        }
+        flush();
+    } catch (e) {}
+    return shards;
+}
+
+/* 逐片写入：遇到配额错误就裁剪本片重试，仍失败则停止并保留已写部分。
+   返回 {n, quotaHit}，quotaHit 用于让下一次备份自动收紧预算。 */
+function _writeChatShards(shards, prefix) {
+    var written = 0, quotaHit = false;
+    for (var i = 0; i < shards.length; i++) {
+        var json;
+        try { json = JSON.stringify(shards[i].m); } catch (e) { break; }
+        try {
+            localStorage.setItem(SC_CRIT_PREFIX + prefix + i, json);
+            written++;
+            continue;
+        } catch (e) { quotaHit = true; }
+        /* 配额不足：砍到最近 50 条再试 */
+        try {
+            var slim = JSON.parse(json);
+            Object.keys(slim).forEach(function (k) { slim[k] = (slim[k] || []).slice(-50); });
+            localStorage.setItem(SC_CRIT_PREFIX + prefix + i, JSON.stringify(slim));
+            written++;
+        } catch (e2) { break; }
+    }
+    return { n: written, quotaHit: quotaHit };
+}
+
+/* 关键备份本次实际占用的体积 */
+function _critUsedSize() {
+    var n = 0;
+    try {
+        for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (!k || k.indexOf(SC_CRIT_PREFIX) !== 0) continue;
+            var v = localStorage.getItem(k);
+            if (v) n += k.length + v.length;
+        }
+    } catch (e) {}
+    return n;
+}
+
+/* 统计 localStorage 中「非关键备份」键已占用的体积，用来算出本次还剩多少配额 */
+function _lsUsedExcludingCrit() {
+    var n = 0;
+    try {
+        for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (!k || k.indexOf(SC_CRIT_PREFIX) === 0) continue;
+            var v = localStorage.getItem(k);
+            if (v) n += k.length + v.length;
+        }
+    } catch (e) {}
+    return n;
+}
+
+/* 估算 {会话id: 消息数组} 的总体积 */
+function _chatMapSize(obj) {
+    var n = 0;
+    try {
+        Object.keys(obj || {}).forEach(function (k) {
+            var a = obj[k];
+            if (!Array.isArray(a)) return;
+            try { n += JSON.stringify(a).length + k.length + 8; } catch (e) {}
+        });
+    } catch (e) {}
+    return n;
+}
+
+/* 按预算裁剪聊天记录。
+   关键在于「均匀裁剪」而不是「写到哪算哪」：后者会造成前几个会话消息完整、
+   后面的会话一个字都没备份。这里用二分找出「刚好塞得下」的最大保留比例，
+   既保证每个会话都有内容，又不浪费宝贵的 localStorage 配额。 */
+function _trimToBudget(obj, budget) {
+    try {
+        var keys = Object.keys(obj || {});
+        var items = [], total = 0;
+        keys.forEach(function (k) {
+            var arr = obj[k];
+            if (!Array.isArray(arr) || !arr.length) return;
+            var sz = 0;
+            try { sz = JSON.stringify(arr).length; } catch (e) { sz = 0; }
+            items.push({ k: k, a: arr, len: arr.length, avg: sz / arr.length });
+            total += sz;
+        });
+        if (!items.length || total <= budget) return obj;
+        var lo = 0.02, hi = 1, best = null;
+        for (var it = 0; it < 8; it++) {
+            var mid = (lo + hi) / 2;
+            var est = 0, out = {};
+            items.forEach(function (x) {
+                var keep = Math.max(20, Math.round(x.len * mid));
+                out[x.k] = x.a.slice(-keep);
+                est += x.avg * keep + x.k.length + 8;
+            });
+            if (est <= budget) { best = out; lo = mid; } else { hi = mid; }
+        }
+        if (!best) {
+            best = {};
+            items.forEach(function (x) { best[x.k] = x.a.slice(-20); });
+        }
+        /* 二分用的是「平均每消息字节数」线性估算，图片分布不均时会偏高或偏低。
+           这里用真实序列化双向校准几轮：超了就缩，小了就放，尽量贴近预算。 */
+        for (var cal = 0; cal < 4; cal++) {
+            var actual = 0;
+            try {
+                Object.keys(best).forEach(function (k) { actual += JSON.stringify(best[k]).length + k.length + 8; });
+            } catch (e) { break; }
+            if (actual <= 0) break;
+            var ratio = (budget * 0.97) / actual;
+            if (ratio > 0.98 && ratio < 1.03) break;
+            var grow = Math.min(1.25, Math.max(0.75, ratio));
+            var grown = {};
+            items.forEach(function (x) {
+                var cur = (best[x.k] || []).length;
+                var keep = Math.min(x.len, Math.max(20, Math.round(cur * grow)));
+                grown[x.k] = x.a.slice(-keep);
+            });
+            best = grown;
+        }
+        return best;
+    } catch (e) { return obj; }
+}
+
+/* 删除上一次留下的多余分片 */
+function _cleanOldShards(prefix, keep) {
+    try {
+        var i = keep;
+        while (i < keep + 500) {
+            var key = SC_CRIT_PREFIX + prefix + i;
+            if (localStorage.getItem(key) === null) break;
+            localStorage.removeItem(key);
+            i++;
+        }
+    } catch (e) {}
+}
+
+function _readChatShards(prefix, count) {
+    var out = {};
+    try {
+        for (var i = 0; i < count; i++) {
+            var raw = localStorage.getItem(SC_CRIT_PREFIX + prefix + i);
+            if (!raw) continue;
+            var part = JSON.parse(raw);
+            if (part && typeof part === 'object') {
+                Object.keys(part).forEach(function (k) { if (out[k] === undefined) out[k] = part[k]; });
+            }
+        }
+    } catch (e) {}
+    return out;
+}
+
+/* 统计一份数据里的消息总数，用于「空数据保险丝」判断 */
+function _countMessages(d) {
+    var n = 0;
+    try {
+        var c = d && d.chats;
+        if (c) Object.keys(c).forEach(function (k) { if (Array.isArray(c[k])) n += c[k].length; });
+        var g = d && d.groupChats;
+        if (g) Object.keys(g).forEach(function (k) { if (Array.isArray(g[k])) n += g[k].length; });
+    } catch (e) {}
+    return n;
+}
+
+/* 统计现有备份里的消息总数（不还原完整对象，只读分片计数，尽量轻量） */
+function _countBackupMessages() {
+    var n = 0;
+    try {
+        var idxRaw = localStorage.getItem(SC_CRIT_IDX);
+        if (idxRaw) {
+            var idx = JSON.parse(idxRaw) || {};
+            var i, raw, part;
+            for (i = 0; i < (idx.c || 0); i++) {
+                raw = localStorage.getItem(SC_CRIT_PREFIX + 'c' + i);
+                if (!raw) continue;
+                part = JSON.parse(raw);
+                Object.keys(part).forEach(function (k) { if (Array.isArray(part[k])) n += part[k].length; });
+            }
+            for (i = 0; i < (idx.g || 0); i++) {
+                raw = localStorage.getItem(SC_CRIT_PREFIX + 'g' + i);
+                if (!raw) continue;
+                part = JSON.parse(raw);
+                Object.keys(part).forEach(function (k) { if (Array.isArray(part[k])) n += part[k].length; });
+            }
+            return n;
+        }
+        /* 旧版 v2：chats 直接嵌在 core 里 */
+        var raw2 = localStorage.getItem(SC_CRIT_PREFIX + 'core');
+        if (raw2) {
+            var core = JSON.parse(raw2);
+            var c2 = core && core.chats;
+            if (c2) Object.keys(c2).forEach(function (k) { if (Array.isArray(c2[k])) n += c2[k].length; });
+        }
+    } catch (e) {}
+    return n;
+}
+
 function _backupCriticalData(d) {
     try {
-        var json = _criticalSnapshot(d || appData);
-        if (!json) return false;
-        /* localStorage 上限约 5MB，超了就逐级降级：先砍聊天条数，保证至少能写进去 */
-        if (json.length > 4.5 * 1024 * 1024) {
-            var core = JSON.parse(json);
-            Object.keys(core.chats || {}).forEach(function (k) { core.chats[k] = (core.chats[k] || []).slice(-200); });
-            Object.keys(core.groupChats || {}).forEach(function (k) { core.groupChats[k] = (core.groupChats[k] || []).slice(-200); });
-            core._truncated = true;
-            json = JSON.stringify(core);
+        d = d || appData;
+        if (!d || typeof d !== 'object') return false;
+
+        /* ===== 守卫 1：数据尚未加载完成，绝不写备份 =====
+           页面关闭时会无条件调用本函数（beforeunload / pagehide / visibilitychange）。
+           若此时 loadData 还没跑完，appData 仍是默认空壳，直接写就会把 localStorage 里
+           完好的真实备份覆盖成空 —— 这是「隔几小时回来数据就没了」最直接的成因：
+           iOS 会终止后台 Web App，再次打开是冷启动，IndexedDB 打开常需数秒，
+           期间一旦锁屏或切走就会触发 pagehide。 */
+        if (window.__scDataLoaded !== true && !window.__scForceBackup) {
+            console.warn('[关键备份] 数据未加载完成，跳过写入以保护已有备份');
+            return false;
         }
-        if (json.length > 4.5 * 1024 * 1024) {
-            var c2 = JSON.parse(json);
-            Object.keys(c2.chats || {}).forEach(function (k) { c2.chats[k] = (c2.chats[k] || []).slice(-50); });
-            c2._truncated = true;
-            json = JSON.stringify(c2);
+
+        /* ===== 守卫 2：空数据保险丝 =====
+           已加载完成，但内存里的数据是空的，而磁盘上的备份有大量消息 —— 说明「读失败」
+           而不是「用户清空了」。这种情况绝不覆盖，否则真数据被空壳抹掉。
+           用户主动重置时会带 __scForceBackup 标记放行。 */
+        if (!window.__scForceBackup) {
+            var curN = _countMessages(d);
+            if (curN === 0) {
+                var oldN = _countBackupMessages();
+                if (oldN > 0) {
+                    console.warn('[关键备份] 内存数据为空但已有备份含 ' + oldN + ' 条消息，判定为读取失败，拒绝覆盖');
+                    return false;
+                }
+            }
         }
-        /* 最后兜底：去掉体积最大的图片类字段，保证「文字类用户数据」一定能备份成功。
-           图片本身仍完整保存在 IndexedDB 主数据里。 */
-        if (json.length > 4.5 * 1024 * 1024) {
-            var c3 = JSON.parse(json);
-            c3.momentPhotos = [];
-            delete c3.stickerLibrary;
-            if (c3.wordbanks) { c3.wordbanks.stickers = []; c3.wordbanks.myStickers = []; }
-            (c3.roles || []).forEach(function (r) { if (r) r.chatBackground = null; });
-            (c3.groups || []).forEach(function (g) { if (g) g.chatBackground = null; });
-            c3._truncated = true;
-            json = JSON.stringify(c3);
+
+        var coreJson = _criticalSnapshot(d);
+        if (!coreJson) return false;
+
+        /* ===== 守卫 3：先探测能否写入，再决定要不要动旧分片 =====
+           直接先删旧分片会导致「旧的删了、新的没写进去」＝备份彻底归零。
+           这里先写一小片探路；探路失败说明配额已满，立刻收手保留旧备份。 */
+        var oldIdx = null;
+        try { oldIdx = JSON.parse(localStorage.getItem(SC_CRIT_IDX) || 'null'); } catch (e) { oldIdx = null; }
+        var probeKey = SC_CRIT_PREFIX + 'probe';
+        var canWrite = false;
+        try {
+            localStorage.setItem(probeKey, '1');
+            localStorage.removeItem(probeKey);
+            canWrite = true;
+        } catch (e) { canWrite = false; }
+        if (!canWrite) {
+            console.warn('[关键备份] localStorage 无可用空间，保留上一次备份不动');
+            return false;
         }
-        localStorage.setItem(SC_CRIT_PREFIX + 'core', json);
+        if (oldIdx) { _cleanOldShards('c', 0); _cleanOldShards('g', 0); }
+
+        /* 1) 先写核心块。若这一块本身就超配额，逐级瘦身保证一定能落盘 */
+        try {
+            localStorage.setItem(SC_CRIT_PREFIX + 'core', coreJson);
+        } catch (e) {
+            try {
+                var c = JSON.parse(coreJson);
+                c.momentPhotos = [];
+                delete c.stickerLibrary;
+                if (c.wordbanks) { c.wordbanks.stickers = []; c.wordbanks.myStickers = []; }
+                (c.roles || []).forEach(function (r) { if (r) r.chatBackground = null; });
+                (c.groups || []).forEach(function (g) { if (g) g.chatBackground = null; });
+                c._truncated = true;
+                localStorage.setItem(SC_CRIT_PREFIX + 'core', JSON.stringify(c));
+            } catch (e2) {
+                try {
+                    var c2 = JSON.parse(coreJson);
+                    ['moments', 'mails', 'favoriteMessages', 'wordCards', 'recallLog', 'lifeTrajectory'].forEach(function (f) { delete c2[f]; });
+                    c2._truncated = true;
+                    localStorage.setItem(SC_CRIT_PREFIX + 'core', JSON.stringify(c2));
+                } catch (e3) {
+                    return false;
+                }
+            }
+        }
+
+        /* 2) 先算剩余配额，再决定要不要裁剪。
+           localStorage 只有约 5MB，且要与镜像、主题等其他键共享；
+           不做预算就会「写到一半配额耗尽，后面几个会话完全没有备份」。 */
+        /* 各浏览器 localStorage 上限差异很大（常见约 5MB，且中文按 UTF-16 计更吃亏），
+           硬编码一个值不是太大被拒绝、就是太小浪费空间。这里改成自适应：
+           记住上一次实际写进去多少，成功就放宽，撞到配额就收紧。 */
+        var BUDGET_CAP = 4400000;
+        var savedBudget = 0;
+        try { savedBudget = parseInt(localStorage.getItem('SC_CRIT_BUDGET') || '0', 10) || 0; } catch (e) {}
+        var BUDGET = savedBudget > 0 ? Math.min(BUDGET_CAP, savedBudget) : 1800000;
+        var usedOthers = _lsUsedExcludingCrit();
+        var avail = BUDGET - usedOthers - (coreJson.length || 0);
+        if (!(avail > 60000)) avail = 60000;
+        /* 按私聊 / 群聊的实际体积占比分配配额，避免某一边被无谓地砍掉 */
+        var cSz = _chatMapSize(d.chats), gSz = _chatMapSize(d.groupChats);
+        var sumSz = (cSz + gSz) || 1;
+        var cBudget = Math.floor(avail * cSz / sumSz);
+        var gBudget = avail - cBudget;
+        var chatsT = _trimToBudget(d.chats, cBudget);
+        var gchatsT = _trimToBudget(d.groupChats, gBudget);
+        var truncated = (chatsT !== d.chats) || (gchatsT !== d.groupChats);
+
+        /* 3) 聊天记录分两遍写入 —— 这才是「消息一条都不丢」的关键。
+              第一遍：用很保守的预算，保证每个会话都至少留下最近的一批消息；
+              第二遍：用完整预算覆盖写，尽量多存。
+              localStorage.setItem 失败时不会破坏已有的值，所以第二遍哪怕一片都写不进，
+              第一遍的成果也完好无损 —— 杜绝「前面会话完整、后面会话一个字都没有」。 */
+        var pass1 = Math.min(avail, 120000);
+        var c1 = _trimToBudget(d.chats, Math.floor(pass1 * cSz / sumSz));
+        var g1 = _trimToBudget(d.groupChats, Math.floor(pass1 * gSz / sumSz));
+        var w1c = _writeChatShards(_packChatShards(c1), 'c').n;
+        var w1g = _writeChatShards(_packChatShards(g1), 'g').n;
+
+        var cw = _writeChatShards(_packChatShards(chatsT), 'c');
+        var gw = _writeChatShards(_packChatShards(gchatsT), 'g');
+        var cn = Math.max(w1c, cw.n), gn = Math.max(w1g, gw.n);
+        var quotaHit = cw.quotaHit || gw.quotaHit;
+        _cleanOldShards('c', cn);
+        _cleanOldShards('g', gn);
+
+        /* 记录本次真实用量，供下次自动放宽 / 收紧预算 */
+        try {
+            var critUsed = _critUsedSize();
+            var nextBudget = quotaHit
+                ? Math.max(400000, Math.floor(critUsed * 0.85))
+                : Math.min(BUDGET_CAP, Math.floor(critUsed * 1.6 + 200000));
+            localStorage.setItem('SC_CRIT_BUDGET', String(nextBudget));
+        } catch (e) {}
+
+        /* 4) 最后写索引：只有索引写成功，恢复时才会采信分片 */
+        try {
+            localStorage.setItem(SC_CRIT_IDX, JSON.stringify({ v: 3, c: cn, g: gn, ts: Date.now(), trunc: truncated }));
+        } catch (e) {}
         localStorage.setItem(SC_CRIT_TIME, String(Date.now()));
         return true;
     } catch (e) {
@@ -25547,13 +26477,24 @@ function _backupCriticalData(d) {
 }
 window._backupCriticalData = _backupCriticalData;
 
-/* 从 localStorage 关键备份恢复，返回核心数据对象或 null */
+/* 从 localStorage 关键备份恢复，返回核心数据对象或 null
+   兼容两代格式：v3 分片版（读索引 + 分片）与 v2 整块版（chats 直接嵌在 core 里） */
 function _restoreCriticalData() {
     try {
         var raw = localStorage.getItem(SC_CRIT_PREFIX + 'core');
         if (!raw) return null;
         var core = JSON.parse(raw);
         if (!core || typeof core !== 'object') return null;
+        var idxRaw = localStorage.getItem(SC_CRIT_IDX);
+        if (idxRaw) {
+            try {
+                var idx = JSON.parse(idxRaw) || {};
+                var chats = _readChatShards('c', idx.c || 0);
+                var gchats = _readChatShards('g', idx.g || 0);
+                if (Object.keys(chats).length) core.chats = chats;
+                if (Object.keys(gchats).length) core.groupChats = gchats;
+            } catch (e) {}
+        }
         if (!core.roles && !core.chats && !core.moments) return null;
         return core;
     } catch (e) { return null; }
@@ -26094,6 +27035,26 @@ async function updateStorageDisplay() {
         }
     } catch (e) {}
 
+    /* 运行方式：Safari 标签页在 iPhone 上更容易被系统清理 */
+    try {
+        const mEl = document.getElementById('storage-mode-text');
+        if (mEl) {
+            const standalone = _isStandalone();
+            if (_isIOSDevice()) {
+                mEl.textContent = standalone ? '主屏幕应用（推荐）' : 'Safari 标签页（易被清理）';
+                mEl.style.color = standalone ? '#07c160' : '#e64340';
+            } else {
+                mEl.textContent = standalone ? '独立应用窗口' : '浏览器标签页';
+                mEl.style.color = '';
+            }
+        }
+        const oEl = document.getElementById('storage-origin-text');
+        if (oEl) {
+            oEl.textContent = location.origin;
+            oEl.title = location.origin;
+        }
+    } catch (e) {}
+
     /* 防清理保护状态 + 上次备份时间 */
     try {
         const pEl = document.getElementById('storage-persist-text');
@@ -26109,7 +27070,11 @@ async function updateStorageDisplay() {
         const abEl = document.getElementById('auto-backup-status');
         if (abEl) {
             try {
-                if (!autoFileBackupSupported()) { abEl.textContent = '当前浏览器不支持（建议安装到桌面）'; }
+                if (!autoFileBackupSupported()) {
+                    abEl.textContent = _isIOSDevice()
+                        ? 'iPhone 不支持自动写入，请用「保存备份到文件」'
+                        : '当前浏览器不支持，请定期手动备份';
+                }
                 else {
                     var ah = await _loadAutoBackupHandle();
                     if (ah) {
@@ -26125,12 +27090,13 @@ async function updateStorageDisplay() {
             if (!t) { bEl.textContent = '从未备份'; bEl.style.color = '#e64340'; }
             else {
                 const days = Math.floor((Date.now() - t) / 86400000);
-                bEl.textContent = days === 0 ? '今天' : (days + ' 天前' + (days >= 7 ? '（建议备份）' : ''));
-                bEl.style.color = days >= 7 ? '#e64340' : (days >= 3 ? '#ff9f43' : '#07c160');
+                const warnDays = _isIOSDevice() ? 3 : 7;
+                bEl.textContent = days === 0 ? '今天' : (days + ' 天前' + (days >= warnDays ? '（建议备份）' : ''));
+                bEl.style.color = days >= warnDays ? '#e64340' : (days >= Math.max(1, warnDays - 2) ? '#ff9f43' : '#07c160');
                 /* 长期未备份：给一次明确提醒，避免再次出现「几天不上线数据就没了」 */
-                if (days >= 7 && !window.__backupWarned) {
+                if (days >= warnDays && !window.__backupWarned) {
                     window.__backupWarned = true;
-                    try { if (typeof showToast === 'function') showToast('已 ' + days + ' 天未备份，建议现在下载一份'); } catch (e) {}
+                    try { if (typeof showToast === 'function') showToast('已 ' + days + ' 天未备份，建议现在保存一份备份'); } catch (e) {}
                 }
             }
         }
@@ -26354,6 +27320,17 @@ window.reportSaveFailure = reportSaveFailure;
 /* 强制落盘：同步写镜像 + 触发异步主存储 */
 function flushSaveNow() {
     try {
+        /* 关键：任何落盘动作的第一步都是「同步写关键备份」。
+           9.30 文件之所以长期不丢数据，就是把这一步放在 saveData 的第一行、await 之前。
+           放在最后会因 IndexedDB 抛错/卡顿而永远走不到。
+           内部的加载守卫会自行判断：数据没加载完就跳过，避免空壳覆盖真备份。 */
+        try { _backupCriticalData(appData); window.__scCritDone = Date.now(); } catch (e) {}
+        /* 数据未加载完成时，连 IndexedDB 写入也要跳过，否则会把默认值写进主库 */
+        if (window.__scDataLoaded !== true) {
+            console.warn('[flushSaveNow] 数据尚未加载完成，跳过落盘以防覆盖');
+            window.__scPendingSave = true;
+            return false;
+        }
         autoCleanChats();
         /* 上限放宽到 20000：此前这里硬编码 500/450，刷新即砍掉聊天记录 */
         Object.keys(appData.chats || {}).forEach(k => { if (appData.chats[k] && appData.chats[k].length > 20000) appData.chats[k] = appData.chats[k].slice(-20000); });
@@ -26390,6 +27367,21 @@ document.addEventListener('visibilitychange', function () {
 // 立即保存函数
 async function saveDataImmediately() {
     try {
+        /* 数据加载完成前禁止写盘：否则会用默认值把真实数据覆盖掉（部署后「数据自动消失」的主因） */
+        if (window.__scDataLoaded !== true) {
+            console.warn('[saveDataImmediately] 数据尚未加载完成，跳过本次保存以防覆盖');
+            window.__scPendingSave = true;
+            return false;
+        }
+        /* 同步写关键备份，必须在任何 await 之前。
+           9.30 文件把这一步放在 saveData 第一行，保证「快速刷新」时
+           IndexedDB 异步写入还没完成也不会丢消息。此前本文件放在最后，
+           await store.setItem 一旦卡住/抛错就根本执行不到，兜底等于没有。 */
+        if (Date.now() - (window.__scCritDone || 0) < 50) {
+            /* flushSaveNow 刚刚同步写过一份，内容一致，不重复序列化整库 */
+        } else {
+            try { _backupCriticalData(appData); } catch (e) {}
+        }
         autoCleanChats();
         /* 上限放宽到 20000，不再把用户的聊天记录裁掉 */
         Object.keys(appData.chats).forEach(k => { if (appData.chats[k] && appData.chats[k].length > 20000) appData.chats[k] = appData.chats[k].slice(-20000); });
@@ -26421,11 +27413,12 @@ async function saveDataImmediately() {
         /* 双写一份副本：主数据被浏览器驱逐/损坏时可自动回补 */
         try { await store.setItem('appDataBak', dataToSave); } catch (e) {}
         try { localStorage.setItem('sc_last_save', String(Date.now())); } catch (e) {}
-        /* 关键备份：现在数据已瘦身（实测 ~30KB），可稳定写进 localStorage。
-           IndexedDB 被浏览器驱逐时，这份同步备份是最后防线。 */
-        try { _backupCriticalData(dataToSave); } catch (e) {}
+        try { localStorage.setItem('sc_has_local_data', '1'); } catch (e) {}
+        /* 关键备份已在函数开头（所有 await 之前）同步落盘，这里不再重复写，
+           既省一次整库序列化，也避免「写入成功前被中断就完全没有备份」。 */
         /* 用户开启「自动备份到文件」后，异步另写一份不受浏览器清理影响的本地文件 */
         try { _scheduleAutoFileBackup(); } catch (e) {}
+        try { _scheduleCloudSync(); } catch (e) {}
         await store.setItem('customThemes', customThemes);
         await store.setItem('themeSchemes', themeSchemes);
         /* 性能优化：主题备份放到空闲时段写，避免与主线程抢时间 */
@@ -26891,8 +27884,16 @@ function _ensureBuiltinLibs() {
 }
 window._ensureBuiltinLibs = _ensureBuiltinLibs;
 
+/* 数据加载完成标志：仿 9.30 文件的 SESSION_ID 守卫思路。
+   enterMain() 里 loadData() 没有 await，60ms 后就 renderDesktop()；
+   期间任何一次 debouncedSaveData 都会把「还没读到真实数据的默认值」写进
+   IndexedDB + appDataBak + 关键备份，真实数据当场被覆盖 —— 这是部署后
+   「数据自动消失」最直接的一条路径。加载完成前一律拒绝写盘。 */
+window.__scDataLoaded = false;
+
 async function loadData() {
     try {
+        window.__scDataLoaded = false;
         /* 先把旧库（localforage）的数据搬过来，再读 —— 否则会读到空数据并被默认值覆盖 */
         try { if (store && store.readyMigration) await store.readyMigration(); } catch (e) {}
         let stored = await store.getItem('appData');
@@ -26939,8 +27940,13 @@ async function loadData() {
         }
         if (_rescued) {
             stored = _rescued;
+            /* 只把恢复结果写回 appData 主键，让页面能正常用起来。
+               绝不再覆盖 appDataBak —— 此前把（可能残缺的）恢复结果同时写进主库和副本，
+               等于把唯一的另一份快照也污染成同一份残缺数据，真数据再也回不来。
+               这里改为另存 appDataRescue，保留 appDataBak 原样作为第二意见。 */
             try { await store.setItem('appData', _rescued); } catch (e) {}
-            try { await store.setItem('appDataBak', _rescued); } catch (e) {}
+            try { await store.setItem('appDataRescue', _rescued); } catch (e) {}
+            console.log('[恢复] 已写入 appData / appDataRescue，appDataBak 保持原样未被覆盖');
             try { if (typeof showToast === 'function') showToast('已从备份恢复数据'); } catch (e) {}
         }
         if (stored) {
@@ -27254,6 +28260,13 @@ async function loadData() {
             appData.schemaVersion = APP_SCHEMA_VERSION;
         }
     }
+    /* 到这里真实数据（或已确认无数据）已经进内存，放开写盘锁 */
+    window.__scDataLoaded = true;
+    /* 加载期间被拦下的保存请求补执行一次，避免那段时间的改动没落盘 */
+    if (window.__scPendingSave) {
+        window.__scPendingSave = false;
+        setTimeout(function () { try { saveDataImmediately(); } catch (e) {} }, 0);
+    }
     await initAppearance(); renderRoleList(); renderGroupList(); updateDate(); await loadUnreadCounts();
     try {
         Object.keys(unreadCounts || {}).forEach(k => {
@@ -27264,7 +28277,9 @@ async function loadData() {
     } catch (e) { console.warn(e); }
     
     startUnifiedTimers();
+    try { _maybePromptIOSInstall(); } catch (e) {}
     try { _maybeShowPersistenceTip(); } catch (e) {}
+    setTimeout(function () { try { _cloudInit(); } catch (e) {} }, 4000);
     
     initNotificationSwitch();
     startOnlineStatusTimer();
@@ -35402,7 +36417,65 @@ function sendNotificationIfNeeded(title, body, targetRoleId) {
 
 
 
-function exportData() { const jsonStr = JSON.stringify(appData, null, 2); try { localStorage.setItem('sc_last_backup', String(Date.now())); } catch (e) {} const blob = new Blob([jsonStr], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `spiritual_connection_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('导出成功'); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+function _backupFileName() {
+    const d = new Date();
+    const p = n => (n < 10 ? '0' : '') + n;
+    return 'spiritual_connection_' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '.json';
+}
+function _markBackupDone() {
+    try { localStorage.setItem('sc_last_backup', String(Date.now())); } catch (e) {}
+    try { if (typeof updateStorageDisplay === 'function') updateStorageDisplay(); } catch (e) {}
+}
+function _downloadBlob(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    try { document.body.appendChild(a); } catch (e) {}
+    a.click();
+    try { a.remove(); } catch (e) {}
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+function exportData() {
+    const jsonStr = JSON.stringify(appData, null, 2);
+    _downloadBlob(new Blob([jsonStr], { type: 'application/json' }), _backupFileName());
+    _markBackupDone();
+    showToast('导出成功');
+}
+/* iPhone / iPad 专用：通过系统分享面板把备份存到「文件」App（可选 iCloud 云盘）。
+   Safari 不允许网页静默写文件，这是 iOS 上最接近「自动保存到本地」的方式。 */
+async function saveBackupToFiles() {
+    let jsonStr;
+    try { jsonStr = JSON.stringify(appData, null, 2); }
+    catch (e) {
+        try { showAlert('生成备份失败：' + (e && e.message ? e.message : e), '备份失败'); } catch (e2) { alert('生成备份失败'); }
+        return;
+    }
+    const name = _backupFileName();
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    let file = null;
+    try { file = new File([blob], name, { type: 'application/json' }); } catch (e) {}
+    if (file && navigator.share && navigator.canShare) {
+        try {
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: '心灵连接备份',
+                    text: '在分享面板选择「存储到文件」，可保存到 iCloud 云盘或「我的 iPhone」。'
+                });
+                _markBackupDone();
+                showToast('备份已保存');
+                return;
+            }
+        } catch (e) {
+            if (e && e.name === 'AbortError') { showToast('已取消备份'); return; }
+            /* 分享失败则退回普通下载 */
+        }
+    }
+    _downloadBlob(blob, name);
+    _markBackupDone();
+    showToast(_isIOSDevice() ? '已开始下载，请到「文件」App 查看' : '导出成功');
+}
+window.saveBackupToFiles = saveBackupToFiles;
 function importData() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -35576,7 +36649,7 @@ function _impFail(title, detail) {
 }
 window.importData = importData;
 async function clearChatRecords() { showConfirm('清空所有聊天记录？', async () => { appData.chats = {}; appData.groupChats = {}; unreadCounts = {}; await saveUnreadCounts(); appData.roles.forEach(r => r.lastActive = Date.now()); await saveData(); renderRoleList(); if (currentChatType === 'role') renderChatMessages(); updateStorageDisplay(); showToast('已清空'); }); }
-async function resetAllData() { showConfirm('重置所有数据？不可恢复！', async () => { appData = JSON.parse(JSON.stringify(DEFAULT_DATA)); appData.schemaVersion = APP_SCHEMA_VERSION; await saveBackgrounds({ home: '', chat: '', group: '' }); await saveData(); await initAppearance(); renderRoleList(); renderGroupList(); showToast('已重置'); }); }
+async function resetAllData() { showConfirm('重置所有数据？不可恢复！', async () => { /* 用户明确要求重置：放行空数据覆盖，否则保险丝会拦住 */ window.__scForceBackup = true; appData = JSON.parse(JSON.stringify(DEFAULT_DATA)); appData.schemaVersion = APP_SCHEMA_VERSION; await saveBackgrounds({ home: '', chat: '', group: '' }); await saveData(); window.__scForceBackup = false; await initAppearance(); renderRoleList(); renderGroupList(); showToast('已重置'); }); }
 
 // ========== 信箱功能 ==========
 function openMailbox() {
