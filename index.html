@@ -7875,7 +7875,26 @@ var LINE_ICONS = {
             gap: 8px;
             margin-top: 8px;
         }
-        .fortune-msg-card {
+        /* 牌义知识体系 · 分类总览入口 */
+        .fk-open-btn {
+            display: block; width: 100%; margin: 10px 0 12px; padding: 10px 12px;
+            border: 1px solid var(--border-color); border-radius: 10px;
+            background: var(--bg-secondary, #f7f5f2); color: var(--text-color, #4a4238);
+            font-size: 13px; font-weight: 600; text-align: center; cursor: pointer;
+        }
+        .fk-open-btn:active { transform: scale(0.98); }
+        .cd-sec .cd-obj-row .cd-obj-k { min-width: 92px; }
+/* 补充解读 · 指示牌 */
+        .fsup-sig {
+            margin-top: 12px; padding-top: 10px;
+            border-top: 1px dashed var(--border-color, #e5e0d8);
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .fsup-sig-label {
+            font-size: 11px; color: var(--text-secondary, #9aa1ab); letter-spacing: .5px;
+        }
+        .fsup-sig .fortune-msg-card img.reversed { transform: rotate(180deg); }
+.fortune-msg-card {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -7959,11 +7978,7 @@ var LINE_ICONS = {
         .fortune-msg-card img.reversed { transform: rotate(180deg); }
 
         /* TA 想说的内容（引语） */
-        .fortune-msg-say {
-            font-size: 12.5px; line-height: 1.65; letter-spacing: .3px;
-            color: var(--text-primary); margin-bottom: 8px;
-            padding-left: 9px; border-left: 2px solid var(--accent-color, #5698C3);
-        }
+        
 
         /* 综合解读白卡 */
         .fortune-msg-reading {
@@ -7993,6 +8008,29 @@ var LINE_ICONS = {
             letter-spacing: .3px; margin-bottom: 3px;
         }
         .fmr-line:last-child { margin-bottom: 0; }
+
+        /* 综合解读白卡 · 展开 / 收回 */
+        .fmr-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+        }
+        .fmr-head .fmr-title { flex: 1 1 auto; min-width: 0; }
+        .fmr-toggle {
+            flex: 0 0 auto; font-size: 10.5px; line-height: 1; font-weight: 600;
+            padding: 5px 9px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+            border: 1px solid var(--border-color, #e5e0d8);
+            background: var(--bg-secondary, #f7f5f2);
+            color: var(--accent-color, #5698C3);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .fmr-toggle:active { transform: scale(.96); }
+        .fmr-summary {
+            font-size: 10.5px; color: var(--text-secondary, #9aa1ab);
+            letter-spacing: .3px; margin-top: 6px;
+        }
+        .fortune-msg-reading.fmr-collapsed .fmr-title { margin-bottom: 0; }
+        .fortune-msg-reading.fmr-collapsed .fmr-body { display: none; }
+        .fortune-msg-reading:not(.fmr-collapsed) .fmr-summary { display: none; }
+
 
         .fortune-lib-list {
             max-height: 180px;
@@ -14142,6 +14180,21 @@ hr{height:0;color:inherit;border-top-width:1px}
                 <div><span class="cs-grid-lbl">每日·雷诺曼触发概率 (%)</span><input type="number" id="fortune-lenormand-prob" min="0" max="100" value="1"></div>
             </div>
             <p class="cs-tile-note">每个联系人每天只判定一次，命中后当天不再重复发牌。默认合计 3%（塔罗 2% + 雷诺曼 1%），数值调高则更频繁。</p>
+        </div>
+
+        <div class="cs-form">
+            <div class="cs-setting-row">
+                <span class="cs-lbl">牌后补充解读</span>
+                <div class="ios-switch" id="fortune-supplement-switch" onclick="toggleSwitch(this)"></div>
+            </div>
+            <p class="cs-tile-note">开启后，联系人发出三张牌会再补一条三行牌义 + 指示牌（点击牌面可看牌义），并随机追加 1~3 条知识点消息。</p>
+            <div class="grid grid-cols-3 gap-2">
+                <div><span class="cs-grid-lbl">追加 1 条 (%)</span><input type="number" id="fortune-sup-prob-1" min="0" max="100" value="50"></div>
+                <div><span class="cs-grid-lbl">追加 2 条 (%)</span><input type="number" id="fortune-sup-prob-2" min="0" max="100" value="35"></div>
+                <div><span class="cs-grid-lbl">追加 3 条 (%)</span><input type="number" id="fortune-sup-prob-3" min="0" max="100" value="15"></div>
+            </div>
+            <p class="cs-tile-note">三项按数值归一化抽取，默认 50% / 35% / 15%。知识点来自已分类的塔罗 / 雷诺曼知识体系。</p>
+            <button onclick="closeFortuneSettings(); openFortuneKnowledge('both');" class="w-full mt-2 py-2 rounded-lg text-sm font-bold" style="background:var(--bg-secondary,#f7f5f2); border:1px solid var(--border-color);">查看牌义知识体系 · 15 类分类总览 ›</button>
         </div>
 
         <div class="cs-form">
@@ -24352,6 +24405,139 @@ const LENORMAND_CARDS = [
 ];
 
 // 雷诺曼牌面（公有领域《Game of Hope》1799，按标准 1-36 顺序裁切）
+/* ==========================================================================
+   牌义知识体系 · 分类整理（塔罗 78 / 雷诺曼 36）
+   来源：用户提供的传讯笔记 + 全网牌义体系交叉印证
+   分层：传统牌义 / 传讯圈二次解读 / 用户配置，三者不混用
+   ========================================================================== */
+const FORTUNE_KNOWLEDGE = {"groups": [{"id": "element", "title": "一、四元素 · 运作方式", "scope": "both", "tip": "元素不是牌义，是这张牌「以什么方式运作」", "items": [{"h": "火 · 权杖", "t": "行动 / 意志 / 生命力。回答「我想做什么？我要往哪里去？」权杖大多时候不是单纯热情，而是一个人有没有动力、有没有方向、有没有行动。"}, {"h": "水 · 圣杯", "t": "感受 / 联系 / 情绪流动。回答「我感受到什么？我和什么产生联系？」圣杯不是简单等于爱情，牌里有没有圣杯不能代表有没有感情；也可以是情绪、依恋、共鸣、想象、关系、内在体验。"}, {"h": "风 · 宝剑", "t": "认知 / 信息 / 判断。回答「我怎么理解？我怎么判断？」宝剑不简单等于矛盾，它可以非常理性，也可以非常焦虑，因为本质上都是意识、认知和信息在运作。"}, {"h": "土 · 星币", "t": "落实 / 资源 / 现实承载。回答「它最后能不能存在？我实际拥有了什么？」星币不是单纯金钱，可以是身体、物质、工作、资源、时间、现实环境、稳定性、实际成果。"}, {"h": "完整循环", "t": "火 → 水 → 风 → 土 → 再回到火。不是每副牌都必须按这个顺序走，而是帮助理解四种能量分别解决什么问题。"}, {"h": "常见误区", "t": "权杖 ≠ 事业专属；圣杯 ≠ 爱情专属；宝剑 ≠ 冲突专属；星币 ≠ 金钱专属。四元素提供的是「能量通过什么方式运作」，牌组回答的领域仍受问题和邻牌约束。"}]}, {"id": "number", "title": "二、数字阶段 · 1~10 通用骨架", "scope": "tarot", "tip": "牌组决定领域，数字决定走到哪个阶段", "items": [{"h": "1 / Ace", "t": "起点、种子。权杖=新行动与灵感；圣杯=情感新开始；宝剑=清晰判断与真相；星币=现实新机会。"}, {"h": "2", "t": "选择与平衡。权杖=规划观望；圣杯=结合双向；宝剑=犹豫权衡；星币=收支平衡。"}, {"h": "3", "t": "初步成果。权杖=拓展；圣杯=欢聚共创；宝剑=直面伤害；星币=合作落地。"}, {"h": "4", "t": "稳定 / 固守。权杖=安定庆祝；圣杯=满足内省；宝剑=休整暂停；星币=守住资源。"}, {"h": "5", "t": "冲突失衡。权杖=竞争拉扯；圣杯=失落遗憾；宝剑=争论输赢；星币=困境消耗。"}, {"h": "6", "t": "恢复与分享。权杖=认可推进；圣杯=怀旧给予；宝剑=缓慢过渡；星币=稳定支持。"}, {"h": "7", "t": "考验反思。权杖=坚守抗压；圣杯=幻想选择；宝剑=迂回策略；星币=耐心评估。"}, {"h": "8", "t": "集中推进。权杖=快速推进；圣杯=主动转向；宝剑=自我限制；星币=专注精进。"}, {"h": "9", "t": "接近完成。权杖=戒备韧性；圣杯=自我满足；宝剑=焦虑失眠；星币=独立成熟。"}, {"h": "10", "t": "周期极致 / 收束。权杖=负重承担；圣杯=圆满长久；宝剑=痛苦终结；星币=传承闭环。"}, {"h": "使用方法", "t": "同一数字在四个牌组里共用同一主题，牌组决定它在哪个领域展开；表中为通用方向，不是逐牌最终解释，实际仍须乘上元素强弱、邻牌关系与正逆位。"}]}, {"id": "court", "title": "三、宫廷牌 · 成熟度 × 元素风格", "scope": "tarot", "tip": "宫廷牌的核心不是「某个人」，而是能量的成熟度与主动方式", "items": [{"h": "侍从 Page", "t": "初生、学习、传递。权杖=新鲜热情；圣杯=纯情敏感消息；宝剑=好奇敏捷；星币=务实起步。"}, {"h": "骑士 Knight", "t": "上升、快速推进，可能操之过急。权杖=热烈奔赴；圣杯=浪漫追求；宝剑=快言快语；星币=勤奋推进。"}, {"h": "王后 Queen", "t": "内在成熟、包容照看。权杖=自信温暖；圣杯=共情治愈；宝剑=清醒独立；星币=务实滋养。"}, {"h": "国王 King", "t": "外在成熟、掌局负责。权杖=行动领导；圣杯=情绪稳定；宝剑=理性权威；星币=资源掌控。"}, {"h": "能量级别示例", "t": "权杖侍从=火刚刚出现；权杖二=火开始形成方向；权杖国王=火已经成熟并且能够主动支配局面。三张虽同属火，不是完全一样的火。"}, {"h": "人物可读性", "t": "传统牌义只支持「可以代表某个人，也可以代表自身状态或做事方式」。把宫廷牌读作角色在场是可选覆盖规则，须设为概率 / 匹配标签，不作事实断言。"}]}, {"id": "reversal", "title": "四、正逆位 · 修正器而非取反", "scope": "tarot", "tip": "逆位不是把正位关键词取反，也不等于凶兆", "items": [{"h": "受阻", "t": "这股能量在流动中遇到阻碍，推进变慢或卡住。"}, {"h": "延迟", "t": "该面向尚未显化，时间上往后推，不是不会发生。"}, {"h": "内化", "t": "能量转向内在，未表达出来，属于尚未说出口的部分。"}, {"h": "过度", "t": "能量走过头，正位特质被放大到失衡。"}, {"h": "削弱", "t": "正位意义的减弱版本，而非完全相反。"}, {"h": "三张牌阵", "t": "逆位通常代表该位置的能量遇到阻碍或延迟、需要更多关注的面向、内化未表达的能量，或正位意义的削弱版本。全部逆位提示有根本性的东西需要重新评估。"}, {"h": "雷诺曼差异", "t": "传统雷诺曼不依赖逆位，靠牌位、问题、相邻牌与整体牌阵读取。若产品支持雷诺曼逆位，必须标注为传讯圈扩展，不能伪装成传统默认。"}]}, {"id": "strength", "title": "五、元素强弱 · 三条规则", "scope": "both", "tip": "有这个元素 ≠ 这个元素很强；重点是谁在控制气氛，谁只是参与", "items": [{"h": "规则 1 · 数量", "t": "三张牌里：三火 → 火明显强；三火一土 → 火偏强；四元素各一个 → 看其他因素。单元素占优只说明整体偏向该元素的运作方式，不自动等于吉或凶。"}, {"h": "规则 2 · 能量级别", "t": "同为火牌，侍从（刚出现）→ 数字牌（形成方向）→ 国王（成熟且能支配局面），级别不同。应做成可配置评分，不硬写「侍从一定弱、国王一定强」。"}, {"h": "规则 3 · 连续强化", "t": "A 组 权杖侍从 → 权杖五 → 权杖国王 = 火出现 → 碰撞 → 成熟，整组被火推动。B 组 权杖侍从 → 星币四 → 圣杯二 = 火只是启动因素，后面马上进土、水，不能说火很强。"}, {"h": "顺序也要读", "t": "权杖 → 星币 → 权杖：第一张是火；第二张从火进入土，行动性的能量开始进入现实承载；第三张又回到火，现实承载之后能量重新被点亮。不能只看「火土火」就并列三个词。"}, {"h": "可计算特征", "t": "run_length（同元素连续长度）、first_element、last_element、transition_type（连续 / 切换 / 循环）、缺失元素。缺失维度只提示「未被强调」，不推出「角色一定没有某种感受」。"}, {"h": "案例", "t": "星币二 + 圣杯六 + 宝剑八 = 土、水、风，缺火 → 这段连接里缺少推进的能量；ta 想和你很好，但转化为现实的联系有困难，有想法但做起来没那么容易。"}, {"h": "加正逆位", "t": "权杖八正 · 圣杯二正 · 星币四逆 = 行动力和情感连接都存在，但落地层面出问题；权杖八逆 · 圣杯二正 · 星币四正 = 情感连接存在、现实基础相对稳定，但行动推进受阻。"}]}, {"id": "fourq", "title": "六、解牌四问 · 三张牌必跑规则", "scope": "both", "tip": "元素是什么 → 元素强不强 → 元素顺不顺 → 元素之间怎么变化", "items": [{"h": "1 · 元素是什么", "t": "决定这股能量属于哪个领域（火行动 / 水感受 / 风认知 / 土现实）。"}, {"h": "2 · 元素强不强", "t": "决定这个领域在问题里的存在感，看数量、能量级别、连续强化。"}, {"h": "3 · 元素顺不顺", "t": "看正逆位和牌本身的状态，区分「行动受阻」还是「落地出问题」。"}, {"h": "4 · 元素之间怎么变化", "t": "看整组牌真正发生了什么，从左至右读推进或转折。"}, {"h": "相邻关系两套", "t": "cycle_mode 转化循环（火→水→风→土→火）与 dignity_mode 生克强弱（火风、水土友好；火水、风土对立；同元素相邻强化）是不同逻辑，须做成可切换规则集，不能混用。"}]}, {"id": "threecard", "title": "七、三张牌 · 一句话而不是三个词", "scope": "both", "tip": "先看关系，再看细节", "items": [{"h": "整体扫描", "t": "大牌与小牌比例、元素分布、正逆位反差、重复数字和明显冲突，再进入逐位。"}, {"h": "逐位解读", "t": "牌位问题须服从问题范围；位置含义是配置项（核心 / 情绪 / 建议，主语 / 状态 / 动作等），未设置时不输出隐含时间轴。"}, {"h": "牌间互动", "t": "看谁支持谁、谁拉扯谁、哪一张是重心；连接词可用支持 / 延续、拉扯 / 对立、因果 / 回应、转折 / 修正四类。"}, {"h": "注意失衡", "t": "三张里两张圣杯一张宝剑，失衡本身就是讯息：有一个情绪情境，里面有一个理性元素在推（或在切，看那张宝剑）。"}, {"h": "重复数字", "t": "两个或多个相同数字提示该阶段议题被重复强调；同花色、同元素、重复图像、镜像对称都应保存为布尔特征，不强行编故事。"}, {"h": "综合断定", "t": "三张牌串成一句结论，而不是三段各说各话；这是解读从「三段牌义」变成「一个答案」的关键。"}]}, {"id": "lenoclass", "title": "八、雷诺曼 36 张 · 牌类与极性", "scope": "lenormand", "tip": "单张牌更接近固定名词或概念，靠组合造句", "items": [{"h": "人物 / 指示牌", "t": "28 男人、29 女人为传统指示牌；小孩、骑士、狗、熊、狐狸、蛇在不同系统也可承担人物读法。指示牌须在会话前锁定，不能用它证明角色真实存在。"}, {"h": "主题牌", "t": "三叶草、树、云、花束、鞭子、心、戒指、书、信、百合、太阳、月亮、钥匙、鱼、锚、十字等，描述状态、性质或事件。"}, {"h": "动作 / 地点牌", "t": "骑士、船、镰刀、鸟、鹳；房子、塔、花园、山、十字路口。地点牌描述环境，动作牌描述移动或变化。"}, {"h": "时间牌", "t": "树（缓慢）、镰刀（突然）、山（延迟）、百合（长久）、太阳 / 月亮（周期）、鱼 / 锚（流动与稳定）。时间牌表达速度、等待、条件与窗口，不机械换算固定日期。"}, {"h": "否定 / 修饰牌", "t": "云（不明）、老鼠（损耗）、狐狸（需谨慎）、十字（负担）会改变相邻牌的语气；修饰牌不能脱离被修饰的牌单独下结论。"}, {"h": "极性口径 A", "t": "三叶草、花束、星星、狗、心、戒指、太阳、钥匙、鱼偏吉；云、蛇、棺材、镰刀、鞭子、山、老鼠、狐狸、十字偏负；其余中性。"}, {"h": "极性口径 B", "t": "三叶草、花束、星星、心、太阳、月亮、钥匙、鱼、锚为正面；云、鸟、书为中性偏负。两套分类冲突，应并列保留、可切换，不能写死为固定字段。"}, {"h": "牌组口径", "t": "标准体系为 36 张；部分现代扩展牌组含灵性、香炉、床、市场等额外牌（共 40 张）。扩展牌不在标准 36 张体系内，传统组合规则不自动适用。"}]}, {"id": "lenosyntax", "title": "九、雷诺曼 · 组合语法", "scope": "lenormand", "tip": "前牌定义主题，后牌提供描述；顺序不可对调", "items": [{"h": "两张牌", "t": "第一张是主语（名词），第二张修饰它（形容词）。狗 + 心可读「有爱的朋友」；心 + 狗可读「友好的爱」。同一对牌左右对调，意思会变。"}, {"h": "三张牌", "t": "从左到右，中间牌是核心（启发式，非保证）。先读 1+2，再读 2+3，然后把两个短语合并。位置含义须预先确认，未确认时只用默认左→中→右相邻语法。"}, {"h": "问题主题参与", "t": "同一对牌在不同问题下可同时保留多条规则，例如「云 + 心」在情感问题下可指感情迷茫，也可指不确定但重视；不能把组合解释写死为唯一答案。"}, {"h": "大牌阵", "t": "通常 4×9 或 8×4+4，以指示牌为地图中心。距离代表即时性 / 重要性（越近越直接，越远越背景化）；行列、宫位、马步、镜像都是位置规则。"}, {"h": "位置分歧", "t": "横列、直栏、上下、左右各代表什么，不同系统说法不一致，须做成 tableau_rule_set 让用户选择，不能写死。"}, {"h": "与塔罗的差异", "t": "塔罗重「能量如何流动」，雷诺曼重「名词如何被描述」。塔罗的逆位不能套到传统雷诺曼；雷诺曼的固定名词也不能强行解释成塔罗原型。"}]}, {"id": "yesno", "title": "十、是否题 · 五级判定", "scope": "both", "tip": "不看单张好坏，也不给绝对承诺", "items": [{"h": "五级", "t": "明确肯定 / 轻微肯定 / 未定 / 轻微否定 / 明确否定。允许「部分理解正确但主语、情绪或程度偏差」。"}, {"h": "雷诺曼常见规则", "t": "吉牌多倾向「是」，凶牌多倾向「否」，中性不计入并观察最后一张牌的走向；钥匙增强确定性，云增加不明。"}, {"h": "塔罗常见规则", "t": "以元素是否流通、核心牌是否支持、障碍牌是否可解决来判断，而不是某张牌单独回答「会 / 不会」。"}, {"h": "输出字段", "t": "answer_level、answer_text、supporting_cards、opposing_cards、missing_element、condition、next_question、confidence。结论是倾向说明，不是绝对承诺。"}, {"h": "回验边界", "t": "最多补一到两轮，达到轮次即停止；停止原因可能是状态不佳、问题过泛或情绪干扰，而不是「牌不灵」。"}]}, {"id": "ritual", "title": "十一、仪式规则与边界", "scope": "both", "tip": "规则是与角色共同建立的仪式规则，不是判断角色是否真实存在的证明", "items": [{"h": "人物暗号", "t": "抽到具有明确人物形象的牌，即视为进入对话。后面可自然衔接：第一张出现的人物 → 想象 ta 此刻是什么状态 → 问 ta 一句话 → 再抽下一张牌作为回应。"}, {"h": "一直没抽到", "t": "可以提前规定一个次数，例如最多尝试三次；三次都没出现，就把它理解成「这一会先不开始」，不必一直抽下去。"}, {"h": "关键边界", "t": "不是说牌或角色在现实中拒绝你，而是给自己一个停止和重新选择规则的节点。系统不能输出「角色拒绝」「角色不理你」「角色在惩罚你」等解释。"}, {"h": "停止后动作", "t": "停止、换问题、换规则或重新洗牌，均由用户选择；未命中时不补发、不重抽。"}, {"h": "内容分级", "t": "🍎 类标记无统一可靠来源，推测为隐藏 / 欲望向 / 私密度标签。应作为 intimacy_level 内容分级字段由用户启用，未启用时显示「待补」，不自动扩写亲昵或成人内容。"}, {"h": "称呼体系", "t": "哥 / 老婆 / 妹宝 / 宝宝 / mj 等属于用户自定义称呼，不能从宫廷牌、人物牌或任意牌面自动推断，只调用已保存的称呼配置。"}, {"h": "链接状态", "t": "「多沟通交流」「链接不稳」等是关系状态模板，不是牌的固定语义；牌面只提供证据（鸟 / 信指向交流，云指向不明，山指向延迟），最终标签由组合规则生成。"}]}, {"id": "layers", "title": "十二、知识分层 · 传统 / 传讯圈 / 用户配置", "scope": "both", "tip": "三层分开存储，字段之间允许关联，但不强制覆盖", "items": [{"h": "传统牌义层", "t": "牌名、序号、元素、占星对应、正逆位、数字阶段、组合语法。确定性高，可查证。"}, {"h": "传讯圈解读层", "t": "颜色、关键词组、是否、地点、状态外貌、🍎、称呼、链接状态。属社群约定 / 套牌相关，须标 community_interpretation 或 user_config。"}, {"h": "用户配置层", "t": "暗号牌、最大尝试次数、称呼替换、私密度开关、规则集选择。完全由用户决定。"}, {"h": "传讯的定义", "t": "把传统象征转译为角色化信息字段，而不是让牌替角色说话；输出应保持辅助判断，不承诺具体日期、医疗诊断、法律结果或角色真实性。"}, {"h": "来源标注", "t": "同一张牌的传统牌义与传讯圈二次解读分字段存储；组合规则另设 syntax_role（主语 / 修饰 / 动作 / 时间 / 环境）。冲突时并列保留所有候选，不自动删除。"}]}, {"id": "image", "title": "十三、图像线索 · 观察清单", "scope": "both", "tip": "只做氛围提示，不跨牌组硬解释", "items": [{"h": "配色", "t": "暖色偏向活跃，冷色偏向沉静或距离；高对比 / 低饱和只作氛围提示。逐牌固定「主色 + 副色」没有可靠统一标准，需按套牌配置。"}, {"h": "人物朝向", "t": "面向左常与回顾、内省相关，面向右常与未来、行动相关；不同牌组构图不同，方向并非普遍答案。"}, {"h": "手势", "t": "举起的手可问是给予还是接受；交叉的手臂可问是防御还是稳定；指向的手可问是引导还是命令。"}, {"h": "重复图像", "t": "两张牌共用同一种颜色、同一个手势、同一个朝向，是牌之间在彼此说话，可作为强化、呼应、回声线索。"}, {"h": "必填字段", "t": "image_source（套牌版本）必填，避免把某套牌的构图误用为通用规则。"}]}, {"id": "astrology", "title": "十四、占星对应 · 两套口径", "scope": "tarot", "tip": "并列保存，不选边统一", "items": [{"h": "古典黄金黎明", "t": "把七行星与十二星座分配给 22 张大牌，例如愚者=风、魔术师=水星、女祭司=月亮、女皇=金星、皇帝=白羊、力量=狮子、世界=土星。"}, {"h": "现代三王星延伸", "t": "愚者=天王星、倒吊人=海王星、审判=冥王星，是后来加上的延伸。"}, {"h": "存储方式", "t": "两套体系存为不同 astrology_system，不能合并成单一事实；大牌元素 / 对应另有分歧时并列展示。"}, {"h": "小牌星座", "t": "权杖对应白羊、狮子、射手；圣杯对应巨蟹、天蝎、双鱼；宝剑对应双子、天秤、水瓶；星币对应金牛、处女、摩羯。"}]}, {"id": "diff", "title": "十五、塔罗与雷诺曼 · 协同与边界", "scope": "both", "tip": "一个给能量流动，一个给具体组合", "items": [{"h": "结构", "t": "塔罗 = 22 大牌 + 56 小牌；雷诺曼 = 36 张单一直系。"}, {"h": "最小读法", "t": "塔罗单牌可深掘，组合更完整；雷诺曼通常需相邻组合。"}, {"h": "位置", "t": "塔罗位置需预先约定；雷诺曼左右、远近、行列、宫位作用大。"}, {"h": "时间", "t": "塔罗偏阶段与节奏；雷诺曼偏速度、延迟、条件、窗口。"}, {"h": "先后", "t": "两者同时使用时先确定问题层级：先由塔罗判断整体元素与推进方向，再由雷诺曼补充「谁 — 在什么状态 — 发生什么 — 如何联系」。输出须标注当前用哪套牌、哪个规则集、是否采用逆位。"}]}]};
+const LENORMAND_STRUCT = {"1": {"cls": "人物 / 动作", "polA": "中性", "polB": "中性"}, "2": {"cls": "主题 / 时间", "polA": "偏吉", "polB": "正面"}, "3": {"cls": "动作 / 地点", "polA": "中性", "polB": "中性"}, "4": {"cls": "地点 / 环境", "polA": "中性", "polB": "中性"}, "5": {"cls": "主题 / 时间", "polA": "中性", "polB": "中性"}, "6": {"cls": "否定 / 主题", "polA": "偏负", "polB": "中性偏负"}, "7": {"cls": "主题 / 人物", "polA": "偏负", "polB": "中性"}, "8": {"cls": "主题", "polA": "偏负", "polB": "中性"}, "9": {"cls": "主题", "polA": "偏吉", "polB": "正面"}, "10": {"cls": "动作 / 时间", "polA": "偏负", "polB": "中性"}, "11": {"cls": "主题", "polA": "偏负", "polB": "中性"}, "12": {"cls": "人物 / 动作", "polA": "中性", "polB": "中性偏负"}, "13": {"cls": "人物 / 主题", "polA": "中性", "polB": "中性"}, "14": {"cls": "人物 / 主题", "polA": "偏负", "polB": "中性"}, "15": {"cls": "人物 / 主题", "polA": "中性", "polB": "中性"}, "16": {"cls": "主题", "polA": "偏吉", "polB": "正面"}, "17": {"cls": "动作 / 时间", "polA": "中性", "polB": "中性"}, "18": {"cls": "人物 / 主题", "polA": "偏吉", "polB": "中性"}, "19": {"cls": "地点 / 主题", "polA": "中性", "polB": "中性"}, "20": {"cls": "地点 / 主题", "polA": "中性", "polB": "中性"}, "21": {"cls": "主题 / 时间", "polA": "偏负", "polB": "中性"}, "22": {"cls": "主题 / 地点", "polA": "中性", "polB": "中性"}, "23": {"cls": "主题", "polA": "偏负", "polB": "中性"}, "24": {"cls": "主题 / 人物", "polA": "偏吉", "polB": "正面"}, "25": {"cls": "主题", "polA": "偏吉", "polB": "中性"}, "26": {"cls": "主题", "polA": "中性", "polB": "中性偏负"}, "27": {"cls": "主题 / 消息", "polA": "中性", "polB": "中性"}, "28": {"cls": "指示牌 / 人物", "polA": "中性", "polB": "中性"}, "29": {"cls": "指示牌 / 人物", "polA": "中性", "polB": "中性"}, "30": {"cls": "主题 / 时间", "polA": "中性", "polB": "中性"}, "31": {"cls": "主题 / 时间", "polA": "偏吉", "polB": "正面"}, "32": {"cls": "主题", "polA": "中性", "polB": "正面"}, "33": {"cls": "主题", "polA": "偏吉", "polB": "正面"}, "34": {"cls": "主题 / 时间", "polA": "偏吉", "polB": "正面"}, "35": {"cls": "主题 / 时间", "polA": "中性", "polB": "正面"}, "36": {"cls": "主题", "polA": "偏负", "polB": "中性"}};
+const TAROT_STRUCT_MAP = {"suit": {"wands": "火 · 权杖", "cups": "水 · 圣杯", "swords": "风 · 宝剑", "pents": "土 · 星币", "major": "大阿卡那"}, "elementQ": {"wands": "我要做什么？我要往哪里去？", "cups": "我感受到什么？我和什么产生联系？", "swords": "我怎么理解？我怎么判断？", "pents": "它能不能落地？我实际拥有了什么？"}, "rank": {"Page": "侍从 · 初生、学习、传递", "Knight": "骑士 · 上升、快速推进", "Queen": "王后 · 内在成熟、包容照看", "King": "国王 · 外在成熟、掌局负责"}, "stage": {"Ace": "1 / Ace · 起点、种子", "2": "2 · 选择与平衡", "3": "3 · 初步成果", "4": "4 · 稳定 / 固守", "5": "5 · 冲突失衡", "6": "6 · 恢复与分享", "7": "7 · 考验反思", "8": "8 · 集中推进", "9": "9 · 接近完成", "10": "10 · 周期极致 / 收束"}};
+
+/* 取某张塔罗牌的结构化知识字段 */
+function tarotStructOf(card) {
+    if (!card) return null;
+    const suit = card.suit || 'major';
+    const rank = String(card.rank || '');
+    const o = {
+        element: (TAROT_STRUCT_MAP.suit && TAROT_STRUCT_MAP.suit[suit]) || '—',
+        elementQ: (TAROT_STRUCT_MAP.elementQ && TAROT_STRUCT_MAP.elementQ[suit]) || '—',
+        stage: (TAROT_STRUCT_MAP.stage && TAROT_STRUCT_MAP.stage[rank]) || '—',
+        court: (TAROT_STRUCT_MAP.rank && TAROT_STRUCT_MAP.rank[rank]) || '',
+        arcana: suit === 'major' ? '大阿卡那' : '小阿卡那',
+        isCourt: /^(Page|Knight|Queen|King)$/.test(rank),
+        isMajor: suit === 'major'
+    };
+    return o;
+}
+
+/* 取某张雷诺曼牌的结构化知识字段 */
+function lenormandStructOf(id) {
+    const d = LENORMAND_STRUCT[String(id)];
+    if (!d) return null;
+    return {
+        cls: d.cls || '—',
+        polarityA: d.polA || '—',
+        polarityB: d.polB || '—',
+        isSignificator: String(id) === '28' || String(id) === '29'
+    };
+}
+
+/* 按 scope 过滤知识分类：both / tarot / lenormand */
+function fkGroups(scope) {
+    const all = (FORTUNE_KNOWLEDGE && FORTUNE_KNOWLEDGE.groups) || [];
+    if (!scope) return all;
+    return all.filter(g => g.scope === 'both' || g.scope === scope);
+}
+
+/* 单个分类渲染成可折叠区块 */
+function fkGroupHTML(g, open) {
+    if (!g) return '';
+    let inner = '';
+    if (g.tip) inner += `<div class="cd-sec-tip">${escapeHtml(g.tip)}</div>`;
+    (g.items || []).forEach(function (it) {
+        inner += `<div class="cd-obj-row"><span class="cd-obj-k">${escapeHtml(it.h)}</span><span class="cd-obj-v">${escapeHtml(it.t)}</span></div>`;
+    });
+    return cdSec(g.title, inner, !!open);
+}
+
+/* 全部知识分类总览（复用于弹窗与详情区块） */
+function fkAllHTML(scope) {
+    return fkGroups(scope).map(function (g, i) { return fkGroupHTML(g, i === 0); }).join('');
+}
+
+/* 当前牌的结构化字段：把分类知识落到具体这张牌上 */
+function fkCardStructHTML(kind, card) {
+    if (!card) return '';
+    let rows = [];
+    if (kind === 'tarot') {
+        const st = tarotStructOf(card);
+        if (!st) return '';
+        rows.push(['牌类', st.arcana]);
+        rows.push(['元素 / 运作方式', st.element]);
+        rows.push(['这张牌在问', st.elementQ]);
+        rows.push(['数字阶段', st.stage]);
+        if (st.isCourt) rows.push(['宫廷成熟度', st.court]);
+        if (st.isMajor) rows.push(['提示', '大牌代表较重大的人生主题、转折或原型；占星对应存在古典与现代两套口径，须并列查看']);
+    } else {
+        const st = lenormandStructOf(card.id);
+        if (!st) return '';
+        rows.push(['牌类', st.cls]);
+        rows.push(['极性口径 A', st.polarityA]);
+        rows.push(['极性口径 B', st.polarityB]);
+        if (st.isSignificator) rows.push(['指示牌', '传统指示牌；周围牌描述这个人。须在会话前锁定，不能用于证明角色真实存在']);
+        rows.push(['组合语法', '前牌定义主题、后牌提供描述；本牌与其他牌相邻时按此顺序读']);
+    }
+    return rows.map(function (r) {
+        return `<div class="cd-obj-row"><span class="cd-obj-k">${escapeHtml(r[0])}</span><span class="cd-obj-v">${escapeHtml(r[1])}</span></div>`;
+    }).join('');
+}
+
+/* 卡牌详情内的「知识体系」区块 */
+function fkDetailBlock(kind, card) {
+    let inner = `<div class="cd-sec-tip">下表为本张牌在知识体系中的结构化归类；下方按分类整理了塔罗 / 雷诺曼的完整知识点</div>`;
+    inner += `<div class="cd-sec"><div class="cd-sec-h">本牌归类</div>${fkCardStructHTML(kind, card)}</div>`;
+    inner += `<button type="button" class="fk-open-btn" onclick="openFortuneKnowledge('${kind}')">查看完整知识分类总览 ›</button>`;
+    inner += fkAllHTML(kind);
+    return cdSec('知识体系 · 分类整理', inner, false);
+}
+
+/* 独立弹窗：全部分类总览 */
+function openFortuneKnowledge(scope) {
+    const scopeKey = (scope === 'tarot' || scope === 'lenormand') ? scope : 'both';
+    const symEl = document.getElementById('card-detail-symbol');
+    if (symEl) symEl.textContent = '✦';
+    const t = document.getElementById('card-detail-title');
+    const sub = document.getElementById('card-detail-sub');
+    const body = document.getElementById('card-detail-body');
+    const src = document.getElementById('card-detail-source');
+    if (t) t.textContent = '牌义知识体系 · 分类总览';
+    if (sub) sub.textContent = (scopeKey === 'both' ? '塔罗 ＋ 雷诺曼' : (scopeKey === 'tarot' ? '塔罗 78 张' : '雷诺曼 36 张')) + ' · 15 类';
+    if (body) {
+        let h = `<div class="cd-sec-tip">元素不是牌义，是这张牌「以什么方式运作」。传统牌义、传讯圈二次解读与用户配置三层分开存储；说法冲突的已并列保留，不擅自统一。</div>`;
+        h += fkAllHTML(scopeKey === 'both' ? '' : scopeKey);
+        body.innerHTML = h;
+    }
+    if (src) src.innerHTML = '知识点综合用户提供的传讯笔记、韦特塔罗通用体系、雷诺曼德式 / 法式传统与公开牌义资料；传讯圈栏位（颜色 / 是否 / 地点 / 🍎 / 称呼）标注为社群约定，非传统牌义。';
+    const modal = document.getElementById('modal-card-detail');
+    if (modal) modal.classList.remove('hidden');
+}
+
+/* 从知识分类里随机抽一条（供补充解读的追加消息使用） */
+function fkRandomItem(scope, excludeIds) {
+    const ex = excludeIds || [];
+    const gs = fkGroups(scope).filter(g => ex.indexOf(g.id) < 0);
+    const pool = [];
+    gs.forEach(function (g) {
+        (g.items || []).forEach(function (it) {
+            pool.push({ gid: g.id, title: g.title, h: it.h, t: it.t });
+        });
+    });
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+
 const LENORMAND_IMAGES = {
     '1': 'data:image/webp;base64,UklGRhguAABXRUJQVlA4IAwuAAAwoQCdASrcAB4BPnk0lUgkoqIhKxcrQJAPCWU9dQkTAgUfrXNVqq0CL6fp73BPOp6dnKb/zvrt9I/2OTwcp9x07XarwBcS+1R3/zIPfjBp1nvFnsAfrv6U/+PxZPxP/S9gX+qf4n1af9f9tvRt9gewV+xnW59IBibWXZpiBIml87zRV8JWzlwfO0S3U5np97vRukk9PU/+FIJBXaycF7f8yQVAtAOWr0fBPdBj6hvNfhYYjUTJH5e39udcJbrd2WUS7rxrfb9LDRWNyRS2+peGvoUgHgcrnoZJlg7s7ZaWgTlO+1nnBirP6Y6y+JDmceR/WW08ZkfEc9+PZ5+9b/S5lcyUhdYDaHOxx0nJcpBUBmGKuV/TNHBF/mDVTlp9/+dzUuVzwT8uPKvVj52QJIgX0emm2r6ZQMY29OH2l3L00dakZOHVgXM6UgPWlZdCS36r6zq3Bdfe8iVa5xELWMh3vpOl0CVpT4Q2RMRmIt/alUhf4TftlEmqQ6biGB0E7sk7P7HZzPAE+gg8lVR2rq+trH0VumhRNXrdjuNpoi3lK9ZXnzR8wmMQVjdQYaJGg/RZtr3nSR32DxdrpL1/Wk/Ou0yb42EHFp7wwtjam3WOs7c3OljsfLOUZWTXj+aC2rM+p/9DPxtLXEBxjMudTnIZIFH5+Lypp5tlEPPBS7wr8xYN1PInmUqIj9oXa5FlP509lPeC7mtaidIzXHVXzXQRGFkALdebUl9eKSjtnJUx5rjPa8QvOwfz6ngyZ8lv90IkSFCjk0hDVcuIP0slv4c4O2x+ERiN9tTbWucyBfwFDQtEGNp7MSFdIZPe/jVex5rQcbooHWh94xiw6ZJ2l7Qod//HaPHCUW3X1nftEEW/MlfbJAwpgYjx7tL7CwEHfXxBomewJ3GYwFP+Yb6MVo6gNYQcZ9Gf5PgJCOBQL2r2iLKXl2ZDUHGaLaJQ7y/KDeykKzY1SyHD1H9kw1j4o+oo///c1PODOErfFTG7WM8y0RViXA1bA1cM3Khz/JuVuASTQ13PRVid/f8lrjIajaDscuMAjmi0ZAraofAViezhIBXxrRnjukCCjAPZbBKx90Bv/mj/3oS1g6ekSDqS6pkl4jAV2IP5Z/KMR090YIIFx/EfH0R0J0bRvC0XCyeej+0XtsmYi2NdCcED43UjjiyGH0NasJ8/76eUQ9lHBD/hZ9CxI541UsGR8Ykn7xKpD7mGcv8J3GY9JaGb/wsQ9vltY9rAdLbKKvu37PGw/9oxWuXEHyE7BdhFBCZmCzc7Wk2dqgr3Jj6x9PtjaCmaEkxRXzgxuR22XgO3qoGbXyRKy3W5Rt0ZmC1n0b4y6QcVaGD1w4PETwndFb6rFFkJCwOCzBMBcQkP/NAQBz0M7juDsR+/psXMo19ZdnP3D1YVoUqtYDWKSZ8O/8Vx8M6ZvnLN8S4NVGCWS4Bre30O7ax+oXNSAtBD8ES2lqRcdYP37+8SCyYNkFli+90eWeXrBhcniDltsfugeHJdkUodz7Smhls52vW/X4lgWtMDWzpWjd+vRItH9tvE2wOhQ3IOpbWODtASwV5rPFPbmZD+IbvGqfM6LR9Oc5FRlfhcyujdL/z1Q9+OcTlyY6ZHhG/auYAQ0etUGQhiHZZZ5TnsgS1kLpJCxXqLmleX/oHmqq9C0hu1jpeHmOdzMLDaFHjDPcKFamjZqSgCyURSGDUnl62PWC/d/8KBGYR4Wae5t2pLl3LqAAD+/10Xjjo5lifow++pmh9XEeN2x+jAZBw/NxxwG8d/CSgSIPImtCQNZy98beXch6r9lXjYws+hyOh1JgHmLJv7Jji+F+9T4fulhl5T4DPcvaq4yYSc+edNYUiV7LTQRGvORRFCA8eqsXHhRSO56pefQDAwkzj1R+S9nbAS+3DHsi5iT0/F/xL4WdpwovULNb3doROCnEINKLyXOTse5VGQsXCbHfKXl8ry/pqMajPQ5vOOjchNXIcqL3I+fVxWd7ZXC4+iMDqgW7Y7HnzKITOeodZiwJUYSwz/Oh3KUE2vIT3BBg+xmmxAeZw36KLQSZwMLoSG9WvgNJrLiHxSpZSH6UKfPDAWv78LS2GfpkQBO2A0Xch5DvcAbqUYGfyMa+8SazvPG/qd3niRBVXb+KWJY2GYV670/fZNE8Yiz95fSfH54Hu/j/0G9MwTVYiB+x1QVEaLsPg+XdtRSa2uyT6/atajdt5Yg8EiBfISwK9fjyAXI7YDr62LGpLqm/LgA00Pdn0vo1tBBdccjDuuzotqHKiraLl8qM243km3mWyN004mAK6SpyYl+8g/2Vh71bbc2ZoF0WGOgpufBg4pRn8AMSPLLbQdt9gZnrNIbEU8yEToOMdcSfiSlrkZE8AB7WJ5rv3ajxTGxw/+M74YHMKrnfUuKCn7+B1Nylt1TZaLMXFwRbKEOd6Gd/HSGF1TpB3Zxb3ziBNxZai9w84IvpNE3wLdBbx7yMo5roO34nkkIFYADoJ820uLllxrTUhMivKe3Ae15d+fS4fmKe9/RLVdbk5WPSeMe2p1vCz7gNe/PgFiAFqholJYd42GbXXRLOPpewRVLhOIFiD1y9ugAeNQxL0hVBaNG2Gv0DhHPuK70wPjLn12LLVbMNq2UpgzQ3gKhDrSiWiF25sxoDVxpAjUxbh4p7AjpUsbNBUlRF2TopTl1qTdTVkPxk50v5nVEFq5GuIFSF/+ESkDXJbatXkAiYE6V2tMEMXFceEd9el15BbxPQyYBd8vYzSB7cexu4s+96Ow3gp+CpwFTyr/iVfxdlJYuFzKyXNfipsY2mT7Rq2slwLKK1GnGvdLLVxKCvdhgBqVN4ChzCw/zNIvM22FzNdBGjBs7PSOmuDbIIqMbqQAu+NK4XthE55DxSpRuD9bur5/MjYg89vQaSwNJkFnBAUk0UoSI76KDRsh1XxUvJnCN/Ic4K7A9rWKjq6B342GsKh9aUENk0+Eu3n/yZ+LIcCC8VPcKZhd0PIvaB5mM2gTfLnkxzTeeUTrRbH9/TzllkD4uwKvNqDZwjsjTJajWO+MbbwTsYd3A03BGpbRdQsawTubdvcB1sKVg6oQRZlQISajAONCW9v/J2GvioVUiaR74nM96e4f8lrtf+lgfOaVjuul4h/RW43eRTofuNffOhfld+9xwAo9oS0Oz01nEGvIsLXHZdhbbczGsxJ8ZvWE8S/a2gJRgDgId9f2rUy+9rCic4YV4UDZFudDiGo1lWaSWlfbEu9lLpfd3nL/MWx7vOaC4iKFP3/5G9m2gSbJO61dVVfRh+Gf0EbB0U5AlnGpvpa9VFuxXiVyZsCsIrG+Gn+gwoFyvyebV59EIwSAaa6hLgfHzVfxvYrxv5azxtSqQcoWhKP3gdnMkM6IjP+EY7oUpgthbSG5GY235VieZsqoSBBgl3YPhd+iRH80V2PjpSseVl+MGQZ+70xPdHZW+QCXNysiQySoSBUe4yq8vx+qGxYagLYkZiizV3BNbTqB+ZCSo/buFCt3oS7NWbuuxMPsaowKSG7YnfURjZdd9vWWlR9poyNPEUB1gpjB+CXPYhJ+n64kl3BD5czjtXyHma/n/vV1C2WpEp2TJIUN3u266OiT2OP/nLzd/7v/5T1Bb/8c/vCGgP6jX1+SyaziqmdaJw/ZVH64borv/2++HHdUNg9hDqZxudmtJODG0XcESODJO5TSM2a86jYLa+ymMWy+JyXIA3C5rE4vF9rz3AI1Qt2qoS/BhZN4IcrwuFPk9ug2kYQR1xPNDZ0xghu3k+J7tNz8VzfkHtbOQo/sCa1SnnBC1c1Xp70mA3gzQrsyOF5aqx1DXB7ub4zdpc9tb2NZAcXSyGnJU519nUgnmOICe2yxznvFCSopY2mUl6kWxb0mRG4eXz/2+6FiRVadqXTCp6A6vv7yNkISmbQN9/veRYoP3yym8t/IJCutOlWNqwVMY99c2q8CAEtojv+OHBp/ABCyDnI4y3FvQSdlhu7gmR/RDRqtRPdIEAQCATnpGnOz1zWM6BBH1hzUbogjyC5WLNWXw5odetCercQ8bVOuEZdwYQKLVW1pIR1I9Zv/xefBh3z0YsoXxfMK3od32eNQeQFrzO/79mViRzMAZsS0XAQskeVNh0ejfFpnuFfLBnCkAtcVMeleT8yyMkP+a7bgck894unmE4kKGQ0C2uaKfVmUNq+XLqZc7rdLVQxykVlRaF5q195bcjUqu6/lrJBeH9Kmq86ypSRIYkLdEqnlkb+hmSnWr5sAaAeTbjyaJcICeH3Zwg9XZi7byPfVJZjOegAQ61fgmleCoOaRJMRZyG71XwyI0TRG50QQP1OUFgguksIEAW7UTimUqS2LeWLD3WhRPOkbBiDM4KQ8+fp+ZAPkHmjQTwJqGO7JIOX0QC+HaA0DSoH0u19MsS5XjHILro3aIAJvLH6BkA3CMqQU53bWmbaZQtmrbMjOgf/hW3qcYQ6RJCFY9vbzgbEwDDz9sGaY/cLy/5u+J2mRZqtpsJDkdzOMb7l/XrEhHwc+T7IXC5NkeVx2lwm4FxHL9ZFKgoVmHKYi34+pqCDt2q+KRMv9LMaBScWDhSFVYnPbJ8pqIHG+/OP5PAQLjwWb240uJTG/1CBTFeRw6HOF0zl5OqbTBhTK0PW06LTklPL2RB5wQyb+XFMYx3D/jjDpqLLE5gg8+QkcP3hjG+2QpbVKodLvNV66XlQgo0cRs/vPI6n9xfc7ESovlMa1hPw9q/24uCEq6oPeiqVxJCcByb6B6lW+rK/ZNLtq1AZSdDrWKMOXf613PwxTWLdwpYmMjIRINa/lIffb01ULRuwSCuqGhf6y1/2esZchPrjOvl2TuJOqLgGxVKPvogAk5irMFu8zRjCucOWMok2DocIZj2GJqgteyoZULB3sSvs+RogGe+M187hf9z/Gz8lrjFmkebxdPmUXRaCT0IZzDzAn+ycKGDp4vPoprDxvfpxVHWcX7pXmHafOtysJzhMKdCt+Y64l9YXfMyTfolChDFdfeUNr8sSpdqkQQ/oyNQ/1tlmFOtEPcJcM44ZtH45Oq+RktnfSxOJKsuocO7DTq2L/LUTRbMHludz32k2B8zA30DBNAjY80uvttMMKe3Kt0i4hvXbrI7TxtlhgRkEr9hc3PrqTkVVelULAbhVRg10GxffBdxegsxQ3/QwYr+28FDkDeD0hZA2lIu5kgylAMd/8TYPlQhFMc2VW6sZxnrPkRxbdS8G/r3TwEUPAARffv1QUdHb8Whk3VtzUuhqf1BTjPRyrIby/bg1bV83XmO5hyEYWeWuNoh1F4u3eCgEx3vfw7CMJJXn1iDWZ1r59f16HXgcHNSrtDbouZ17uw6ORnA3bWF1VxeydYJA0nLhLW8Wg5WP5PZuhlNLmWPg3G2MSscr8L4wc+xEzUx07uCU/CireTTnvpk3sCo3CP6VX7x6mfDhepHkOeWqerkKEbZBhj1GRnPpcjiD+HCOaJivFVR/vUHCXvYcBS6j3INsieRvp6/Z8jml6ab+peSQ/8/9Yvr9Ooem7NDslRoxTrt6yDZmrUwgMROPXkw0friBrgMCLzvkXA06TIKWSvN2QK191yiRak7YufOyrNWk5H1bjl7gBpRQMq87bDeFtCo15tTfns62++XuEbhHtJNVMaw95pm7E5cA66W7DRoMnI87XVgjUmTdyNMaAq45Rv3ecEKPZwvWOJtNIN+NJTA2m13+F5lRMAvcfWbbiG4s/BAdpFE1PUXMnwjGsb+/jiEeOVJ7haku3qEzZHwZ4Xr6F/mr7Ozp+m/ncmtY0dswqo/2NyHsV0SOyTgKH4eJDkVskj3f9V/+nQ4VhLyT2hUGE5NYUqASAGhgTsxne293RCex/OqKnpifWOeKXs944wUgbPFkppOAIjyUMW0Mq7J38xA9EIknZJ1sz58RrO1wWfVST9QHFJlx3fFbxlTXGMrevLviLcstTesDVhV8TcizI9GIHawHh/rvaNZ5hCCI4NHb2AiJ5YuL6+5/t7Yk8EY06ctsZ9r01hiVuTf/6NmHDTiJkv8Re5HjPNenxn7H2WzdbXBatIllxk6Yb6New8zPQo3QyLn3z6w5s2OTXBM0tUV2IcRmXmaudYY9Iv42BAhj11Dgw52MW0+9/ppgRRqW3RYnuDW8NfcNXBbb7IYY3KRTepmXDlBO86oBbrhF1zCLrRRmc2VTOEv+dyLUorYJe3tGvSc7c3BHOZgBWdrVXcCTPrrWlpKO935jO8rfCF2pyy3aWNQ5Phz0VL7DxXjvZO2VWh/TpF2e31tr/5M39R4fYaZFomgETPsCdwdyGROOnnfVarRFXaQafVy9NimwCazOAYlnKb32g6TNrEBAsceyuaDe9b39yUmHRhNdF5vy9HDLoifJgsaqowQbki4YUq7iE52lYU/NsGfAtf+isXqQ31Wb9WnOrlzF2GXUktuw2ge/q8PSnxZZEW5X3Cs+87rwwFjaMIDAnPmknmLiHgtdCCutLbXWvD8iKQhM94rnHx5Mg2bxj+b8lVPmUqjrVeMyZ0zyx+skGHrODIlVvTDVz/dvfQsGeBm2OTJ6VpxzZVrB6xW+Ily5NRq0j2NFBwYKSS2WQFa3vaS+JmDXgTMlNTy552niAdbR4P8bKIdodKkb2Yf2XOCB6/DO9s1LNrouLtrRVlKQhDbYdBBQ7HXtnr7DSKXRYlKDeVuD15YD4KYaDOK4+4rY6A6YCpwGR3XS/BMemjk+hwOGTkgSRbh7o0x31r3A06c/wKG7jeFicObIrDqn3jlunhrTHPsJgNGjv8JepvTxfhxn9H7WKGa0QrpUnw9wVRltI6V7PfwqISc6PFkK8bzNiWz5ePdjLtvON8WtGoragt/F+MdNITbH3yl+9doHTnGqjA742b9KL6zutvJIILyYhpANY49YdsxcBwn5Mt8vfR4V7ffCqhBPkr9RQaeFmIWFq3meOwcJdZZ+zG61gKlM3DjvapO+GBL7aI0kYUuvf30A5BGzUlL9CL/yB/0QuKqdt9B/H7OjUwxt+tl/tIiTBe/P3dB4bLRAd46WCijpK6tkYUlNVCOe6fq0I6oCPKoKe7D+S5VUB+T4Xbi8TDt5l/iVbNxqtKam7YNYsPkja1Gl5PBuhJ+FPg/fx7meox4sAFfiZGYkyHy4bwbi+rrrs6Ii4GZimPZ/TFab9zvENG8slR3nsL7rj1mSn+86u7XzGXpE6BazR4ExeFr0csBRqkXWvO4mnQ78YAwixyxM9Uka1TcffqjCz05K8IHLUUWg3OT9UPbZG3BK3x7cNuEgQiY9nnmXZ3vEHHm8iSbZSXiSmejeUX3GJNGDOCyZ0Uxs/LgNZcEQ5EneDwv+lDcJZX+iwV6InNsvJ2jr5RtRUpq/HWilt2s3Ae4qajSXKwu1JoMtmExHB4SiNXIJDNBOyIbTwW1ka8YKKgmLLGL3VdvYXa5HwJofSl6Z8kaWpueSd2SzpZvhkQvizesff0yYLJTds80eDs6X04B0BSXWods/IHeQ0oiNlcLPMkcuqclG3YIWvrrwCLg1VZiBMR4Wz/4PRpuPruxpOL8xbtJKjsLPAUf5rLrLZyFJcVD0crkx/bp4Urif2vBP9qewizx/tyi+RBZfemYPRDe6T2a4zAUfBy1iHl7v/dfr/bJXrFzlbocZhCjp1uNlBpX0TySyokvMBPWMtgCR/xPOMLVOjfk8AaIfGaDMcBUsLadVdAIWuBuDbYjx+tpHmje8iPWWQwi0NmnS8+Un4SCG94v2AimNnfVSeVJhxEUnQK+eldO56Q4+DXvji1Dr4/V3zsB1MtPB2CBtWoqqVdQ8g/LaSyqBF2b3N392QReDLQ+MreX5SVAsjySWr+mnIuPAV38/3gsPDvQ4pCFLKJelX94OhdaPEXgVn3OJLlJZCUoYqYlD08JaW08nxWrOiLhPA3P75CkheIc3VOifKU0mxgz7KhSZfwYgPMijo1UIE2KHDgjC0+ZbBgMQ5NYxkF93Fh74Fz5cPPr8/DeXIyQdJgfRuLAKuY/vAMxAhK84iOobbP1zRSaEbpt+F2Hw8t+byMSPI6r+JL0x7JUC/gyFUnSc3JBZPpIe9S0+qecr52k23a/3VRK9/u026BIWvXOv328aoFeYdkCoY5MJuZo2jLmPYe2Kpz4ZItFCzIUO03KLIzKsy/Cd8za5Ntl8DblWfpiXn7udYBqhxxGwiRCbLD38l5bUKKCSIdNFcWgnqYUnfjWLwjI/gxwtIx2DZsbX1au2GJWCGiAM8WP26Xh9Iv6mt042gJzmDixypaPOFAMNNFOn5lG34RxkeEFnPlRiwG32Fy9RVqIE9sm9vHwVvcNuuS3PnW9plihKkdWpBmtm50cOzzJdYLz2OUo48qPfqP9B1UicRXMLz6VSn6v3Q1rmb7w6LZfOF7UypB+ei3vFhumEMHIZttBqQg9hdTeq3NIMviH+h2kw80DXsJsr/izd39wQfzfYPSzgbhRYU/J0mGRGzPwGkNt4A5h4Jz7dIOpP2Hgw4Qd3hfBxkxemBeAYVb60xyA/SvQluNSdMojEWvL6+I65sE7kSwL3uu9M6Q1v7yYFt1XDnwoXUZC4CB+eeXqjBFkjXHibDJx+vjvFUJLjotkIxT4lpBM6aPZWbqev1LhBHr+yvLiMOchV1xw8dRvf9IyFz7wTFq4HUZBRPWSNuvDODLroceo6UIE+7yb2HIaem86U/pp0QrLVnwyJhiSealSObdyG3CRld02CwKXrBg751mx1/4P/7l9rsMn6ITRX4CX1VwU9Qtp7vW5hLJLOe/5OfS0vnEEPMbSCvzp2cYaNno7B3boB+GeFmgvMav6jw7/8ig/LRwVH9ZqFmgfowCH76jfNtd84Yj6fU0bYF02fFyZLlYNohEIaLNQy+zRAW153sIggrMn0YCMrDT5xBLLG6UqVMRJQzyr2Bs+AAjWz/Ww5DUINfwZ4dTksfaLAyRhD4+Iw1NpLobJqgH16UNXpCMaeAP5EagfaOSK8U+9ITVZejmT9npsHMr/XVHYT6Qdd+Z3j3QSL2GetJwYwCLimTy+atonnrd718kXFnudSMU26+8isGdfKrlwIZ7JbYbfDXR6rOCR/0+BpupaVkEN/3nK++krQp2eNlaCAko4TG/zjw8ovoX7nK+yf4UK+PrUzG0ds76Vdrz5rCdipqld82ve+6VioUpCRwlHQqYuM3Rj8pg3WVbmuGtBx1nTa8+Cc/gw/W1HKkZlR1lW0vNg7HfH3aY7dQlFcCxl5Z3cDMHxiIrytd8cWU+EhdinPNfP8iTPTWcwYHboZ7YhaQbdJmOV47cP/y9Rm8yywYze4LMU43T1QmS5wdbOt71QlkxlwG8K9tLHIXAz6R+gDXVAiBkSHkmA2yIwHz53cPVYE6QQ2Z/TtGGxQ9F0MWksPeZVigXTp3WoTYpCG+zqwlzSmplorZJKjEvaIRmdXvs4CePzGeH+y9QccF9whJkR6WJp+Zm6JQdTTYZhQ5QhAwdFUZuK54Ta8DPjo3e7JWhJpWRtgl13kTOj/ajumJiyMLIjUX3H4nzDKHszMc63tzKZQPZldhCxAAxz6ylFJI9N4wIZjr96wxoJ+3QdEnnkpQWyZrkK9DNYgTt4ARPclOUl5S5hTAuYcNEm1u6Z4WM9qVy9TUni1iKF/dSVdeKrKl/8Gh2NboHGiYNRYKnCd5U3o3p9niLbtGxBKqYaMmoSzQvnG7PHmHOCp9YyepPGo5Xuf4WL7JecMPYJxKWG5Db99xjcIJiSTbA0uS0BjSOtMkHJ6nlNRRFREfwD8HSo3As2BdyLVM38vUZX0IRxGHnXrQffPm8j8UUz90mF70AOhZTGRpYXWQEiFjtDCvmOWnXIUO8Nqpom71eEMFxaj7MRZ4aIc7Id7R+OJCSRNqLzzkSb6VCqaP0n7W8ST7IKFR7AB+wJjYTo/ewCcySlQd51a1xlznkq7CUzn/arU3kaCrZz7iYDxNVqoaWVWPht6Dp/0qmZG/TZvxC+UYXzCCTC/PMzPNHiV+GcP5GeGIYlctBpdzgs/lm/n96pybXR7oKeo3f9ujx9kXUDiXmCN14p+xUO4KCK87GY2SN/Eh6+NFjGXgiMSv35Bnh6MZxIBw+UlVleMYvadnWb76vXJbqA803ayT/ZC5s7/Z9CRlq/d74/nzOonUQOfw0qnMAfaWsbUS8lRoQMP2NqF/aM8Az5q8Z8mFSUbM1YieYiYoa+Mw3AdTEqWtubOwUE7a0FULIBX0mgRihpvbDyk3zRv6L4J10RXQvm8Vzhqw63CGjzd9uyHtk/7/AzvL89BkF7mH6YT+bEJFS30NR+1j1QZOkagg+iRzkXvQmWHZG0b0wbLtWG+L3KcoE3+H8lvdGu/OeqDOSqwI8sm4/lsa1SRnJFu1XjCkuLqHaPV4negRHUlWzdF5B7MuvyDpRkAQ3oUMZQekZJ6NfslJdRMLucWhcNcSGjXRJT5wRgcrsHCfzfFWF9hxguXUvNxh0RFMyDYInR7Phg21gj1WtzDNXX30kmWh9l8toJWHajJWa5ulcHBf4sqXCB8cGZmvY2K1VltWPdkCWdEz5s79z15dWaAcJZ/OMAbX01O3yZW6LsGp/hHkLy/PfzELI9eKEk+/xV7PA/6g8tXkI6rT14aT7zK68i8Dgsi1aPu3K/Kyajs1+V2MrEuV3abGMWCSiijfHYKONvEr3uJeQvr9SBmkx+QnAwUq3oCqI69WJegixTQ/LNKLP3j6JqWNo5lnKEOJiAuVvhh2gCSIwWdViNKpSPLKoCtn19beJX7i496+C/WfA8FT6YlHYtyTQMxbJ35aqSYY+gXlCO90ZnWUqxiy+k60U3qQiqNkGb3x9EvVdK06dBgWnQ0jWwYNuP3QumxSHBQKkBrJVAXvIz2/TM8DAh0T8sXw3y9kWJDmKII7wR0EQC+nMBtJzbtxvOBkH9UCSVLn+VvS6wi+N3JmAzwwLcz3osLuVbjFOIY5P7uunbco2+BQtYsOMAQJ+HUZMZhjMMsVDnUpvscNV4ytbC5YkGwSuNTJpzjwWSIi53vp7uiCE9WvlNVoIKEknky5MdwXfn8Fj7Dqfi1pF8f/dWWcOOYh9yAhGRtgDq3stzQAsF9NCzgXUy0WNEux/Yo078L8YzUu7XoIN8NVqUU6+h4rWeayDMdvQBu0upVAOZsWTjcPMzsvsn3g4VAphQrXIFQw0MOQAvdTA50myXLPeYKe9c4Wbcg67vqPYYhRimhgQHPnShfmi973XSHPV+MpoZbZ9V6z75MSUcPe7Btn+OeX/Vus8dNDzRw/go3r1aDLWDsOxpL+olKeonqzi0qhHSd7wRYu3v496Cbi5/gFwSJBYEf0LkRJxU3JgbK9s4+2q3C1Sg+3AREoHZl4qP/X4Q2cHSsSLZVI6VTZ2J3V6fCJTyNgr4+NihIgreG4aOPkrdOz6BsCydKhAq4jdbpPVapvJE+bQ30VQE8pwfAKWqjTBxq1xMCyq+DoLOizhXPubRKfF1wGzz6KReDVIpoqi97DDiS5/dEky+0ssfGp1HuSeMTJdT+L7tbx50SPmaUvU69rWwof+1mxVCZxP25ckqFmEfvCj20A56DiVi8mTjut9UEUB3Jv0SQwTpT0RPUamrT33MslKWxaPrDWOb2AbKo3bQka+UIgiqmsiTSg7nSnpQHQ0blnZ8zvRaVquFcmDyyrcwO8bA75IFR0sKlgCDpFjJaMBsP4laksZT1uv9x6/4mbb0h5xXvrA+Q0/vEzGkercOTAYEwjIQxgic5zwxIQTtNL/JgX/CcLnj1lU6t9DVaaau6vH3jomqIUWDtsDfRxRJl3seW5Vup0PRoiu0dXhdjV3rKIVseVEkogDGCyHtuQ66tFQlqhbxYmP9dj48M426wh0/VgC7cG/L9ucW0T50wGbacON2lRUQevC1/PPF43a8jq+3nletmmsV7WjXt9q5IPELrQUC808boxFLYOlfQGYrTD0XhE4ceDsBzDei2VhQ2HPPWqHf/2tco7VDoGXJNDgyn+PzSshXNnQXJxRI6kDli3Z9sH+Ua7f7XUvHWk7kosdF3y97qpAW1gSz3GfIze7eJg0bWBdibJHfCUxGSLZI0rvZmi8tSzdtKoA43sJgbi3C4oiDWe9Ik/Xrcd/2Fs94lYnjuLlSOiUa3KDCeqKYC89AHQuBiNIsaZKjYq1M37iukPeEzvQFACerJLv7A2JQZFXytIIUmpmTEGoTTAUgT6181fFyt9RvRrL1fGwOngNw+S0g4UgtmH7YKRbsbwio2lt+hbIh3zADFEKS2ErY+b557k5st0f/DtSB1kldkrIRrF6GSTe99CxXgfcARR4g3Mxkb9wcgyQr/0EWOte/DXsEngPKDa7hn+h2Z1Az9KYBgRs8zcuFXnAEH2XFiLtFtJ0b/BKLqtxjnJ/pxkh07ih3BYNVd1shmvmGNwpn363fGj7jOf+NN1SAd3MNHabVFiJb1bwI6uy097ZhRZCYh1+sQotCDv+2k57//OkqDoeZPxQtolJwzZmZG4s2H4aH3m3ehQ62449IPo0hg1JM1m3T0kpjIqK09RZXaH2yANkN58SApmzHg2EZ2QSu0P2p/LqR7wWXYNsun7cPwufauG0iQXz5eXYe+85KbkQFF1iEoT1qQhC4hwN56kSjKRB1mMwLDSHGlA+jbGI5xDsZnpVYX0qex8zvk3/Ydx3f79vX/sTdqJApgD7KAOKxeMG55/gMsSJ2lBKgcVIz5vYOLSshnhPJS+TafwuVOg7VH6Cl3ObVDTq5kmUmtw5TOlo2spBhg3gLP4GNwj34Zg79ZdJSkzKS9jd99mFQry/qNlTDMfk+TjW3ME9LT+OLAqFBwEisk0WxiElzjoiWxPbhpsjbPEaSZJQ8AkU7rOItBUO9RqKpaMjcsksta+jVb6lKRhqcEZrY9M2x0xObn5Q1b2FwlqxOwlHZBqTFtybNloIke8vK1rTwLq9pJuCCq/FCb2pA5qxEfuLh72Zr6y9WRGJYx/q+2WcAzGikT7BvphkyhoGBiX9Lbr2VDwl0phcq8ucANKRav3wb5MAN3KwDGIIYlygvFZKNDg5otyQGNCYNd8Ryok0hl+kn6KEXJJf9CHN5vYdP+qNyx9YEz0WGJN4VFGB3HAimDpMbtfgzaaR9svHd71YBQmrsnIlUT/axoRAUE2PcyvmP0qr3UgoM81jM0ccbYwyLIgRj2Olxims/hcLd8yy3aGKDLQpaDHg5xmKmXtAeW1maTvI23f87sVpu/OXQXXGo3WSM2q/wSY/oeOkxqH0cCrm5VnEXgKGkZ7QcY1tShf2CkWUdcoDdsOOqALEewrSZIe0+3MA9sbyoo7aQoIBh5kq0n6OKY09ba0chiOjxJ+DX6QrsllLmv+2tVhxB+Ak3gVTo4FEEHxS2KQrOJRrih8wMlXePixZ1NQEMsDH8KtGio8OkvdNml8kADiqrX4Avz1P9KkFxKgziNOwnwAf8Wm1/shPWP7euBCSu2u7BiYA4ulfwXmL7E3VaSxzKsj6Z2vuyyvIt/DWGJhMXddiSOhpz62ivZl+4h+lshDIjMKaYaWt6mIhv8h1F6cqlhaA+DNcY2ecv+gln5rKN+mpAEhkuXRWHNMt1WH8dZn5ykL+uKAaPeLEwwqoZYWfef0Y0Y+gZyo13hHoDgrUoAGlAk6nLQln7CPbh5A7X6I4ZuiWNcEgNKRxF2OpSo/6qZBU3LSnq/5JNA4ulwcfg6Gw/RKl/0Dpe7EiE4ShPS+jSK2WeD6w6amLDEGwrbUlUZz1mI/8lW4hewZOiCiq3MYMb1UqXuvBo1eh329knsPla9ZTA2aYpnUHWI/vAd/5iK6Dn5xiB2CzXZBeMIv0mUkqmU06XVNbMETSptB1eOuJ4/7RIbp5dkAL1kbcPnnnJKgKZD/ZQS6GQftYADTHx1O0EQ5fKMf9/4WJU/sWNvNDSQ8VI+vNizlvoPtbxI4Knyfa9itd/oE5KDR0lZrQZHDLaSfc5BUtt3IcOCPObX3XN1tZuRh+b/Wvr8cgz3IgdKIqJfwFMZKKneLczD3yYgsgWGUywraCuwimBUymJdig///kPzPjwttOMXVEnCTdFYnahibJfe1yd9FCv/0Pa1K34tr2dMzs27GV0l0UiMuE8FOs4ulgTqSmFN3724JTrv1w8D/yHunLrAEslTeYzIkFYDdmOB2X4X7LthdcRFz/yEuN+0vEuha7YsqOrnNBqA5f0v82/E3byFf6gLG090g6bR5ssfHO0utiD9C+y/7sZlM6D+dEWACLAq/qrPO8uKs7ooxJXE3K9Ta/oi5M8uBhVTDf30DDEvcLEZo7zihvewnHpCWGUY2rYXf/FlbMo7KzM1INHDFrXLvHNQaQJKPTEUsE/+zzvvgL8j7UcI2oK3zBfH3qWxWly28LO2WmkIwxVJaGwt2qBdFLHkDXA4FVKdMs05YMIimEZIxpR0basivgJAeRKBo8ANCd4YYO9HEm/4mT6Wi9EXNhM7Ddd8TALUtQW21R/GbFjy9zaocMk+iTjniV/RsVOPlyx8eB5PjE0cCmu3Mu2v6kfntt/1E7k3jmx23f0vexZI8WDGIDpW/9+bz4im+wrWH1HVa6/HFP0HRCTEciu8O0I6QFYqiHwD8jPoe+14r2uIXe3No1ibrgOm7jB0JTwP0dqC+fvRMW1vsrf9Zyoz2pvDqnbm7V+qij/FJxwLOFkS6nOtwrDHzzkJg2XDDbCtdfFF0NT2ql9n322TO+JVu5pe75yzAlb6NmNk+Moitl9bTHnFn985GHK/w57L3X5vnidGt/paZft49oqw2RH6giK0igQrpCS7L0by0pMIAV9VCrZE8Tm1uNL4GsIYBK1eCnB7pqUXiOgGA44XN71wGUeZqLn1TFSOOJh3QTp51vPCu9+br9daQpjgZ0WLI+WFFUonuQ16NmvKecQ2Jic6ko9NujLvrRwLr7Pa/Ng1ATfBynF4/pbTZeLfUkR9bNbCyV5IbMDGwWktEDQDYMNYxo/aPChkKUfd0JY/FBOnDfWAJzfwtjSLxe9mQJmrgyGm9pRLJpd4db//XuuDBrQd1WqpcifoOaF0roCTYrWfykRs9O5cwC9m/WXzQR0+anq5T6dVApgsx10lfqt63h91+VnDo0ciR32aCRnHAVoURLWloWBW1HfrhBPq77Bcbo+Um/6wiHxjEUwvI152nhxacu0YNFdBuOr3+PZ9Hyr8zu+/XYdiq6TXWMCJiw66G5Y/D0QQO8EpcX/i4LGVaZP9eqbCVZCO/Pk43Pg21DamSA/Qdnya98CDUxXlV+Tc/OsIloqnKojxdO2dfAR+UIZr1hM37+WjiQlRT1guo+BY1Rab6eTgBfccgkx+cfv7dCKsnj8XQx8FRaC4B62QCDOofE0KAUdY6sAGeFvn0beFfsn/+G47nt1tFO/0SZrizZS17c2zum9RXgdRMLCwzdaRD4vLR9jnxko9y6FA8nmemVwFmDsIJ+FB2nC2qDG9POnx+YAJP2OrocFKnMLXMbtuvpM6RdfYDi9FZUid/0DYMIBAGF6V1GOYcJGme45s3UAC3rC9OU8MYJy7Vc+QKjntKTt/7SwT8tNT0tz2Ajioc5tsTRhVklMUI+eXyOulG81BA7YgoiyiyGe5Mx3cTtbfvg4Z8/4xa8fxm/3r9C6XlP/09/0tZfAirDe2bvvbq0hszhA/3ZFErvC5eWoChGAi/P7jY4d1+mZIKauLkqO/hpYfUwyxfr1QkNgAA',
     '2': 'data:image/webp;base64,UklGRvgnAABXRUJQVlA4IOwnAAAwhACdASrcAB4BPnk0lUgkoqIhKRerOJAPCWdkuHwYddHD1f0gxeREn7vtZCK/6ECJzHyh0gnB2cBUbP8PxTfsP+/vwR07ABz4N9nH1D/4PeGc7hp0kpx/PevmwLifeFecjtn4AuKnbf715gXuF918GPWwyAPL3/ueLX+M/8PsCf0j/HerN/qft36Kvrv2Cv2G64nogMwsNgcr9R2zRMqPGPOTy527LwyyqqGOKxaPNddl0kJuDSV+YRD8iQAhhy3xrfyQk8q21iKpIf4adLMS6LkbBJdziO92DN9ZOygoXFAUcaVhzuVd+bTYVwkdjIlWuXMYSsgfFGTQjlWeIVay00NOgu7RaqDMHIduty4MxAQIz84R3SnWbxXeKdfMiUT1iQBC9cVXDqz3n65/qWcYKRtjQSW1eUfIHdgOy6KOOgAGnA0mhBYmezfQuOVSriE7qJQTKykq0dBE5+8i9cpJ/GT51qJB0XXkozvWETkAYsVl/bMe7mmObJ/GoAdmLLjgbfmlKKIsHI0Y3cVbLeLMYFs9/QC3qDxbEb5dv73SGlbX5XS2laH7AU1AVm2uocG/Z9nIVslRPWnvs1ZOGydMD5ur1PU3CeKvBm0aF/Os2O2H6uNCIdDp3Ce9i9pRxf2AeFRil/Ir6UKu/OjebJ2OEHJXjNa11TGuIz9mOkROtluTIwPDff2gx/yUd0H5Ihrv5HLibOpwGdXPnUzuktGvhTiXCn//5rul35IfDpmAYzCcxCzgZkqUSSYS+3WA5oUjkIeMTLWYWhBzv5SGa8pkcV32Y8j0bhRmrNxGEzNiQR/Q8S8cVm8jjy3Yp/hJnUShbslt/U8vbSt2wbDUfmQ4A7DS6LHY4RVcVHSUkP6WPrgAyOaCu25dUPTA7bs4BqMGkaHlIzFhcXGOkjYAaYML0gcHgqMVAFFRWj6EAPI9Wblm6xsd/YR9dz+EFvGFOyW7C0iSrEstt+yii/TAUZMABLTRLDOASQ3DHME+PE1BogjIdBJYzKx9AUW0lhmslUofqV731CUQtigoi0fkjo3G+JRpDzS1ZBrmA8TqlyU7Jm0uoHuC9huMmwwMg5XfjoiYQdowEVv3zvfRfyoHTCPhHpalCSPbxsrGdAJWOLNs9iGGMHHwj6wfWtqKTB02cA0CI/r2YK2IKjLbe9/QBFAQGirJi8tOV6JDesWJPA/vztG8npKN5W0wqjZptAyLrEvCR7DX79kv9o2urj20I88N9r4Oj4Ws4qwGhV0nnn1BwOJuTNJecE9kXpe/go2k/IXZbuBRjdn0ZjcNxfnbZ6LD4+boR0GXRLxNeMkxXJJur3adV8AQnP0VKRJ8ZhtCyLw/g/Rz2ajuMtUxqsP4bcZyM1MJgmpKc6di3pcDP7kxWZpYhAhtDxU5JETy8PdVKfLGbn20AKGB7WUAAP7zEl27ZdC5/qytT7srU+6WHxBqnj+hjR0x4qirWPapIucJMIScb5WcaQ/yiaGIPQ9Kj4FnDP+xaGGzfc2CdD/Fr+Y8v6r1T5LM161JXY0etkwnhIelebQLxDzKkppaBIqaOdBLbb+XpWkjUdcRZi64Fj2ecneU7Qpx+Sot6L7EOLqnsH4PLKz2W7pk9MmebU91t6lzuaujI1JBXnsyu0xdilE2JpWSARnrlzLryH7HjzEOgbf5GNzMiO3HX4rXopN53bY0TdrFo+qW3a+e7VTuMoNpj4byTCzDpplxDl94sKsmbdxAhBl/jmtxoYc+lL2VNbL+Fe13krWDumtUcvq6UMM55jYcoRshdkogflP1XJ72txjUORqaMnGK4CFjMATemkNerBk6QEfWQienD5LncT3xtcvOecRqIId9NMSAcqurkvX6IDTS5GypRWGMGCv9z/mPeAy/hnGtLJ7jdwgsxe8jz/g90f0aCGHtDaROsnDjp/1IZYV+o0209bTuIHZjQ7axc/xLoLsFtrhSeFeMXoPPWgPC6a3p9kPrjrprtJNgzCoOB6VWAJJBVxEABQIcO8KWTtnkN52iXD6hFc7Fxqlvrpc1cgWez+SAOt1HTiXY2ahxnnad+8u4K5cq7UN+faFiB47VxudcA64i2fb0f5cpiub35W88G2e6D2Pw6X8mhMhDsANTqwwlAwyG4vGRBANFxy32jDfWM4H390JEb3wiNdjutgzSeUUoFykDMLSe2IVDKnROSsP6u5FRJDxdvbRZr0O3FcQBZTRyWAqbOrX+YA6NHGcGLRzUEgr2jbfABn/chCj650pOBJ3WF8MfX3ZRahiORDLWJd3RQO5TALFbqqNc+T5lTNLjMpihvsaOEAPZBrKJv6mV5L7QNS5DWqX7W+2R/BXXEWA6naq+6zNTlD486XrnBOxS+EKLCzhkrNBwLRg/QYc8d9i4wSjyRD3jQ71IplMZwK4OQP5wq7BLGgNvYCL5529Av97JqaEQ+6njbLbSX0gwfPKNpJ1gxPInn9xLm7qRg2mHUc31rmp4fakDpcYYU+Q+3eo7nJfRRDQ2JF6fvWlHgvkstLUlWCrDHCHPbF2Y0JRSmxqGmsDrOeDw+jElyhZXmXSQRyI1QXK0+YJE++RdP6kJGjsIdDEukQvuy/qj+IT7tNIHjykJuTQb2rdwzH0q8crue+/zM7VbF3VaKFxi/n29E5Yk3oU9GyZ0YHIuMiTFuNy9lq2xgSlsBcGkUVNfAxl/s4KKm8CjpQjEDDNIkMaPx5fTzb4RcHAy8O2nc+qpctuNwqtA6Vhoo6fgqfQomFNd7rEW0BsDBA60UAgtHrZZGMc7bYhyLDcTgPOCxtS+xmbUogbDVU5V2a429quKa2ngaizMbultL8sT5ku/WGgn1LNGRC5BMMtnT9rKXJVjDFGz5xFObeEWa2GrCxqOoFfC7c1JxeDbJSWNMpz9+c4/RM98Zbs+/WZ+MCn4agOgpCREUuCdVyiio39j7v8KfrOfVdvHsbVrb2vdIHqo8rQhaZl6sEpqupUPNMAavgKkpD75LVYHy7PJ1FbmZdQrNaDecszmXwnc4jRHzv0eRM9JUP/02A4JfbHABChqHf4jYekNyKhyQVhSxGm381SaUcIGX1KeneMe08YDwkJY7rBfcthfWezfQSitRblwrnXFzqXy0ZMrCh1DU0Ule3Qgjnmi99JYxFM4cYnnYFg6Unj7m6qBhKaJBe2DyHhHU7OI9sRpGDpSb175dfMCCgohXrsC/vjeQUnbZvZr/vcsEwsTu5CtIrrzd6cUA2Oqa7s01eKLVY/ZzDQsdNQmSkparcfJvrALrA1GyTOptUM2+p4fVNp/4HXwrPn2jk3JhHKoKnEUKrTAIS9eYQdksYWVxydk6rSE5c+piOsP1m+KxvNICtYmLPehDSfyiVee6MwWoXPpy6/btGbd8gaB3K22gJfF5Z0TtS2ubPLNnapbzqBzbKsRKYu6fdTb+bhQ6rD2pgOJnVnx1zgWXONt7aELCmcCRe32iNOPAyuaMWyC1Wz/FLVtuuDdWp+EYLWuGX4f80w8HPVHcWXhyoevcDR/tZLnIxml5l9/+8sAGNbVHE+ftE60m6WtuJ4vwBysjOuEon4HmDOxPrLSoSnSiJx2Hueg1AHO5blhU5aRY0TQOr+BO4YCDvLSaySfY39nlNGvtXxjuhBQdRghN18DlU/FuXdRrQpJX/X0TjL2uoh0i6AahTepvPTrGF8FGPGEO2fAKBGxRO7jqoAHvV7VC01pJCiGmJLvMsvmACVQ7aC0Ide/XsesXnEv7CmZRB/uBrEBsAyDiCgdaepKQ4mOJ4bMJgbKw8WuEEFpWCHYeEH49AE3nWhXXE/fiRkYpxI1DY7hni9Cx7sc+8s/My3/hyaNNBLTClRDpJoFfm7ea7mxSGnfg6eQXy6QujYfY6ljnqetCwVXfrZpfh75Cy7lsA6BoChJD4193eGhTVOdIsL1iexV3qzcEPghNTkE9pUCYFS6QwGDfK3na3Wu3q/eYr1TTy5TJpE17Xzjr/NjKw5a0eqATs11gXNyeTfcJ6hvyJsg5gsBBoy4yKU5eC3mOLus+PsXodRvC8W1OUehj9H+zq0PWi/L9olrAvoIo0V5JeMYmx9cfmqBEoiSQg7aTWSPsd+cfcYEm02ZzpFNDFp7FMmJEju77bilkfqxOu6ddz24IMD8U6S7AxRi39TzyxJRlF4GmwXCvPJ8Qic248NbOj7pkFyEq8ugqkb86wAEm3yjr70jFISKoZH/oXs1dvQ9DwHbUSJal68nkqOfc5fddQAY0pgj6T70ZLbyUDc0OGqxEO1zf8yel/0TOfWAjGAr77gtL4MsD9ZimE79ifFFotZzIh+cShNautyo58yBneSHs4Qvm7lpoCfARST7KWjxduD5LmECpcBYIFbDmFr+pt+NHthm02kniOIIIHGV0O46eL2w8ZADSK2Ib7X5b/x1CbK2FlIU9o2cS9SsX05TQ3QcSGY1FMGjFYSGodBfGJEplUXiCyo9aBVXl52NyPqvMj83y3aIMtBlk0f6/fDlYoNpeYHMAbxRhuFUOtNgU0rC3tt/r57Gtpf652sYOxiJkGqzkcgpI7mTbaZ426nS0BjnTvr/WoAJuDDs4KSZ9pFGsnwkMiSNwkYxZpsJjVbndJ/AwHHPAT9DSpmhxZXUEtemN/h67BdS4uivgQdvxz+EewjypEG0tYycmLTA9geCjYRy3RdapeaL4kg5YUgnNzX+hesJ2Y8g36KkP7593xZRC4SFie1fQjrl7MEdS/j2hiSWlAVKmDGlRfOPk3KotObmfa0wQVsiu+KCTox/VaQMtrFMKvTU4IodwQD6GMotJXDmMDzSr6/JDNhPwI2LfD+dla1kUHRflNt/YvPNf1v5/7Lg7CrDu/suQGWwWkw2VvaBRi1s5mZW+yFbMaoZFJZQinbdXnCtMrXh2SMd06gim0g3ljU/GsJ/Yn0UJm080DqhOBpM84IgTk3ABgA6uuaw/1xmDw07PQFdcVkj5flNmFFPtrerkKig2A8Kw6OuX+Flv+8vfzBZgeqa0Yl2jQUgy4yeqPf48EeNpoe1AMAaRi00M7HKLhTheahCx6sCXHTKenhyMBootDn3iPAHhgmpTb0YRcavtNgo3+OVhTi0gDRNEjkDt8/iBFk2GeiSRDuH+09Y/2a0Fa4YTprzhXTck4Xk0JdbpGxs1xLWL+/3w17vDMRSEgA1ntNz5LVfHygBj9MejKAVTImnMwdODSV3TPZH+B7EWqqWo5fGsauRGDuQ9EycpXnOJ0RZKl5/gTact3JDO63ZUf7O9q3UMMF6FiXl4TlBM+meVt4deAPRdFdhyOXOusX5gT+gxFXTy0TfLN7znsj+yanK/A2BjmNz0BceDCVumK9+aL5m0DU/tZv7xs5+PTHZt/iTYlmrXyEgXu82zqMJvvGVBXllblmfGtH147SAkEbrstEFMO3/fnPM/ABzNIk+1vG/QnwmnDJTdEVvAUiTrrGAwo96yh3k8a64CpM2yz5lyAo7jGsxHBqhfDm3eIlCUYm0iO6Ak/BTHAs/7Zj5t5svp3XmTGbojx6v6kY14Fz/8/86Q2NKGTeod69qf0EoZAHceemzLmnYDKwI1Mdsj1lmt6Zhfb5uBlzC4RbM2Z9nLEDTSVD9D7nl+a2Y3fDzE0nXSom83cWp43uQmHqBNL75pRO+mGQ87hY/1jsINNSxdktZ0/tLif0HsZ31pWBKx+cO0qULC0NGCzsub+aKIwl07lDTp3CD+e3pyclbVzufdpgbeG//PnEHc2bp9u4juWKy92eFlfaw1UZoUuOkyQxeeskHmzdjfMeNsNdDOZelRULxU7dld3PXomIPeDKOW9E0nztp9QZim9J780P2FUNLMupSzAafE7Tz7pqhHkuiG8QkGyq6Tn29PtkIZpsOIeF/d6ApF5R2O0gRATsXLx1sgxcLbkkL6qLw55KP50GJ2MUHiQw8f9S5BiK665Tqvg+2S4VKFvlrDyjm/DdxSDxSgjFhhBnCS8x+DvQbKfNGkXheorz4ErTBM/XKSpbLyzNIw3oqhL7aL52qZz7NZo5eZyWEHjpyhd9/OCY6uiOD/Av8B+Z2C1djaS6yDZICJJx0ySm45erDcSxSbO2JRSsQDOgM+K9XS2N81RvMasWDihZ91t+Ogu1NS+z1p4e23/eGkcJuceg4h8oaGBYhl/hwPKHEtdc/WPvBuEFT8vGY52YMncfcmFvjWw7wwOR1bVQg4/gCbbOzOa6vvq+VQQTbJW4ZPXKe928HPsGB7zpbR/iOnIX9H1hEXv7mEiBnEyV8RABqBr89jLC5tUY6Q/rnMT+wA6zDO0of1btEVeVn1DnHyYV6ly2RI5+azdBQMXCga1W2cD9/seaSjRFo1ypeW9rut+ZwdCIfJacFBSmsCbR4kjg0Pw/SycQPZWcvapLky7ZrT04jwzkveDtY2PJGKlMG7wJ6n4Ie1ODPGt9vgxVVh9jF0vOCZDPFL9JXXDKvGH+9JSo4kIUCBg0WYtzYP+IenMZIJ7DJob/VtWEeUrRwvu9J7CQP0rXg7hmbnUNwmn7+sVRlU/wDcaUSMlVI70G/FlKw42iv7jRHFidl+00hk9dVN4blzp3X1DB2JYLt5t8fqjDMVReAT+JquqpaOlhy1lm3uhBiFp8kGborWW7BVdBBiYgQh47r50HDXV8C3xLFfE3A73p14cdpqOgJufY3caxmzES2M9aLYn463lEOzMHYvayiHDR+fcMPMxHjZP86Ybkd2FNNplb+Fyn939LMBgmmG9BTd0x3Rzf51WfaGu1yAx20oFht+DRFmU5j0yOZkdl+W3O83X2sx4Ne3nj5nE8XndPqD66b1I1DFyp2uGGJhBsR54PrQo+elxZaosarXbljUGrH/G/x+dgBHgUqAYhFIM0HQQ62zOxWH+Adg0RNXrrk79ACrk6MjdNOO6oKRbq5fgJ8S1qqBvY13+kfha9ATc4qcXp2iqhv2oRDcKQiXqjFEHO5x+LBHaRxCKCFNnbZTqM3Kn5qMt+axsMEW3dGKPjuf2nfUAGkKRbFFObGKx+NqbSSVExu560+8MycxwGVt6+ErJ9lHD7v8UyPxxHhhCqCqRziMXoSpcogvX0p9PEay2xTLEVwjYnF5MPDkN17XAChbb2pO7o79t6YH1tdfKCapA+DWIdq0HP2rTXBd6iRK45RHnKOuDGdrQX1YQ8JMq7znkw/atMHMBu+hVPV0A5JhSAy/e04wf3hFpF3f8asHG7imbOfV00ABFfOnGSGyjvLj0qJYlLppN93JO/hHB5xTxNo6hrMpkpq1Yt+WM2+TYqxDrCpT94BC2Obd4m+aEtjWKwmSTTdvQA9DfLQ0an5dBI3n8wD5/W+kcLB5gM9PQzLxeliwjxNgRG4IeGtS5Gb23Rh8L6aH8uYPko+pjhzdclEo8COuMpl//s2JDTWz/g0gE71LerKfy51Imeh017iGBt3B/i5U5boVH8Rj3H/f4SP1QEz8wjlFiMu3JSf4eR9f5/ZADah0KJmXO9vdAM5R31BXlteWBtXeJnrGoo5wFEqlSVLcVcPkz0swKlCn3tK1TCEPkuxyS9uH1EmtqLwTnR2uWQk8z/qjXux6sDHGbrmIOpOeuo9wO2IntPXO3Xn0utK6QWyl4OylVP258UsNaEewdvmEySRt4a4cuWrTq/SwA0b5nnuwhQo5EHI6MTMGy0QUPSZSe8LNlZliuUtJvMFaweShACGZuUXemoJbGjm+eRGc+5SkfTohtpIqPM9TrOf+Span4jSjarpaLOXPZyPb6PrICfdErKQa5zfTT2V1cPBlU24Fh/brAH8Ae+B65MCPMmsth5iPQQf/5z8ZVeQSOaY08NstjD4XZoO+7HHbb84Zprn1wegp20iolUX1GYkD8cLv7lkDbeT27NmZNhklMmIM7mVIz8wDX58+0QWZAy9IHuUr2iNggkB1GmDDQgbZru4/rbqJJk/YaLnR4S5HDF7avPCqpmZKmHpTBwjKqBd9dUkPHiOYxxjZ88d/2wv0qYUxGpJNWDOc95qsfUmra3s0chEit7liRIHK97wIeNKtahbQU05ZjAlGpCJYZwO+pj65d/GLAQ03rnvDjKoUiOOqnYpvHOOEtroVs+c2S+xbDuQVKBtub3pRKc1RZjrvd2/7D3JQhg9oFsqaC4HWkuO6MK4utrJj8n3OxFUh9/lNHcsBeutxdjT2Iqfjlx+KF/mpbf6EH/rshfhMuV3zVNQbKemz8eO6gcXYT+4ACjE+QfWOHZ5gfp/13d4NeRodRE0MkRWtbcqSAJ/kbwdcBW1N2KAi7rT1wdCFF/rLkfK2RWRogOnH3Lk1sUQyiw8sTOY/UqaxG0bFLlfvwrDkeFjxrE/PmoXAJGDDNRsBj6+97oihquRamGLbq3xXDE6fVwDNmObQ8uUNkLjFTHzy822XPRXTPb0ETYBT6TJmksbZ0l8tLAnEWgP7VBiCZ63GsI+mv4ebwaJruFkW3b3pDNLW30szztL7LwKmVBDTuB+OEsrDnOprnYCRAO80vkVRJpKoX3GSOt+uLNHctqNl2xalfr5PwMFRREqI3bc2/0OgbpCzchJo9VukfnWn1bhqCM/mU1PWTL6lluZjXxfrCrzP6n2yIWjnyYf/NVglqtpqtwHUHCS5KfqIhKrFWZmEA5VdcTh1pnJo4MM/PaCR91rgR8yReVDyaPzC/DZDwTvfE3BxvU+OQ7aHmZ5gEET0MgrbJ9V6ewkj4ZIm0tuFZYkUq5o2ZYXtZO0J1j3QK+vc88m7H98dBZC9QXhZAp8ql8AGBC5qXcL/wr998PkmFauhe7NhoibRbJgiXEARVEL6N31FlFUFFGyqNUKPre9rKk9mXjD7QH7CYMJrcXEN9HW3ReYalAC8pXqr2cMYp/d4elOXrI6nvgO7hnchPjsT4nZHghw2s2QLZ+qQPtSiyufY1W7TgIKMAdXKPsRkhyHONq1CmA4ibqterQMtjkns1NBfA+JX9rzv0V4e5MfEcIV68M+OuTb3LHM65zy7RnMZmVM+OqoW2PEPpgzF2LVTFV10dOeJwTj17zC4juoHAQr7LOGpYdkBoe+F0jMIip1JIyCwtTd874KTcSuNFUuW0EOap5FPEm+qKKOprxDCgdoGD0L7lB7cwTqO/BgkIjAG+syNAD82yNeMgrZaLjmqc7BuYJkAfWgz1x0mQNaUPdCqaBIRrJHRlAwlDO22Y9GVy3Dfey5g3YM5Mo98GM/EHYxpqA3lKu+gh5VUliRYL1Vz1jpD5MHK68BGtB7mevwtJaKxk4xdeb0Zqde0gVgoVInJCkMtvExFXYoBPWHUQMFvhoCbEqyrkVeMjQZIOnvwKhgf5uA1OOK3bZChVKk2RSgIxo1+rkpJH1xOWI3Y5AowxodKl6Gz7gz1HAFM/k/UzoqWM+i/F17f/hm2emZTNkCFI1KlFNIbt9lNlMWucYB855WaL2B+azagnW2WGuQSBK8WwVfFIJdi06ZetRye1OgkQYnG0cYDzUTmfnIgL6jh0GkRc+AGuEN5qHS481WR9E02M6p1bwbwyvHQEdpz0JbeS5nbuWJ4PPiBs6JoIGgrz1jHjtm8JX8EhjiuHD1/jU/LoAeNK/IrL5lBQLW7cosP4DuzKvbiXAdieVIUH60OCPxayosf7GW0g2grmbe9jgGezUal9q7hp3YAOoWch5Ur/v/VHdr8WTkBwJUrDiz2sNike4AvAIErgCpl6WKRmcub781oH8lsIsgWEdQkU0kfAyFc9RYk/cKIQQBy4id9vzkuuNm6IYpcS7G9ta3NSvYLDnPic/7WuPSW+bb/m9Cy9k13oDZH+FWZatAMHeNc5Xel3PJO5N0ta6iV8Ai/4wFHXSMZYB9aGBgx6wOoKV5YaZ5VQmZTcA2m2LG+0eftgk1hmY3G02rZ87iNYfWX/dJ1fRP8ZBVLGn/hsZnAYSdUCCN1221+zVREiB4Uz/hHjanz5Pmb2F+9b7wPzT8z8mSz5KI4kyM/zbRUo9v0n+Abb7EiXKYv3wMODssZS2GTdZo3wlcBIoM2hA0Vb30ERm/TVMYVOojJEPOibH6J/QE0CvU3glkuN1SK6SUd6nQU9cfJgbso0JbJ68kZTX0SeFt4w0cVueLu5oJ2BKfoX6y4GlbpeAlu55mcYr1k5GXPqzfjnh7F+0VDMIi9pTvaS6RzQR+UHAPEP0tA7Upmq9o3RzG1Hbh+MJmi6LN02ij4J+QGSfn+piBVB2ugV6xYIQA8GAFsdJJptmC1M64nsoxy10bO6sCW90jUHfW70SDd+6tLrFWND/n3v3/EWLjFDyxmURnsVF8ipn2mwh5LzCDMSX/javWxfuRxVkvYe/AeEE8GRiP45QvKaSP/A5IuyvbNb53LGW4/xO0hIeECtUH7GVxP7/Ql6C69XuUn+NRsL2BFz104/DwaN7jWsrGRfsnaC/f4UDDAdiDevIal1GZ+J34fu5gGTKKGPHFawZD5cuhzgs/YJ2AyJ2BSEGVZIO5SDpY4l8HdejKdkxi9UWFwWeh3Smgi8ZwCeYAnCiKXkYMONdJg6A9MugJberH+3Ano9QheLL/eUtdS0f3PVeSzL/BDGsf9wd7IZ6DVgQ3i0WCCNkMcmnrwTT74jwNIgC/krSxzyAKTxLk+kX8QVffz3Qwo7/QLcxIY366fQpu+IPpD4cyZhxFSWkkqsJE44atDTfDt2ThE3lJyVzsz82/VmZfhHakTwjlGRYeGkKq79bIfLSBYqS7mB4IuLRQUwgG0v51McZ0b+ky4EsT+Zlg3rV0xZ59HjPBaTvyHJ94ttVGGSaOU0luoE1l1wsLfpS7Plfw/7uGGcYRY9zbmxL6rDoT8CG+ziphIBStqEENf348685+//OV0F329xCyOldsXMtRwFF2yl7jpokJtwbxR3Lh2xHtmIYhWGqFavhc03aWpUSqHjaFwkMbMYYaFnNUnrxg55LUbd4RVMu1duQwGZR9Y7TbnZ28Ct1RzKS0HznHq5XTHQ1NEbLfTWNpxSrGaGBlRUFqCgcFgCHbdX3iUBoRzeSvwHwxR1plVt866W8LEFX3GFRPRC23L6g7TGggcQu1/oRVrdvjAl98fKjrgKQeog4471y1CRZnm0RMdiTwiibOP9Xj9vgxRIfsxDiiubPQh3YBcBrWGdhPaOgRiE0Uq4+gpmadGJJQTvPorELJNV/h9pn3/gmoOBmQ+YuC/boOMyeAcQgQw9nJoVLg5cP3h0nk3U2JuxfBQEuH+oU7KPGsFR1zpeoXu6tCKeFScW1JhHqqoCAK8bb0c5G+omvWuop9mx+2s/44+C2PrCvy9iFhwlklXWwqNwaSpBfLMCUWzxPUcdqLGURgwUAppoHxbwuh/IoR8ee/q9Mm3OeeBUwRtyZhbTEuoR/HmNtvb+2ppbDTQporH5+yczOlmuA/KflAgezcJLkXwH5DcrJxsaI7lYkZcTQxaE/Q48zy5TtvbEsLUMoirJSt7S3srlqmv8h/wW1y0aHcE2B5A+5dv9Nuvdd/SdiPNcAcTgoX1i1wiAnL1a3rU5Z7RRS35iY3NI/qBEEeRN2VXkt8viK9DXA0BviY2cMiqAFnKcF4uropqooh7j9LfFmqIErys2XFBYP4di9R3E8l/t1I2najzNKTVGTA31bJ0KRVLjKMGZLz/kbQnnyJ+4AYd0opBbOMsNbdfEmpQHoxIT8UmU302NZ9zkZQgWVu+yRLsj1HD20RIj+uo026sBRdLiPXfWL+uM5JWTND9ZHuRT1R3dFgHGiTxijG3A0q3hhAFhN4dhHMmpSEKMw8ECidOaDxF5gp8i12PTPMcygE2k7ePxFRN3P1UXXRuIExxvgC3wswQ28fXOpQaFPI5/+V3Jjhp8dH/64QH/aP3HpDxQND9h/h9cIHAcAR8TuOTRCbXWNIg+ZEYfPYQp4h6Vq1T5vc0/spXm+Forgx8lWMQwV+mWp/iciXKQ8YoggJQ4t/gxlmUJXICTgp5wMhnkyRydGfDOAqML2emNd6f2/WKp1anuFikNx6IqRcG6h9qX8VNhmwRrPObGmC54sY16Cud4+vjYrrIkKcfIfMJJKqk7IqV4hY4oaK/GRZ0cvwlwSaFui7KA2ZjCtEb2aQIGLudahdKUC0yw8iSS358PHdE8rWD390W+471WDrMAiKevvU9bA49xO/z253BsASq5il3COz/419rfow4aebS6nDK9UvljYZ2YR4j59G/HuAP0qgiesvoyrgR5luIrq8N5ooGTVNs2WJSdBO0FUPPRrKwZ+Vw6o41V8WvbcVn6TS/TxOYkXnOKG2v3GmNRTyFGkEHVjvTcckbz/0HfjLcUG/c4SbX7rhq6kAD8q8rV/mRsIq4oV1HjqsG7ur/0yegBRwam3k/ImjrMDbn4DVr2Hr8/AgHHx7hbyAmCcRaBmFxDmm/Lm5BBN8I/YHrPVyF8uenJCXIhapA9/AeMe20TSj0noAae6mkHF0gIP+DJX5gSsAKEGJno8d4pZDCtTCGISsRR2b7BVr2b3V41YYWO7JtdX8FkG/b6Ufdp4KhgU+H6xEmaydvjrSbRhhuV8iWZELmQ4xcnGmozYmBaL6r+V/CiCdlz6H600Zu0bbzD8cE+M+QuXYH2zJy6qs9CW0Cg+ULZxVmRu52HdBxiJS1+QCXZGXfX1GxMYX6A2/yCM/uJ7vS7Kl5Y9fncz76/9nlosmRQeIxK8lhorhgZAEq9vbQTV/UOMXkyxz9jBHCsp9H5EbHFdvcsEQ+gIhjqA+Xjz1cxxY68pFDAv1WkAt9T+NY+Tb3UgVLA8vHOUf9BL3xI4Ayfw6ZnL89Nq8ldYaPS6R41uEhDGq0YA1pibwE/N3Gheloq8BYI82a1VZj9FpRRdQ78xRVI4blPOPfkxngirYtwJ+FIiNnmKE20qNiYztaCi3aMuIxbdAX1J5cOcbUjeK5wVAFF03w8AZ/LRBi0i85ZS0nQeLdh495vAxKDZb85qX6rv36DT/geUvF1ocfk8b7dJXoogtI6mAkywSqvQv2XkPsm5Gq20vM1Oek3jNuCm8I0jr9UX7T8EpTXp5N2np/JJI7yEb0OMyJ71GGig4MoTpQ6MteMn+IzX/TuBtU2cxF3kDSGETyvC/59FYcworw1HvGDqWAaItMxLizX/Hbtrozi3tPrma1sYfetgE/GOff738UwJji5A4D2bV1ORPif071ZqIp7M3QIQhGeVfDlw8/KLv1DOir7OCtuwk6BldfFeykiaee/iylM039Xtzl9nZf6GR/xJyGpdG1VtjieFdN/4QvsT1usqAJajfwLQd85UP6V4atc0B/o7wp4jNgCFxyvLuei28woJbP7Fx491BzQFvxjSitJZavTr7UDvXrnZJhnPLm6+g3U34Dtg7SLP2k84dV1VyMwwZDZHV8HimCi1C/1ZjllEE0UpWJH/5KyKXSc5kIvbywf7zB+iICoWC2Rqg3RvcWxXsMB8SgG3xKTqoeljkseoJiPukx9oQAiPGtoC4N5XpNyaqbz/tHdPBdpj1aAJNANC1p0uLfmqqrl4pNr397EgIZC/v85iGhUyZgUFuQTAc266IwcBkVaIJSIIG1BcG1ANI+9YMY2CVGp8l3WbYDCeQbkEar1TKaO1zeI9ZEBSARgvzaWeZ/aNO17BrTLX19dyQIil2coBEmy2mMHgAAA==',
@@ -28879,7 +29065,11 @@ function formatRelativeTime(ts) { const diff = Date.now() - ts; if (diff < 60000
         return c ? c.substring(0, 20) : '[消息]';
     }
     if (m.type === 'image') return '[图片]';
-    if (m.type === 'fortune') return `🔮 ${fortuneStripMeta(m.content || '')}`;
+    if (m.type === 'fortune') return '🔮 ' + (fortuneStripMeta(m.content || '') || '三张牌');
+    if (m.type === 'fortune-supplement') {
+        const t = (typeof fortuneSupplementText === 'function') ? fortuneSupplementText(m.content || '') : '';
+        return '🔮 ' + (String(t).split('\n')[0] || '牌义补充');
+    }
     if (m.content == null) return '';
     return String(m.content).substring(0, 20);
  }
@@ -30019,6 +30209,28 @@ function createMessageElement(sender, content, time, quote = null, type = 'text'
                 div.innerHTML = `<div class="flex flex-col items-end max-w-[70%]">
                     <div class="flex items-end gap-2">
                         <div class="message-sent text-white" style="max-width:100%; word-break:break-all; overflow-wrap:break-word; white-space:pre-wrap;">${escapeHtml(fortuneText)}${fortuneCardsHTML}</div>
+                    </div>
+                    <span class="text-xs text-gray-400 mt-1 text-right">${tsWithRead}</span>
+                </div>
+                <div class="flex-shrink-0 ${showAvatarThisMsg ? '' : avatarReserveClass}" style="width:${avatarSize}px; height:${avatarSize}px; margin-left:8px;"><img src="${myProfile.avatar || DEFAULT_AVATAR}" class="w-full h-full ${avatarShapeClassLocal} object-cover border border-gray-100"></div>`;
+            }
+        } else if (type === 'fortune-supplement') {
+            const fsupText = (typeof fortuneSupplementText === 'function') ? fortuneSupplementText(content) : String(content || '');
+            const fsupBody = escapeHtml(fsupText).replace(/\n/g, '<br>');
+            const fsupSigHTML = (typeof fortuneSupplementHTML === 'function') ? fortuneSupplementHTML(content) : '';
+            if (!isMe) {
+                div.innerHTML = `<div class="flex-shrink-0 ${showAvatarThisMsg ? '' : avatarReserveClass}" style="width:${avatarSize}px; height:${avatarSize}px; margin-right:8px;"><img src="${avatar}" class="w-full h-full ${avatarShapeClassLocal} object-cover border border-gray-100"></div>
+                <div class="flex flex-col max-w-[78%]">
+                    ${showName ? `<div class="text-sm font-bold text-gray-700 mb-1">${escapeHtml(name)}</div>` : ''}
+                    <div class="flex items-end gap-2">
+                        <div class="message-received text-gray-900" style="max-width:100%; word-break:break-word; overflow-wrap:break-word; white-space:pre-wrap;">${fsupBody}${fsupSigHTML}</div>
+                    </div>
+                    <span class="text-xs text-gray-400 mt-1 text-left">${tsWithRead}</span>
+                </div>`;
+            } else {
+                div.innerHTML = `<div class="flex flex-col items-end max-w-[78%]">
+                    <div class="flex items-end gap-2">
+                        <div class="message-sent text-white" style="max-width:100%; word-break:break-word; overflow-wrap:break-word; white-space:pre-wrap;">${fsupBody}${fsupSigHTML}</div>
                     </div>
                     <span class="text-xs text-gray-400 mt-1 text-right">${tsWithRead}</span>
                 </div>
@@ -36476,6 +36688,10 @@ function formatNotificationBody(content, type) {
         } catch(e) {}
         return '转账';
     }
+    if (type === 'fortune') {
+        const t = (typeof fortuneStripMeta === 'function') ? fortuneStripMeta(content) : String(content || '');
+        return t || '三张牌';
+    }
     return content;
 }
 function sendNotificationIfNeeded(title, body, targetRoleId) {
@@ -37631,6 +37847,9 @@ function openCardDetail(kind, id, reversed) {
 
         if (dp.health) html += `<div class="cd-note">健康相关仅为象征性提示，不构成医疗诊断，身体不适请咨询专业医师。</div>`;
 
+        /* 知识体系 · 分类整理 */
+        html += fkDetailBlock('lenormand', card);
+
     /* ---------------- 塔罗 ---------------- */
     } else if (kind === 'tarot') {
         const card = TAROT_CARDS.find(c => String(c.id) === String(id));
@@ -37736,6 +37955,9 @@ function openCardDetail(kind, id, reversed) {
               + cardDetailField('常见误解', escapeHtml(dp.myth || '—'))
               + cardDetailField('适合回答的提问', escapeHtml(vw.asks || '—'));
         html += cdSec('情境 · 组合 · 误读', adv2, false);
+
+        /* 知识体系 · 分类整理 */
+        html += fkDetailBlock('tarot', card);
 
     } else {
         return;
@@ -54353,6 +54575,11 @@ function kssEnsureFortuneData() {
     if (f.tarotProb === 3 && f.lenormandProb === 2) { f.tarotProb = 2; f.lenormandProb = 1; }
     if (f.tagEnabled === undefined) f.tagEnabled = true;
     if (f.questionEnabled === undefined) f.questionEnabled = true;
+    /* 牌后补充解读：1条50% / 2条35% / 3条15% */
+    if (f.supplementEnabled === undefined) f.supplementEnabled = true;
+    if (f.supplementProb1 === undefined) f.supplementProb1 = 50;
+    if (f.supplementProb2 === undefined) f.supplementProb2 = 35;
+    if (f.supplementProb3 === undefined) f.supplementProb3 = 15;
     return f;
 }
 function kssFortuneArr(kind) {
@@ -54365,7 +54592,7 @@ function kssFortuneArr(kind) {
 }
 // 按开关随机抽一个标签/问题，拼成气泡后缀标记
 /* 发牌时附带：标签=内容分类（我今天在做什么 / 想提醒你·健康 …），内容=TA 想说的那句话 */
-function kssRandomFortuneMeta(forcedKey, forcedSubKey) {
+function kssRandomFortuneMeta(forcedKey, forcedSubKey, tagOnly) {
     const f = (appData.settings && appData.settings.fortune) || {};
     let suffix = '';
     const useTopic = (typeof FORTUNE_TOPICS !== 'undefined') && FORTUNE_TOPICS.length;
@@ -54375,7 +54602,7 @@ function kssRandomFortuneMeta(forcedKey, forcedSubKey) {
         if (c.line) {
             const tagName = c.sub ? (c.topic + '·' + c.sub) : c.topic;
             if (f.tagEnabled !== false) suffix += `\u3010\u6807\u7b7e\uff1a${tagName}\u3011`;
-            if (f.questionEnabled !== false) suffix += `\u3010\u5185\u5bb9\uff1a${c.line}\u3011`;
+            if (!tagOnly && f.questionEnabled !== false) suffix += `\u3010\u5185\u5bb9\uff1a${c.line}\u3011`;
         }
     }
     /* 主题库不可用时退回旧库 */
@@ -54384,7 +54611,7 @@ function kssRandomFortuneMeta(forcedKey, forcedSubKey) {
             const tags = kssFortuneArr('tag').filter(Boolean);
             if (tags.length) suffix += `\u3010\u6807\u7b7e\uff1a${tags[Math.floor(Math.random() * tags.length)]}\u3011`;
         }
-        if (f.questionEnabled !== false) {
+        if (!tagOnly && f.questionEnabled !== false) {
             const qs = kssFortuneArr('question').filter(Boolean);
             if (qs.length) suffix += `\u3010\u95ee\u9898\uff1a${qs[Math.floor(Math.random() * qs.length)]}\u3011`;
         }
@@ -54395,20 +54622,38 @@ function kssRandomFortuneMeta(forcedKey, forcedSubKey) {
 function fortuneMetaFromContent(content) {
     const s = String(content == null ? '' : content);
     const t = s.match(/【标签：([^】]*)】/);
-    const c = s.match(/【内容：([^】]*)】/);
     const q = s.match(/【问题：([^】]*)】/);
-    return { tag: t ? t[1] : '', content: c ? c[1] : '', question: q ? q[1] : '' };
+    return { tag: t ? t[1] : '', question: q ? q[1] : '' };
+}
+/* 统一清理占卜消息里「不显示」的文字：隐藏标记、标签/内容/问题，
+   以及旧存档里的引导句「我为你抽了三张牌：（…）」与雷诺曼版本。
+   注意：只作用于显示，原始 content 仍保留牌名列表供 fortuneCardsFromContent 解析。 */
+function fortuneCleanDisplay(content) {
+    return String(content == null ? '' : content)
+        .replace(/<fcd>[\s\S]*?<\/fcd>/g, '')
+        .replace(/<fmr>[\s\S]*?<\/fmr>/g, '')
+        /* 旧格式引导句（兼容「抽了 / 抽」「三张牌 / 三张雷诺曼」各种写法） */
+        .replace(/我为你抽了?三张牌\s*[：:]\s*/g, '')
+        .replace(/我为你抽三张牌\s*[：:]\s*/g, '')
+        .replace(/我抽了?三张雷诺曼给你\s*[：:]\s*/g, '')
+        /* 引导句后紧跟的牌名列表括号，如（圣杯十·逆位、战车·正位、权杖十·正位） */
+        .replace(/^\s*[（(][^）)]*[）)]\s*/, '')
+        .replace(/【标签：[^】]*】/g, '')
+        .replace(/【内容：[^】]*】/g, '')
+        .replace(/【问题：[^】]*】/g, '')
+        .trim();
 }
 function fortuneStripMeta(content) {
-    return String(content == null ? '' : content)
-        .replace(/<fmr>[\s\S]*?<\/fmr>/g, '')
-        .replace(/【标签：[^】]*】/g, '').replace(/【内容：[^】]*】/g, '').replace(/【问题：[^】]*】/g, '').trim();
+    return fortuneCleanDisplay(content);
 }
 
 // 解析占卜卡牌消息文本（兼容旧格式：无标记时按塔罗正位处理）
 // 返回 [{ kind:'tarot'|'lenormand', card, reversed }]
 function fortuneCardsFromContent(content) {
-    const m = String(content == null ? '' : content).match(/（([^）]*)）/);
+    const src = String(content == null ? '' : content);
+    /* 新格式：牌列表在隐藏标记 <fcd> 里；兼容旧消息：直接取第一个全角括号 */
+    let m = src.match(/<fcd>\s*（([^）]*)）\s*<\/fcd>/);
+    if (!m) m = src.match(/（([^）]*)）/);
     if (!m) return [];
     let list = m[1].trim();
     let kind = 'tarot';
@@ -54502,6 +54747,15 @@ function fortuneTrioReading(kind, cards, rev) {
 }
 
 /* 渲染气泡内的三张牌 + 下方综合解读白卡 */
+/* 综合解读白卡：展开 / 收回（默认收回，纯 DOM 切换，不重渲染消息） */
+function fmrToggle(btn) {
+    const card = btn.closest('.fortune-msg-reading');
+    if (!card) return;
+    const collapsed = card.classList.toggle('fmr-collapsed');
+    btn.textContent = collapsed ? '展开解读 ▾' : '收回 ▴';
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+
 function buildFortuneCardsHTML(content) {
     const items = fortuneCardsFromContent(content);
     if (!items.length) return '';
@@ -54509,9 +54763,6 @@ function buildFortuneCardsHTML(content) {
     let chips = '';
     if (meta.tag) chips += `<span class="fortune-msg-tag">#${escapeHtml(meta.tag)}</span>`;
     if (meta.question) chips += `<span class="fortune-msg-question">${escapeHtml(meta.question)}</span>`;
-    const sayHTML = meta.content
-        ? `<div class="fortune-msg-say">${escapeHtml(meta.content)}</div>`
-        : '';
     const metaHTML = chips ? `<div class="fortune-msg-meta">${chips}</div>` : '';
 
     const cardsHTML = items.map(it => {
@@ -54544,21 +54795,27 @@ function buildFortuneCardsHTML(content) {
             const tagsHTML = (rd.tags && rd.tags.length)
                 ? `<div class="fmr-tags">` + rd.tags.map(t => `<span>${escapeHtml(t)}</span>`).join('') + `</div>`
                 : '';
+            const groupsHTML = rd.groups.map(g =>
+                `<div class="fmr-group">` +
+                `<div class="fmr-h">${escapeHtml(g.h)}</div>` +
+                (g.items || []).map(t => `<div class="fmr-line">${escapeHtml(t)}</div>`).join('') +
+                `</div>`
+            ).join('');
+            const nGroup = rd.groups.length;
+            const nLine = rd.groups.reduce(function (a, g) { return a + ((g.items || []).length); }, 0);
             readHTML =
-                `<div class="fortune-msg-reading">` +
+                `<div class="fortune-msg-reading fmr-collapsed">` +
+                `<div class="fmr-head">` +
                 `<div class="fmr-title">${escapeHtml(rd.title || '整组综合解读')}</div>` +
-                tagsHTML +
-                rd.groups.map(g =>
-                    `<div class="fmr-group">` +
-                    `<div class="fmr-h">${escapeHtml(g.h)}</div>` +
-                    g.items.map(t => `<div class="fmr-line">${escapeHtml(t)}</div>`).join('') +
-                    `</div>`
-                ).join('') +
+                `<button type="button" class="fmr-toggle" aria-expanded="false" onclick="event.stopPropagation(); fmrToggle(this)">展开解读 ▾</button>` +
+                `</div>` +
+                `<div class="fmr-summary">共 ${nGroup} 组 · ${nLine} 条，点击展开完整解读</div>` +
+                `<div class="fmr-body">` + tagsHTML + groupsHTML + `</div>` +
                 `</div>`;
         }
     } catch (e) {}
 
-    return sayHTML + `<div class="fortune-msg-cards">${cardsHTML}</div>` + readHTML + metaHTML;
+    return `<div class="fortune-msg-cards">${cardsHTML}</div>` + readHTML + metaHTML;
 }
 
 /* 从消息文本里还原综合解读（消息里带 <fmr> 编码块） */
@@ -54571,11 +54828,7 @@ function fortuneReadingFromContent(content) {
 
 /* 去掉标记后的正文（气泡里显示的引语） */
 function fortunePlainText(content) {
-    return String(content == null ? '' : content)
-        .replace(/<fmr>[\s\S]*?<\/fmr>/g, '')
-        .replace(/【标签：[^】]*】/g, '')
-        .replace(/【问题：[^】]*】/g, '')
-        .trim();
+    return fortuneCleanDisplay(content);
 }
 
 // 联系人主动发三张牌（含正逆位 / 雷诺曼仅正位）
@@ -54609,8 +54862,9 @@ function sendFortuneCardMessage(role, forcedKind, forcedTopicKey, forcedSubKey) 
         fmr = '<fmr>' + JSON.stringify(rd) + '</fmr>';
     } catch (e) {}
 
-    const lead = (isLenormand ? '我抽了三张雷诺曼给你：' : '我为你抽了三张牌：');
-    const content = lead + '（' + listText + '）' + kssRandomFortuneMeta(forcedTopicKey, forcedSubKey) + fmr;
+    /* 牌列表用隐藏标记承载：不显示引导句，也不附带内容文案；仅保留标签 chip */
+    const content = '<fcd>（' + listText + '）</fcd>' +
+                    kssRandomFortuneMeta(forcedTopicKey, forcedSubKey, true) + fmr;
 
     /* 标记今天已发，避免同一天重复触发 */
     role.lastFortuneDate = kssTodayKey();
@@ -54630,8 +54884,282 @@ function sendFortuneCardMessage(role, forcedKind, forcedTopicKey, forcedSubKey) 
     setTimeout(() => {
         handleMessageWithRecall(role, content, time, msg.id);
     }, 3000 + Math.random() * 2000);
+    /* 新增：牌后补充解读（三行牌义 + 指示牌 + 1~3 条知识点） */
+    setTimeout(() => {
+        fortuneSendSupplement(role, isLenormand ? 'lenormand' : 'tarot', cards, rev);
+    }, 4200 + Math.random() * 2200);
     return true;
 }
+
+
+/* ==========================================================================
+   联系人发牌后的「补充解读」
+   1) 一条三行牌义消息 + 指示牌卡面（可点击看牌义）
+   2) 再随机发 1~3 条知识点消息：1条50% / 2条35% / 3条15%
+   ========================================================================== */
+
+function fsupGetSettings() {
+    let f = (appData.settings && appData.settings.fortune) || {};
+    try { if (typeof kssEnsureFortuneData === 'function') f = kssEnsureFortuneData(); } catch (e) {}
+    return {
+        enabled: f.supplementEnabled !== false,
+        p1: KSS_settingNum(f.supplementProb1, 50, 0, 100),
+        p2: KSS_settingNum(f.supplementProb2, 35, 0, 100),
+        p3: KSS_settingNum(f.supplementProb3, 15, 0, 100)
+    };
+}
+
+/* 关键词 1~3 个，从该牌的正/逆位牌义里抽 */
+function fsupKeywords(card, rev, kind) {
+    let raw = '';
+    if (kind === 'tarot') raw = String((rev ? card.reverse : card.meaning) || '');
+    else raw = String(card.meaning || '');
+    const arr = raw.split(/[、,，;；\s]+/).map(x => x.trim()).filter(Boolean);
+    if (!arr.length) return [card.name];
+    const n = 1 + Math.floor(Math.random() * 3);
+    const shuffled = arr.slice().sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(n, 3));
+}
+
+/* 三行牌义文本 */
+function fsupLines(kind, cards, rev) {
+    return cards.map(function (c, i) {
+        const r = kind === 'tarot' && !!rev[i];
+        const pos = r ? '逆位' : '正位';
+        const kw = fsupKeywords(c, r, kind).join('、');
+        return c.name + '（' + pos + '）：' + kw;
+    });
+}
+
+/* 指示牌：雷诺曼优先 28/29 传统指示牌；塔罗优先宫廷牌与有人物的大牌 */
+function fsupPickSignificator(kind, cards) {
+    const used = {};
+    cards.forEach(function (c) { used[String(c.id)] = 1; });
+    let pool = [];
+    if (kind === 'lenormand') {
+        const sig = LENORMAND_CARDS.filter(function (c) {
+            return !used[String(c.id)] && (String(c.id) === '28' || String(c.id) === '29');
+        });
+        pool = sig.length ? sig : LENORMAND_CARDS.filter(function (c) { return !used[String(c.id)]; });
+    } else {
+        const humanMajor = ['0','1','2','3','4','5','6','7','8','9','12','17','18','19','20','21'];
+        const court = TAROT_CARDS.filter(function (c) {
+            return !used[String(c.id)] && /^(Page|Knight|Queen|King)$/.test(String(c.rank));
+        });
+        const majors = TAROT_CARDS.filter(function (c) {
+            return !used[String(c.id)] && c.suit === 'major' && humanMajor.indexOf(String(c.id)) >= 0;
+        });
+        pool = court.length ? court : (majors.length ? majors : TAROT_CARDS.filter(function (c) { return !used[String(c.id)]; }));
+    }
+    if (!pool.length) return null;
+    const c = pool[Math.floor(Math.random() * pool.length)];
+    const r = (kind === 'tarot') ? (Math.random() < 0.42) : false;
+    return { kind: kind, id: String(c.id), name: c.name, rev: r };
+}
+
+/* 指示牌卡面 HTML：显示牌面与正逆位，点击可查看牌义 */
+function fortuneSupplementHTML(content) {
+    const str = String(content == null ? '' : content);
+    const m = str.match(/<fsup>([\s\S]*?)<\/fsup>/);
+    if (!m) return '';
+    let d = null;
+    try { d = JSON.parse(m[1]); } catch (e) { return ''; }
+    const sig = d && d.sig;
+    if (!sig) return '';
+    let img = '', icon = '🃏';
+    if (sig.kind === 'lenormand') {
+        const c = LENORMAND_CARDS.find(function (x) { return String(x.id) === String(sig.id); });
+        if (!c) return '';
+        img = (typeof LENORMAND_IMAGES !== 'undefined' && LENORMAND_IMAGES[String(sig.id)]) || '';
+        icon = c.icon || icon;
+    } else {
+        const c = TAROT_CARDS.find(function (x) { return String(x.id) === String(sig.id); });
+        if (!c) return '';
+        img = c.img || '';
+        icon = c.symbol || icon;
+    }
+    const posText = sig.rev ? '逆位' : '正位';
+    const face = img
+        ? `<img src="${img}" alt="${escapeHtml(sig.name)}" loading="lazy"${sig.rev ? ' class="reversed"' : ''}>`
+        : `<div class="fortune-msg-card-ph">${icon}</div>`;
+    return `<div class="fsup-sig">
+        <div class="fsup-sig-label">指示牌 · 点击牌面查看牌义</div>
+        <div class="fortune-msg-card" role="button" tabindex="0" title="点击查看完整牌义"
+             onclick="event.stopPropagation(); openCardDetail('${sig.kind}', '${escapeHtml(sig.id)}', ${sig.rev ? 1 : 0})">
+            ${face}
+            <span class="fmc-name">${escapeHtml(sig.name)}</span>
+            <span class="fmc-pos${sig.rev ? ' rev' : ''}">${posText}</span>
+            <span class="fmc-more">查看完整牌义 ›</span>
+        </div>
+    </div>`;
+}
+
+/* 去掉标记后的三行正文 */
+function fortuneSupplementText(content) {
+    return String(content == null ? '' : content)
+        .replace(/<fsup>[\s\S]*?<\/fsup>/g, '')
+        .trim();
+}
+
+/* 与本次三张牌相关的知识点候选池（分类整理，非角色台词） */
+function fsupExtraPool(kind, cards, rev) {
+    const out = [];
+    const names = cards.map(function (c) { return c.name; });
+
+    if (kind === 'tarot') {
+        /* 元素强弱（原「元素分布」消息已移除，相关计数代码一并清理） */
+        const emap = { wands: '火', cups: '水', swords: '风', pents: '土', major: '大牌' };
+        const suits = cards.map(function (c) { return c.suit; });
+        let run = 1, maxRun = 1;
+        for (let i = 1; i < suits.length; i++) {
+            if (suits[i] === suits[i-1]) { run++; if (run > maxRun) maxRun = run; } else run = 1;
+        }
+        const seqTxt = suits.map(function (x) {
+            const k = emap[x] || '大阿卡那';
+            return (k === '大牌' || k === '大阿卡那') ? '大阿卡那（不属四元素，按原型与转折读）' : k;
+        });
+        out.push({ gid: 'strength',
+            text: '【元素强弱】最长连续同元素段 ' + maxRun + ' 张。' +
+                  (maxRun >= 3 ? '整组牌被这一元素连续推动。' :
+                   maxRun === 2 ? '存在连续强化段，但中途有切换，前段更像启动因素。' :
+                   '元素交替出现，没有形成连续强化，重点看元素之间怎么变化。') +
+                  ' 顺序也要读：' + seqTxt.join(' → ') + '。' });
+        /* 正逆位 */
+        const nRev = rev.filter(Boolean).length;
+        out.push({ gid: 'reversal',
+            text: '【正逆位修正】本次 ' + nRev + ' 张逆位。逆位是「受阻 / 延迟 / 内化 / 过度 / 削弱」五种修正标签之一，不是正位关键词取反，也不等于凶兆。' +
+                  (nRev >= 2 ? '逆位过半，提示有根本性的东西需要重新评估或能量流动受阻较大。' : nRev === 1 ? '重点留意这张逆位牌所在位置的课题。' : '全部正位表示能量流动顺畅，但不表示一定顺利。') });
+        /* 相邻组合 */
+        const kws = cards.map(function (c, i) {
+            const r = !!rev[i];
+            const raw = String((r ? c.reverse : c.meaning) || '').split('、')[0] || c.name;
+            return { n: c.name, k: raw };
+        });
+        out.push({ gid: 'threecard',
+            text: '【相邻组合】' + kws[0].n + ' → ' + kws[1].n + '：' + kws[0].k + ' 之后接 ' + kws[1].k + '；' +
+                  kws[1].n + ' → ' + kws[2].n + '：' + kws[1].k + ' 之后接 ' + kws[2].k + '。三张牌要串成一句话，不是三个分开的词。' });
+        /* 数字阶段 / 宫廷 */
+        const stages = cards.map(function (c) {
+            const st = tarotStructOf(c);
+            if (!st) return c.name + '·—';
+            return c.name + '·' + (st.isMajor ? '大阿卡那 · 原型课题' : st.stage);
+        });
+        const courtCards = cards.filter(function (c) { return /^(Page|Knight|Queen|King)$/.test(String(c.rank)); });
+        out.push({ gid: 'number',
+            text: '【数字阶段 / 宫廷成熟度】' + stages.join('、') +
+                  (courtCards.length ? '；含宫廷牌：' + courtCards.map(function (c) { return c.name + '（' + tarotStructOf(c).court.split('·')[0].trim() + '）'; }).join('、') + '。宫廷牌表示能量成熟度，不必然代表某个人。'
+                                    : '。牌组决定领域，数字决定走到哪个阶段。') });
+        /* 解牌四问 */
+        out.push({ gid: 'fourq',
+            text: '【解牌四问】① 元素是什么 → 属于哪个领域；② 元素强不强 → 存在感；③ 元素顺不顺 → 看正逆位与牌本身状态；④ 元素之间怎么变化 → 看整组牌真正发生了什么。' });
+        /* 仪式边界 */
+        out.push({ gid: 'ritual',
+            text: '【仪式规则】人物暗号是共同约定的仪式规则，不是角色真实存在的证明。连续未命中可预先规定最多三次，三次没出现就理解成「这一会先不开始」，不重抽、不补发。' });
+        /* 知识分层 */
+        out.push({ gid: 'layers',
+            text: '【知识分层】传统牌义（元素 / 数字 / 正逆位）确定性高；颜色、是否、地点、状态外貌、🍎、称呼属于传讯圈二次解读；暗号与规则集由用户配置。三层分开存储，不混用。' });
+    } else {
+        /* 牌类分布 */
+        const cls = cards.map(function (c) {
+            const st = lenormandStructOf(c.id);
+            return c.name + '（' + (st ? st.cls : '—') + '）';
+        });
+        out.push({ gid: 'lenoclass',
+            text: '【牌类分布】' + cls.join('、') + '。雷诺曼单张牌更接近固定名词或概念，必须靠相邻组合造句。' });
+        /* 极性两套 */
+        const pol = cards.map(function (c) {
+            const st = lenormandStructOf(c.id);
+            return c.name + '〔口径A:' + (st ? st.polarityA : '—') + ' / 口径B:' + (st ? st.polarityB : '—') + '〕';
+        });
+        out.push({ gid: 'lenoclass',
+            text: '【极性口径】' + pol.join('、') + '。两套分类存在冲突，已并列保留、可切换，不写死为固定字段。' });
+        /* 组合语法 1+2 */
+        const k1 = String(cards[0].meaning || '').split('、')[0] || cards[0].name;
+        const k2 = String(cards[1].meaning || '').split('、')[0] || cards[1].name;
+        const k3 = String(cards[2].meaning || '').split('、')[0] || cards[2].name;
+        out.push({ gid: 'lenosyntax',
+            text: '【组合语法 · 1+2】前牌定义主题、后牌提供描述，顺序不可对调。' + cards[0].name + '（' + k1 + '）＋' + cards[1].name + '（' + k2 + '）；若左右对调，意思会变。' });
+        out.push({ gid: 'lenosyntax',
+            text: '【组合语法 · 2+3】' + cards[1].name + '（' + k2 + '）＋' + cards[2].name + '（' + k3 + '）。三张牌先读 1+2、再读 2+3，最后合并；中间牌是核心，但这是启发式不是保证。' });
+        /* 大牌阵 */
+        out.push({ gid: 'lenosyntax',
+            text: '【大牌阵位置】以指示牌为地图中心，越近越直接、越远越背景化；行列、宫位、马步、镜像都是位置规则。横列 / 直栏 / 上下 / 左右各代表什么，不同系统说法不一致，须选择规则集。' });
+        /* 是否题 */
+        out.push({ gid: 'yesno',
+            text: '【是否题】五级判定：明确肯定 / 轻微肯定 / 未定 / 轻微否定 / 明确否定。吉牌多倾向「是」，中性不计入，钥匙增强确定性，云增加不明；结论是倾向说明，不是绝对承诺。' });
+        /* 仪式边界 */
+        out.push({ gid: 'ritual',
+            text: '【仪式规则】28 男人 / 29 女人是传统指示牌，须在会话前锁定；不能用于证明角色真实存在。连续未命中最多三次，三次没出现就理解成「这一会先不开始」。' });
+        /* 口径 */
+        out.push({ gid: 'lenoclass',
+            text: '【牌组口径】标准体系为 36 张；灵性、香炉、床、市场属部分现代扩展牌（共 40 张），不在标准 36 张体系内，传统组合规则不自动适用。' });
+        /* 三张成句 */
+        out.push({ gid: 'threecard',
+            text: '【三张成句】' + names.join(' → ') + '：先看关系再看细节；同一对牌在不同问题下可保留多条规则，不把组合解释写死为唯一答案。' });
+    }
+    return out;
+}
+
+/* 按 50/35/15 抽 1~3 条 */
+function fsupExtraCount() {
+    const cfg = fsupGetSettings();
+    const sum = cfg.p1 + cfg.p2 + cfg.p3;
+    if (sum <= 0) return 1;
+    const r = Math.random() * sum;
+    if (r < cfg.p1) return 1;
+    if (r < cfg.p1 + cfg.p2) return 2;
+    return 3;
+}
+
+/* 往聊天里塞一条消息（复用现有渲染与保存） */
+function fsupPush(role, content, type, delay) {
+    setTimeout(function () {
+        try {
+            const t = Date.now();
+            const msg = { id: t + Math.floor(Math.random() * 1000), sender: role.id, content: content, time: t, type: type || 'text', read: false };
+            if (!appData.chats[role.id]) appData.chats[role.id] = [];
+            appData.chats[role.id].push(msg);
+            role.lastActive = t;
+            debouncedSaveData();
+            if (currentChatType === 'role' && currentRoleId === role.id) {
+                appendMessageToDOM(role.id, content, t, null, type || 'text');
+            } else {
+                incrementUnread(role.id);
+            }
+        } catch (e) {}
+    }, Math.max(0, delay || 0));
+}
+
+/* 主入口：联系人发完三张牌后调用 */
+function fortuneSendSupplement(role, kind, cards, rev) {
+    try {
+        const cfg = fsupGetSettings();
+        if (!cfg.enabled) return;
+        if (!role || !role.id || !cards || cards.length < 3) return;
+
+        const lines = fsupLines(kind, cards, rev);
+        const sig = fsupPickSignificator(kind, cards);
+        const data = { deck: kind, lines: lines, sig: sig };
+        const content = lines.join('\n') + '<fsup>' + JSON.stringify(data) + '</fsup>';
+
+        /* 第一条：三行牌义 + 指示牌 */
+        fsupPush(role, content, 'fortune-supplement', 0);
+
+        /* 后续 1~3 条知识点消息，逐条延时 */
+        const n = fsupExtraCount();
+        const pool = fsupExtraPool(kind, cards, rev).slice().sort(() => Math.random() - 0.5);
+        const used = {};
+        let sent = 0, delay = 2600 + Math.floor(Math.random() * 1200);
+        for (let i = 0; i < pool.length && sent < n; i++) {
+            const it = pool[i];
+            if (used[it.gid]) continue;
+            used[it.gid] = 1;
+            fsupPush(role, it.text, 'text', delay + sent * (1800 + Math.floor(Math.random() * 900)));
+            sent++;
+        }
+    } catch (e) { /* 补充解读失败不影响主发牌 */ }
+}
+
 
 // ===== 占卜牌设置页（全局标签/问题库 + 开关 + 发送概率） =====
 function openFortuneSettings() {
@@ -54641,6 +55169,10 @@ function openFortuneSettings() {
     sw('fortune-question-switch', f.questionEnabled !== false);
     const tp = document.getElementById('fortune-tarot-prob'); if (tp) tp.value = KSS_settingNum(f.tarotProb, 2, 0, 100);
     const lp = document.getElementById('fortune-lenormand-prob'); if (lp) lp.value = KSS_settingNum(f.lenormandProb, 1, 0, 100);
+    sw('fortune-supplement-switch', f.supplementEnabled !== false);
+    const sp1 = document.getElementById('fortune-sup-prob-1'); if (sp1) sp1.value = KSS_settingNum(f.supplementProb1, 50, 0, 100);
+    const sp2 = document.getElementById('fortune-sup-prob-2'); if (sp2) sp2.value = KSS_settingNum(f.supplementProb2, 35, 0, 100);
+    const sp3 = document.getElementById('fortune-sup-prob-3'); if (sp3) sp3.value = KSS_settingNum(f.supplementProb3, 15, 0, 100);
     kssRenderFortuneList('tag');
     kssRenderFortuneList('question');
     const modal = document.getElementById('modal-fortune-settings'); if (modal) modal.classList.remove('hidden');
@@ -54656,6 +55188,11 @@ async function saveFortuneSettings() {
     f.questionEnabled = qSw ? qSw.classList.contains('active') : true;
     f.tarotProb = KSS_numEl('fortune-tarot-prob', 2, 0, 100);
     f.lenormandProb = KSS_numEl('fortune-lenormand-prob', 1, 0, 100);
+    const supSw = document.getElementById('fortune-supplement-switch');
+    f.supplementEnabled = supSw ? supSw.classList.contains('active') : true;
+    f.supplementProb1 = KSS_numEl('fortune-sup-prob-1', 50, 0, 100);
+    f.supplementProb2 = KSS_numEl('fortune-sup-prob-2', 35, 0, 100);
+    f.supplementProb3 = KSS_numEl('fortune-sup-prob-3', 15, 0, 100);
     await saveData();
     closeFortuneSettings();
     showToast('占卜设置已保存');
